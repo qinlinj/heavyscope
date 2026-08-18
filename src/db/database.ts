@@ -15,6 +15,14 @@ import {
   SETTING_SYNC_SOURCE,
   SETTING_WARN_PERCENT,
 } from "@/lib/settings";
+import {
+  planBackupApply,
+  reportFromPlan,
+  serializeBackup,
+  type BackupApplyReport,
+  type BackupMode,
+  type BackupPayload,
+} from "@/lib/backup";
 import { planRollovers } from "@/lib/rollover";
 import { defaultPools } from "./defaults";
 import {
@@ -359,5 +367,97 @@ export class HeavyScopeDB {
     }
     this.persist();
     return plans.length;
+  }
+
+  exportJson(): string {
+    return serializeBackup({
+      pools: this.listPools(),
+      usage_records: this.listUsage(),
+      settings: this.listSettings(),
+    });
+  }
+
+  importBackup(backup: BackupPayload, mode: BackupMode): BackupApplyReport {
+    const plan = planBackupApply(
+      {
+        pools: this.listPools(),
+        usage_records: this.listUsage(),
+        settings: this.listSettings(),
+      },
+      backup,
+      mode,
+    );
+
+    this.db.run("BEGIN");
+    try {
+      if (plan.clearExisting) {
+        this.db.run("DELETE FROM usage_records");
+        this.db.run("DELETE FROM pools");
+      }
+
+      const upsert = this.db.prepare(`
+        INSERT INTO pools (
+          id, name, type, quota_total, quota_used, reset_at, reset_cycle,
+          unit, color, is_preset, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          name = excluded.name,
+          type = excluded.type,
+          quota_total = excluded.quota_total,
+          quota_used = excluded.quota_used,
+          reset_at = excluded.reset_at,
+          reset_cycle = excluded.reset_cycle,
+          unit = excluded.unit,
+          color = excluded.color,
+          is_preset = excluded.is_preset,
+          created_at = excluded.created_at,
+          updated_at = excluded.updated_at
+      `);
+      for (const pool of plan.poolsToUpsert) {
+        upsert.run([
+          pool.id,
+          pool.name,
+          pool.type,
+          pool.quota_total,
+          pool.quota_used,
+          pool.reset_at,
+          pool.reset_cycle,
+          pool.unit,
+          pool.color,
+          pool.is_preset,
+          pool.created_at,
+          pool.updated_at,
+        ]);
+      }
+      upsert.free();
+
+      const insert = this.db.prepare(`
+        INSERT OR IGNORE INTO usage_records (id, pool_id, amount, recorded_at, note, source)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      for (const record of plan.recordsToInsert) {
+        insert.run([
+          record.id,
+          record.pool_id,
+          record.amount,
+          record.recorded_at,
+          record.note,
+          record.source,
+        ]);
+      }
+      insert.free();
+
+      for (const [key, value] of Object.entries(plan.settingsToMerge)) {
+        this.writeSetting(key, value);
+      }
+
+      this.db.run("COMMIT");
+    } catch (error) {
+      this.db.run("ROLLBACK");
+      throw error;
+    }
+
+    this.persist();
+    return reportFromPlan(plan);
   }
 }
