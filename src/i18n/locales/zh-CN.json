@@ -78,7 +78,27 @@
     "thresholdsInvalid": "警告值须 ≥ 1，且严格小于危急值；危急值不能超过 100。",
     "pools": "额度池管理",
     "poolsHint": "在此添加、编辑或删除额度池。仪表盘也保留同样的操作。",
-    "noPools": "还没有额度池。可在此添加，或回到仪表盘添加。"
+    "noPools": "还没有额度池。可在此添加，或回到仪表盘添加。",
+    "dataSources": "数据源",
+    "dataSourcesHint": "导入 Cursor 用量快照。自动同步只会再次应用上次导入的内容，不会编造实时额度。",
+    "snapshotLabel": "Cursor 快照（JSON 或 CSV）",
+    "snapshotPlaceholder": "粘贴 Cursor 快照 JSON，或 pool,amount,note 格式的 CSV…",
+    "snapshotApply": "应用快照",
+    "snapshotFile": "导入文件",
+    "syncEnabled": "启用自动同步",
+    "syncInterval": "间隔（分钟）",
+    "syncSource": "自动同步来源",
+    "syncSourceNone": "无",
+    "syncSourceCursor": "Cursor",
+    "syncNow": "立即同步",
+    "lastSync": "上次同步",
+    "lastSyncNever": "从未",
+    "syncStatusOk": "已应用",
+    "syncStatusSkipped": "已应用过",
+    "syncStatusError": "失败",
+    "noSnapshot": "请先导入快照，自动同步才会运行。",
+    "manualTruth": "适配器失败或快照过期时，仍以手动记录为准。",
+    "grokReserved": "Grok / xAI 适配器已预留，即将推出。不会读取凭证或实时用量。"
   },
   "common": {
     "ok": "确定",
@@ -136,5 +156,11 @@
       "import": "导入",
       "sync": "同步"
     }
+  },
+  "adapters": {
+    "manual": "手动录入",
+    "cursor": "Cursor",
+    "grok": "Grok（即将推出）",
+    "reserved": "即将推出"
   }
 }
