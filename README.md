@@ -82,6 +82,8 @@ Example JSON:
   ]
 }
 
+A copy of this sample (clearly marked SAMPLE ONLY, fake demo numbers) lives in [docs/cursor-snapshot.example.json](docs/cursor-snapshot.example.json).
+
 Example CSV:
 
 pool,amount,note

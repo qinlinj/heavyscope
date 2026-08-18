@@ -105,7 +105,9 @@
     "loading": "正在加载本地数据库…",
     "dbErrorTitle": "无法打开本地数据库",
     "dbErrorBody": "HeavyScope 无法加载 sql.js 数据库。页面不是空白，错误会显示在这里。",
-    "retry": "重新加载"
+    "retry": "重新加载",
+    "renderErrorTitle": "页面渲染出错",
+    "renderErrorBody": "HeavyScope 遇到渲染错误。请重新加载页面重试。本地数据仍保存在浏览器中。"
   },
   "advisor": {
     "title": "消耗速率顾问",

@@ -56,6 +56,11 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Desktop packaging / installers (Linux .deb can be built locally; macOS menu bar must be built on a Mac)
 - [x] Release notes and 0.7.0 polish (README, CHANGELOG, docs/RELEASE.md)
 
+## Polish / leftover gaps (0.7.2)
+
+- [x] Render ErrorBoundary + bilingual fallback (reload)
+- [x] Sample Cursor snapshot JSON linked from README
+
 ## Polish / leftover gaps (0.7.1)
 
 - [x] GitHub Actions CI (Node 22 + test/build)
@@ -66,4 +71,4 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Signed macOS menu-bar binary / codesign (needs a Mac and certificates)
 - [ ] Windows installer
 - [ ] GitHub Release asset upload (MCP has no create-release tool)
-- [ ] React render-error boundary beyond DB open failures
+- [x] React render-error boundary beyond DB open failures (0.7.2)
