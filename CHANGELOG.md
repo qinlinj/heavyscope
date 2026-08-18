@@ -6,6 +6,16 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.7.4] - 2026-08-18
+
+### Added
+
+- JSON export / import of local data from Settings → Local data. Export downloads `heavyscope-backup.json` with `{ version, exportedAt, pools, usage_records, settings }` from the current sql.js tables (not the wasm binary). Import accepts a file or pasted JSON. Default merge: pools upsert by id (imported wins), usage records insert if the id is unknown, settings keys merge (language is left alone unless present). Optional replace-all needs a second confirm and does not run unless the user chooses it.
+
+### Changed
+
+- Version 0.7.4.
+
 ## [0.7.3] - 2026-08-18
 
 ### Added
