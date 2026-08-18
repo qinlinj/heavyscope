@@ -25,6 +25,7 @@ import type { Pool, PoolDraft } from "@/db/schema";
 import { persistLanguage } from "@/i18n";
 import { useDatabase } from "@/hooks/useDatabase";
 import { formatAmount, usagePercent } from "@/lib/format";
+import { displayPoolName } from "@/lib/poolName";
 import {
   isValidThresholds,
   SETTING_CRIT_PERCENT,
@@ -183,7 +184,7 @@ export function Settings() {
                         className="size-2 shrink-0 rounded-full"
                         style={{ backgroundColor: pool.color }}
                       />
-                      {pool.name}
+                      {displayPoolName(pool, t)}
                     </p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {formatAmount(pool.quota_used, pool.unit)} / {formatAmount(pool.quota_total, pool.unit)}
