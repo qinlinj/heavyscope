@@ -15,6 +15,7 @@ import {
   SETTING_SYNC_SOURCE,
   SETTING_WARN_PERCENT,
 } from "@/lib/settings";
+import { planRollovers } from "@/lib/rollover";
 import { defaultPools } from "./defaults";
 import {
   SCHEMA_SQL,
@@ -116,6 +117,7 @@ export class HeavyScopeDB {
     const raw = saved ? new SQL.Database(base64ToBytes(saved)) : new SQL.Database();
     const store = new HeavyScopeDB(raw);
     store.migrate();
+    store.applyDueRollovers();
     store.seedIfEmpty();
     store.seedSettings();
     store.persist();
@@ -338,5 +340,24 @@ export class HeavyScopeDB {
 
   resetLocalData(): void {
     localStorage.removeItem(STORAGE_KEY);
+  }
+
+  applyDueRollovers(now = new Date()): number {
+    const plans = planRollovers(this.listPools(), now);
+    if (plans.length === 0) return 0;
+    const ts = now.toISOString();
+    for (const plan of plans) {
+      this.db.run(
+        "UPDATE pools SET quota_used = ?, reset_at = ?, updated_at = ? WHERE id = ?",
+        [plan.quotaUsed, plan.nextResetAt, ts, plan.poolId],
+      );
+      this.db.run(
+        `INSERT INTO usage_records (id, pool_id, amount, recorded_at, note, source)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [newId("usage"), plan.poolId, plan.amount, ts, plan.note, plan.source],
+      );
+    }
+    this.persist();
+    return plans.length;
   }
 }
