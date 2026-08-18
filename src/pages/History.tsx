@@ -103,6 +103,9 @@ export function History() {
             {t("history.clearFilters")}
           </Button>
         </div>
+        <p className="text-xs text-muted-foreground sm:col-span-2 lg:col-span-5">
+          {t("history.dateHint")}
+        </p>
       </div>
 
       <p className="text-xs text-muted-foreground">
