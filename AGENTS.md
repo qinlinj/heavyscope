@@ -41,6 +41,7 @@ https://github.com/qinlinj/heavyscope
 - Phase 5 — Tauri 2 macOS menu bar (done)
 - Phase 6 — data source adapters (Cursor first, Grok reserved) (done)
 - Phase 7 — packaging / tests / docs (done)
+- 0.7.1 polish — CI, DB error UI, quota cycle rollover (done)
 
 ## Commits
 

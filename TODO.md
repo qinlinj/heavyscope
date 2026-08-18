@@ -34,7 +34,7 @@ GitHub: https://github.com/qinlinj/heavyscope
 ## Phase 3 — charts + history
 - [x] Per-pool usage history page (`/history` with pool / date / source filters)
 - [x] Daily, weekly, and pool-share charts on the dashboard
-- [ ] Reset rollover that archives the previous window (deferred; official Phase 3 is charts + history)
+- [x] Reset rollover that archives the previous window (0.7.1: zero quota, advance reset_at, keep history)
 
 ## Phase 4 — UI polish + Settings + i18n persist
 - [x] Dashboard density and visual polish
@@ -55,3 +55,15 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Tests for burn-rate math, charts, and adapter apply (Vitest)
 - [x] Desktop packaging / installers (Linux .deb can be built locally; macOS menu bar must be built on a Mac)
 - [x] Release notes and 0.7.0 polish (README, CHANGELOG, docs/RELEASE.md)
+
+## Polish / leftover gaps (0.7.1)
+
+- [x] GitHub Actions CI (Node 22 + test/build)
+- [x] Visible DB open error (ErrorState) instead of a blank page
+- [x] Quota cycle rollover without deleting usage history
+- [x] History date-input i18n hint (browser locale picker unchanged)
+- [ ] Live Cursor / Grok APIs (out of scope; snapshot import + reserved adapter only)
+- [ ] Signed macOS menu-bar binary / codesign (needs a Mac and certificates)
+- [ ] Windows installer
+- [ ] GitHub Release asset upload (MCP has no create-release tool)
+- [ ] React render-error boundary beyond DB open failures

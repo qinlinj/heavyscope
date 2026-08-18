@@ -1,13 +1,13 @@
-# HeavyScope v0.7.0
+# HeavyScope v0.7.1
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
 ## Highlights
 
-- Vitest coverage for burn-rate advisor math, chart aggregations, and Cursor snapshot apply.
-- Apply is delta-only and hash-idempotent: the same used/total snapshot is skipped; used is never reduced.
-- README documents develop, desktop packaging, Cursor snapshot JSON, and local-only privacy.
-- MIT license.
+- GitHub Actions CI: Node 22, package manager from packageManager, test and build on push/PR to main.
+- Visible error state if the local sql.js database fails to open.
+- Quota cycle rollover: overdue pools reset used quota, advance reset_at, and keep usage history.
+- History date inputs stay browser-native, with an i18n hint.
 
 ## Desktop installers
 
@@ -17,9 +17,10 @@ GitHub Releases notes. Published as a file because the GitHub MCP server has no 
 
 ## Known gaps
 
-- No signed macOS binary in this release (needs a Mac).
+- No signed macOS binary in this release (needs a Mac and codesign).
 - Cursor adapter is snapshot import only. There is no live Cursor API.
 - Grok adapter remains reserved.
+- No Windows installer.
 
 ## Verify
 
