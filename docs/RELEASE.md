@@ -1,12 +1,17 @@
-# HeavyScope v0.7.2
+# HeavyScope release notes
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
-## Highlights
+## v0.7.3
+
+- Preset pool display names go through i18n (`displayPoolName`). The four presets (preset-grok-heavy, preset-grok-bot, preset-cursor-models, preset-cursor-other) have en / zh-CN labels. Stored `pool.name` stays the English identifier. Custom pools still show `pool.name` as-is. No database rewrite.
+- Version 0.7.3. sql.js Vite include, Tauri sources, and CI are unchanged.
+
+## v0.7.2
 
 - React class ErrorBoundary around the app. Render crashes show a bilingual ErrorState fallback; Reset reloads the page.
 - Sample Cursor snapshot at `docs/cursor-snapshot.example.json` (fake demo numbers, marked SAMPLE ONLY).
-- Version 0.7.2. sql.js Vite include, Tauri sources, and CI are unchanged.
+- Version 0.7.2. Settings About reads Vite `__APP_VERSION__` from package.json (no leftover 0.5.0).
 
 ## Desktop installers
 
