@@ -4,6 +4,18 @@ All notable changes to this project are documented in this file.
 
 The format is based on Keep a Changelog, and this project uses Semantic Versioning.
 
+## [0.7.0] - 2026-08-18
+
+### Added
+
+- Vitest unit tests for burn-rate math, chart series, and Cursor snapshot apply (delta-only + idempotent hash skip).
+- Complete English README covering features, stack, develop, desktop packaging, snapshot format, and privacy.
+- MIT license and v0.7.0 release notes in docs/RELEASE.md.
+
+### Changed
+
+- Version 0.7.0.
+
 ## [0.6.0] - 2026-08-18
 
 ### Added
