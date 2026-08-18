@@ -2,6 +2,11 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.7.5
+
+- Settings → Local data can load demo usage for the four preset pools (last 10 days, English notes) so charts and the advisor look alive. A second load needs confirm because `demo_seeded=1`.
+- Version 0.7.5. JSON backup export/import, displayPoolName, sql.js Vite include, Tauri sources, and CI are unchanged.
+
 ## v0.7.4
 
 - Settings → Local data can export and import `heavyscope-backup.json` (`version`, `exportedAt`, `pools`, `usage_records`, `settings`) from the current sql.js tables. This is not a wasm / binary dump.
