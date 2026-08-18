@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Pool } from "@/db/schema";
+import { displayPoolName } from "@/lib/poolName";
 
 type Props = {
   open: boolean;
@@ -67,7 +68,7 @@ export function UsageDialog({ open, pools, onOpenChange, onSubmit }: Props) {
               <SelectContent>
                 {pools.map((pool) => (
                   <SelectItem key={pool.id} value={pool.id}>
-                    {pool.name}
+                    {displayPoolName(pool, t)}
                   </SelectItem>
                 ))}
               </SelectContent>

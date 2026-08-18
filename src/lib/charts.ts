@@ -143,12 +143,16 @@ function isPoolList(items: Pool[] | UsageRecord[]): items is Pool[] {
 }
 
 /** Pool share of quota_used (preferred) or summed record amounts. */
-export function poolShare(poolsOrRecords: Pool[] | UsageRecord[], pools?: Pool[]): SharePoint[] {
+export function poolShare(
+  poolsOrRecords: Pool[] | UsageRecord[],
+  pools?: Pool[],
+  labelFor?: (pool: Pool) => string,
+): SharePoint[] {
   if (isPoolList(poolsOrRecords)) {
     return poolsOrRecords
       .filter((pool) => pool.quota_used > 0)
       .map((pool) => ({
-        name: pool.name,
+        name: labelFor ? labelFor(pool) : pool.name,
         value: pool.quota_used,
         color: pool.color || FALLBACK_COLOR,
       }));
@@ -165,7 +169,7 @@ export function poolShare(poolsOrRecords: Pool[] | UsageRecord[], pools?: Pool[]
     .map(([id, value]) => {
       const pool = lookup.get(id);
       return {
-        name: pool?.name ?? id,
+        name: pool ? (labelFor ? labelFor(pool) : pool.name) : id,
         value,
         color: pool?.color ?? FALLBACK_COLOR,
       };
