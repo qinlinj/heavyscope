@@ -59,6 +59,7 @@ GitHub: https://github.com/qinlinj/heavyscope
 ## Polish / leftover gaps (0.7.6)
 
 - [x] Replace native `window.confirm` with in-app AlertDialogs (delete pool, reset DB, demo re-apply, import, replace-all)
+- [x] Product screenshots on GitHub (`docs/images/*.png` linked from README)
 
 ## Polish / leftover gaps (0.7.5)
 

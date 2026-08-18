@@ -6,6 +6,14 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+### Added
+
+- Product screenshots for the README: `docs/images/dashboard.png`, `docs/images/dashboard-zh.png`, `docs/images/settings-backup.png`, and `docs/images/confirm-delete.png`.
+
+### Removed
+
+- Temporary screenshot-upload leftovers (`docs/images/parts`, `docs/images/READY`, `docs/images/*.b64`) and the one-shot decoder workflow `.github/workflows/decode-screenshots.yml`.
+
 ## [0.7.6] - 2026-08-18
 
 ### Changed
