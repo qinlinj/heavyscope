@@ -14,6 +14,7 @@ import type { UsageSource } from "@/db/schema";
 import { useDatabase } from "@/hooks/useDatabase";
 import { filterRecords } from "@/lib/charts";
 import { formatAmount, formatDateTime } from "@/lib/format";
+import { displayPoolName } from "@/lib/poolName";
 
 const SOURCES: UsageSource[] = ["manual", "import", "sync"];
 
@@ -62,7 +63,7 @@ export function History() {
               <SelectItem value="all">{t("history.allPools")}</SelectItem>
               {pools.map((pool) => (
                 <SelectItem key={pool.id} value={pool.id}>
-                  {pool.name}
+                  {displayPoolName(pool, t)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -142,7 +143,7 @@ export function History() {
                           className="size-2 shrink-0 rounded-full"
                           style={{ backgroundColor: pool?.color ?? "#94a3b8" }}
                         />
-                        {pool?.name ?? record.pool_id}
+                        {pool ? displayPoolName(pool, t) : record.pool_id}
                       </span>
                     </td>
                     <td className="px-4 py-3 tabular-nums">
