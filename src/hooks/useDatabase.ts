@@ -15,6 +15,7 @@ import type { ApplyReport } from "@/adapters/types";
 import { HeavyScopeDB } from "@/db/database";
 import type { Pool, PoolDraft, UsageRecord, UsageSource } from "@/db/schema";
 import type { BackupApplyReport, BackupMode, BackupPayload } from "@/lib/backup";
+import type { DemoSeedReport } from "@/lib/demoSeed";
 import i18n, { LANG_STORAGE_KEY } from "@/i18n";
 import { syncTraySummary } from "@/lib/desktop";
 import {
@@ -48,6 +49,7 @@ type DatabaseApi = {
   resetLocalData: () => void;
   exportLocalBackup: () => string;
   importLocalBackup: (backup: BackupPayload, mode: BackupMode) => BackupApplyReport;
+  applyDemoSeed: (force?: boolean) => DemoSeedReport;
   applyImportedSnapshot: (raw: string) => Promise<ApplyReport>;
   applyStoredSnapshot: () => Promise<ApplyReport>;
 };
@@ -233,6 +235,16 @@ function useDatabaseState(): DatabaseApi {
     [db, refresh],
   );
 
+  const applyDemoSeed = useCallback(
+    (force = false): DemoSeedReport => {
+      if (!db) return { skipped: true, inserted: 0 };
+      const report = db.applyDemoSeed(force);
+      refresh(db);
+      return report;
+    },
+    [db, refresh],
+  );
+
   const applyImportedSnapshot = useCallback(
     async (raw: string) => {
       if (!db) return idleReport("Database not ready");
@@ -278,6 +290,7 @@ function useDatabaseState(): DatabaseApi {
     resetLocalData,
     exportLocalBackup,
     importLocalBackup,
+    applyDemoSeed,
     applyImportedSnapshot,
     applyStoredSnapshot,
   };
