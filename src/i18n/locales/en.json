@@ -102,7 +102,10 @@
   },
   "common": {
     "ok": "OK",
-    "loading": "Loading local database…"
+    "loading": "Loading local database…",
+    "dbErrorTitle": "Could not open the local database",
+    "dbErrorBody": "HeavyScope could not load the sql.js database. Your page is not blank — the error is shown here.",
+    "retry": "Reload"
   },
   "advisor": {
     "title": "Burn Rate Advisor",
@@ -155,7 +158,8 @@
       "manual": "Manual",
       "import": "Import",
       "sync": "Sync"
-    }
+    },
+    "dateHint": "Date fields use the browser locale. HeavyScope does not override the picker."
   },
   "adapters": {
     "manual": "Manual entry",
