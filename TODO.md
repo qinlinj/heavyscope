@@ -42,8 +42,8 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Confirm language + other prefs persist across sessions
 
 ## Phase 5 — Tauri 2 macOS menu bar
-- [ ] Tauri 2 macOS menu bar
-- [ ] Share the same SQLite schema
+- [x] Tauri 2 desktop tray / macOS menu-bar shell
+- [x] Share the same sql.js schema and UI (no native SQL plugin)
 
 ## Phase 6 — data source adapters (Cursor first, Grok reserved)
 - [ ] Optional Cursor local usage adapter (read-only)

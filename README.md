@@ -2,40 +2,46 @@
 
 Local-first multi-quota monitoring panel for SuperGrok Heavy and Cursor Ultra.
 
-Demo-first: a polished Web app now, Tauri 2 macOS menu bar later. All quota data stays in the browser (sql.js + localStorage). There is no HeavyScope cloud account.
+The same React UI runs as a web app and inside a Tauri 2 desktop shell. Quota data stays local. There is no HeavyScope cloud account.
 
 ## Features
 
 - Four preset pools plus custom services
 - Manual usage recording
-- Dashboard cards with percent used, remaining amount, and reset countdown
-- Burn Rate Advisor with recommended daily pace and waste / overspend risk
-- Daily / weekly usage trend charts and pool-share donut
-- Usage history with pool, date, and source filters
-- Progress color shifts green to yellow to red using configurable warn / crit thresholds
-- Settings page for language, alert thresholds, and pool management
-- Chinese UI by default, English available; language stored in localStorage and the settings table
+- Dashboard, advisor, charts, history, and settings
+- Desktop tray / macOS menu-bar shell (Tauri 2)
 
 ## Stack
 
-- Vite + React + TypeScript
-- Tailwind CSS + shadcn/ui + Recharts
+- Vite + React + TypeScript, Tailwind, shadcn/ui, Recharts
 - react-i18next (zh-CN, en)
-- SQLite via sql.js
+- sql.js SQLite (web and Tauri webview)
+- Tauri 2 tray shell in src-tauri
 
 ## Develop
 
-Requires Node.js 22 and the project package manager.
+Requires Node.js 22 and the package manager in package.json.
 
-```bash
-# install dependencies, then start the dev server
-# see package.json scripts: dev, build, preview
-```
+Scripts: install, dev, build, preview.
+
+## Desktop
+
+src-tauri wraps the existing Vite React app.
+Click the tray icon to open the window.
+Close hides to tray. Use Quit to exit.
+
+Run the package.json tauri script with the dev or build subcommand.
+
+pnpm tauri dev
+pnpm tauri build
+
+macOS menu-bar binaries must be built on a Mac.
+Identifier is com.heavyscope.app. Product name is HeavyScope.
 
 ## Language
 
-Repository docs and source comments are English. UI strings live in `src/i18n/locales/`.
+Repository docs and source comments are English. UI strings live in src/i18n/locales/.
 
 ## Privacy
 
-The database is a sql.js file encoded in `localStorage` under `heavyscope.sqlite.v1`. Reset it from Settings.
+The database is a sql.js file encoded in localStorage under heavyscope.sqlite.v1. Reset it from Settings.

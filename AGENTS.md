@@ -25,7 +25,7 @@ Never wait for the user to unblock routine decisions.
 - Tailwind CSS + shadcn/ui + Recharts + react-i18next
 - SQLite via sql.js on Web; schema is defined in src/db/schema.ts
 - Package manager listed in package.json packageManager field
-- Later: Tauri 2 macOS menu bar (Phase 5)
+- Tauri 2 desktop tray / macOS menu-bar shell in src-tauri (Phase 5)
 
 ## Repository
 
@@ -38,7 +38,7 @@ https://github.com/qinlinj/heavyscope
 - Phase 2 — Burn Rate Advisor (done)
 - Phase 3 — charts + history (done)
 - Phase 4 — UI polish + Settings + i18n persist (done)
-- Phase 5 — Tauri 2 macOS menu bar (pending)
+- Phase 5 — Tauri 2 macOS menu bar (done)
 - Phase 6 — data source adapters (Cursor first, Grok reserved) (pending)
 - Phase 7 — packaging / tests / docs (pending)
 
