@@ -1,13 +1,12 @@
-# HeavyScope v0.7.1
+# HeavyScope v0.7.2
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
 ## Highlights
 
-- GitHub Actions CI: Node 22, package manager from packageManager, test and build on push/PR to main.
-- Visible error state if the local sql.js database fails to open.
-- Quota cycle rollover: overdue pools reset used quota, advance reset_at, and keep usage history.
-- History date inputs stay browser-native, with an i18n hint.
+- React class ErrorBoundary around the app. Render crashes show a bilingual ErrorState fallback; Reset reloads the page.
+- Sample Cursor snapshot at `docs/cursor-snapshot.example.json` (fake demo numbers, marked SAMPLE ONLY).
+- Version 0.7.2. sql.js Vite include, Tauri sources, and CI are unchanged.
 
 ## Desktop installers
 

@@ -105,7 +105,9 @@
     "loading": "Loading local database…",
     "dbErrorTitle": "Could not open the local database",
     "dbErrorBody": "HeavyScope could not load the sql.js database. Your page is not blank — the error is shown here.",
-    "retry": "Reload"
+    "retry": "Reload",
+    "renderErrorTitle": "Something went wrong",
+    "renderErrorBody": "HeavyScope hit a render error. Reload the page to try again. Your local data is still in the browser."
   },
   "advisor": {
     "title": "Burn Rate Advisor",

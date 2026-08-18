@@ -42,6 +42,7 @@ https://github.com/qinlinj/heavyscope
 - Phase 6 — data source adapters (Cursor first, Grok reserved) (done)
 - Phase 7 — packaging / tests / docs (done)
 - 0.7.1 polish — CI, DB error UI, quota cycle rollover (done)
+- 0.7.2 polish — render ErrorBoundary, sample Cursor snapshot (done)
 
 ## Commits
 
