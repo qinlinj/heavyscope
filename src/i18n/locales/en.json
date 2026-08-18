@@ -27,6 +27,12 @@
     "custom": "Custom",
     "recent": "Recent records"
   },
+  "presets": {
+    "preset-grok-heavy": "Grok Heavy Weekly Shared Pool",
+    "preset-grok-bot": "Grok Bot Weekly Quota",
+    "preset-cursor-models": "Cursor Models Pool (Grok/Composer)",
+    "preset-cursor-other": "Cursor Other Models Pool"
+  },
   "form": {
     "name": "Name",
     "type": "Type",

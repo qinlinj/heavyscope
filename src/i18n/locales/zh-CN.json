@@ -27,6 +27,12 @@
     "custom": "自定义",
     "recent": "最近记录"
   },
+  "presets": {
+    "preset-grok-heavy": "Grok Heavy 每周共享池",
+    "preset-grok-bot": "Grok Bot 每周额度",
+    "preset-cursor-models": "Cursor 模型池（Grok/Composer）",
+    "preset-cursor-other": "Cursor 其他模型池"
+  },
   "form": {
     "name": "名称",
     "type": "类型",
