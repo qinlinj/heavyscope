@@ -78,7 +78,27 @@
     "thresholdsInvalid": "Warning must be at least 1 and strictly less than critical, which cannot exceed 100.",
     "pools": "Pool management",
     "poolsHint": "Add, edit, or delete quota pools. The dashboard has the same actions.",
-    "noPools": "No pools yet. Add one here or from the dashboard."
+    "noPools": "No pools yet. Add one here or from the dashboard.",
+    "dataSources": "Data sources",
+    "dataSourcesHint": "Import a Cursor usage snapshot. Auto-sync re-applies the last import and never invents live quota numbers.",
+    "snapshotLabel": "Cursor snapshot (JSON or CSV)",
+    "snapshotPlaceholder": "Paste a Cursor snapshot JSON or pool,amount,note CSV…",
+    "snapshotApply": "Apply snapshot",
+    "snapshotFile": "Import file",
+    "syncEnabled": "Enable auto-sync",
+    "syncInterval": "Interval (minutes)",
+    "syncSource": "Auto-sync source",
+    "syncSourceNone": "None",
+    "syncSourceCursor": "Cursor",
+    "syncNow": "Sync now",
+    "lastSync": "Last sync",
+    "lastSyncNever": "Never",
+    "syncStatusOk": "Applied",
+    "syncStatusSkipped": "Already applied",
+    "syncStatusError": "Failed",
+    "noSnapshot": "Import a snapshot before auto-sync can run.",
+    "manualTruth": "Manual entry remains the source of truth when adapters fail or a snapshot is stale.",
+    "grokReserved": "Grok / xAI adapter is reserved and coming soon. It does not read credentials or live usage."
   },
   "common": {
     "ok": "OK",
@@ -136,5 +156,11 @@
       "import": "Import",
       "sync": "Sync"
     }
+  },
+  "adapters": {
+    "manual": "Manual entry",
+    "cursor": "Cursor",
+    "grok": "Grok (coming soon)",
+    "reserved": "Coming soon"
   }
 }
