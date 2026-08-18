@@ -6,6 +6,7 @@ GitHub Releases notes. Published as a file because the GitHub MCP server has no 
 
 - Native browser confirm dialogs are gone. Delete pool, reset local database, demo re-apply, import, and import replace-all use in-app AlertDialogs with zh-CN / en titles and actions. First-time demo seed applies immediately; a second load still confirms because `demo_seeded=1`.
 - Version 0.7.6. JSON backup, demo seed, displayPoolName, sql.js Vite include, Tauri sources, and CI are unchanged.
+- English README now documents dashboard + burn rate advisor, charts/history, settings (thresholds, pools, language), Cursor snapshot import, JSON backup export/import, demo seed, Tauri 2 tray, in-app confirm dialogs, how to run, the macOS build-on-Mac note, snapshot + backup formats, and privacy.
 
 ## v0.7.5
 
