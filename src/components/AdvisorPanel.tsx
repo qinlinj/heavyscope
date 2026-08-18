@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import type { Pool } from "@/db/schema";
 import { formatAmount, usageTone } from "@/lib/format";
+import { displayPoolName } from "@/lib/poolName";
 import {
   type CrossPoolAdvice,
   type PoolAdvice,
@@ -66,7 +67,7 @@ export function AdvisorPanel({
                 className="size-2 rounded-full"
                 style={{ backgroundColor: pool.color }}
               />
-              {pool.name}
+              {displayPoolName(pool, t)}
             </span>
             <RiskBadge level={tightest.risk} />
           </CardDescription>
@@ -126,7 +127,10 @@ export function AdvisorPanel({
               {t("advisor.switchTitle")}
             </CardTitle>
             <CardDescription>
-              {t("advisor.switchSuggestion", { from: fromPool.name, to: toPool.name })}
+              {t("advisor.switchSuggestion", {
+                from: displayPoolName(fromPool, t),
+                to: displayPoolName(toPool, t),
+              })}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -147,7 +151,7 @@ export function AdvisorPanel({
                     className="size-2 shrink-0 rounded-full"
                     style={{ backgroundColor: source.color }}
                   />
-                  <span className="truncate">{source.name}</span>
+                  <span className="truncate">{displayPoolName(source, t)}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-2 tabular-nums text-muted-foreground">
                   {formatAmount(item.recommendedDaily, source.unit)}/{t("advisor.perDay")}
