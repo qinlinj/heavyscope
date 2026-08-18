@@ -43,6 +43,7 @@ export function ConfirmDialog({
         <AlertDialogFooter>
           <AlertDialogCancel>{cancelLabel ?? t("form.cancel")}</AlertDialogCancel>
           <AlertDialogAction
+            type="button"
             variant={destructive ? "destructive" : "default"}
             onClick={onConfirm}
           >

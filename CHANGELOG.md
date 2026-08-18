@@ -10,6 +10,10 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 - Product screenshots for the README: `docs/images/dashboard.png`, `docs/images/dashboard-zh.png`, `docs/images/settings-backup.png`, and `docs/images/confirm-delete.png`.
 
+### Changed
+
+- Confirm dialogs: Radix AlertDialog already traps focus and cancels on Escape; Title/Description supply `aria-labelledby` / `aria-describedby` for Dashboard/Settings delete and reset. Destructive confirm action is `type="button"`.
+
 ### Removed
 
 - Temporary screenshot-upload leftovers (`docs/images/parts`, `docs/images/READY`, `docs/images/*.b64`) and the one-shot decoder workflow `.github/workflows/decode-screenshots.yml`.
