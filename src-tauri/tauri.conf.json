@@ -1,0 +1,55 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "HeavyScope",
+  "version": "0.5.0",
+  "identifier": "com.heavyscope.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "HeavyScope",
+        "width": 980,
+        "height": 720,
+        "resizable": true,
+        "fullscreen": false,
+        "label": "main",
+        "minWidth": 420,
+        "minHeight": 520,
+        "visible": true,
+        "center": true,
+        "theme": "Dark"
+      }
+    ],
+    "security": {
+      "csp": null
+    },
+    "macOSPrivateApi": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "deb",
+      "app",
+      "dmg"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "DeveloperTool",
+    "shortDescription": "Multi-quota monitor for SuperGrok Heavy and Cursor Ultra",
+    "longDescription": "Local-first multi-quota monitoring panel. Web and desktop share the same UI and sql.js data logic.",
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "hardenedRuntime": true
+    }
+  }
+}
