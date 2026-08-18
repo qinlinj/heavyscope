@@ -5,7 +5,8 @@
   },
   "nav": {
     "dashboard": "Dashboard",
-    "settings": "Settings"
+    "settings": "Settings",
+    "history": "History"
   },
   "dashboard": {
     "title": "Quota overview",
@@ -92,5 +93,38 @@
     "switchTitle": "Switch suggestion",
     "switchSuggestion": "{{from}} is running hot. Switch new work to {{to}} while it still has headroom.",
     "noReset": "No reset scheduled"
+  },
+  "charts": {
+    "title": "Usage trends",
+    "subtitle": "Daily, weekly, and pool-share charts from local records.",
+    "daily": "Daily usage",
+    "dailyHint": "Last 14 days, stacked by pool",
+    "weekly": "Weekly usage",
+    "weeklyHint": "Last 8 weeks, stacked by pool",
+    "share": "Pool share",
+    "shareHint": "Share of quota already used",
+    "empty": "No usage records yet. Record usage to see charts.",
+    "total": "Total"
+  },
+  "history": {
+    "title": "Usage history",
+    "subtitle": "Every recorded usage event, newest first.",
+    "empty": "No records match these filters.",
+    "time": "Time",
+    "pool": "Pool",
+    "amount": "Amount",
+    "source": "Source",
+    "note": "Note",
+    "allPools": "All pools",
+    "allSources": "All sources",
+    "from": "From",
+    "to": "To",
+    "clearFilters": "Clear filters",
+    "count": "{{count}} records",
+    "sources": {
+      "manual": "Manual",
+      "import": "Import",
+      "sync": "Sync"
+    }
   }
 }

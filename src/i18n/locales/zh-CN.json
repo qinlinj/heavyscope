@@ -5,7 +5,8 @@
   },
   "nav": {
     "dashboard": "仪表盘",
-    "settings": "设置"
+    "settings": "设置",
+    "history": "历史"
   },
   "dashboard": {
     "title": "额度总览",
@@ -92,5 +93,38 @@
     "switchTitle": "切换建议",
     "switchSuggestion": "{{from}} 消耗过快。把新任务切到仍有余量的 {{to}}。",
     "noReset": "未设置重置"
+  },
+  "charts": {
+    "title": "用量趋势",
+    "subtitle": "基于本地记录的日、周用量与额度池占比。",
+    "daily": "日用量",
+    "dailyHint": "近 14 天，按额度池堆叠",
+    "weekly": "周用量",
+    "weeklyHint": "近 8 周，按额度池堆叠",
+    "share": "额度池占比",
+    "shareHint": "已用量份额",
+    "empty": "还没有用量记录。先记录一次用量即可看到图表。",
+    "total": "合计"
+  },
+  "history": {
+    "title": "用量历史",
+    "subtitle": "全部用量记录，最新在前。",
+    "empty": "没有符合筛选条件的记录。",
+    "time": "时间",
+    "pool": "额度池",
+    "amount": "用量",
+    "source": "来源",
+    "note": "备注",
+    "allPools": "全部额度池",
+    "allSources": "全部来源",
+    "from": "开始日期",
+    "to": "结束日期",
+    "clearFilters": "清除筛选",
+    "count": "{{count}} 条记录",
+    "sources": {
+      "manual": "手动",
+      "import": "导入",
+      "sync": "同步"
+    }
   }
 }
