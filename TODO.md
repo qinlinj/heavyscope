@@ -46,9 +46,10 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Share the same sql.js schema and UI (no native SQL plugin)
 
 ## Phase 6 — data source adapters (Cursor first, Grok reserved)
-- [ ] Optional Cursor local usage adapter (read-only)
-- [ ] Grok / xAI adapter reserved
-- [ ] Keep manual entry as the source of truth when adapters fail
+- [x] Cursor snapshot / CSV adapter (import + idempotent re-apply)
+- [x] Auto-sync interval (re-applies last imported snapshot)
+- [x] Grok / xAI adapter reserved (Coming soon)
+- [x] Keep manual entry as the source of truth when adapters fail
 
 ## Phase 7 — packaging / tests / docs
 - [ ] Tests for burn-rate math, schema, and CRUD

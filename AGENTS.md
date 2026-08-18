@@ -39,7 +39,7 @@ https://github.com/qinlinj/heavyscope
 - Phase 3 — charts + history (done)
 - Phase 4 — UI polish + Settings + i18n persist (done)
 - Phase 5 — Tauri 2 macOS menu bar (done)
-- Phase 6 — data source adapters (Cursor first, Grok reserved) (pending)
+- Phase 6 — data source adapters (Cursor first, Grok reserved) (done)
 - Phase 7 — packaging / tests / docs (pending)
 
 ## Commits
