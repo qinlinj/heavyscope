@@ -22,6 +22,7 @@ export function Dashboard() {
     updatePool,
     deletePool,
     addUsage,
+    thresholds,
   } = useDatabase();
   const [formOpen, setFormOpen] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
@@ -45,10 +46,10 @@ export function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="font-heading text-2xl font-semibold">{t("dashboard.title")}</h2>
+        <div className="border-b border-foreground/10 pb-2 sm:border-0 sm:pb-0">
+          <h2 className="font-heading text-xl font-semibold">{t("dashboard.title")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{t("dashboard.subtitle")}</p>
         </div>
         <div className="flex gap-2">
@@ -73,18 +74,22 @@ export function Dashboard() {
         advices={advices}
         tightest={tightest}
         switchAdvice={switchAdvice}
+        warnPercent={thresholds.warn}
+        critPercent={thresholds.crit}
       />
 
       {pools.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("dashboard.empty")}</p>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2">
           {pools.map((pool) => (
             <PoolCard
               key={pool.id}
               pool={pool}
               records={records.filter((record) => record.pool_id === pool.id)}
               advice={advices.find((item) => item.poolId === pool.id)}
+              warnPercent={thresholds.warn}
+              critPercent={thresholds.crit}
               onEdit={(next) => {
                 setEditing(next);
                 setFormOpen(true);

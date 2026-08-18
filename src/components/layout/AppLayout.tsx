@@ -1,6 +1,8 @@
 import { Gauge, History, Settings2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
+import { persistLanguage } from "@/i18n";
+import { useDatabase } from "@/hooks/useDatabase";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -15,44 +17,83 @@ export function AppLayout() {
   return (
     <div className="dark min-h-svh bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,_oklch(0.28_0.04_250/_0.45),_transparent_55%)]" />
-      <div className="relative mx-auto flex min-h-svh max-w-6xl flex-col px-4 py-6 sm:px-6">
-        <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="relative mx-auto flex min-h-svh max-w-6xl flex-col px-4 py-5 sm:px-6">
+        <header className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-black/20">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-black/20">
               <Gauge className="size-5" />
             </div>
             <div>
-              <h1 className="font-heading text-lg font-semibold tracking-tight">
+              <h1 className="font-heading text-base font-semibold tracking-tight">
                 {t("app.name")}
               </h1>
               <p className="text-xs text-muted-foreground">{t("app.tagline")}</p>
             </div>
           </div>
-          <nav className="flex items-center gap-1 rounded-xl bg-card/80 p-1 ring-1 ring-foreground/10 backdrop-blur">
-            {links.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                end={link.to === "/"}
-                className={({ isActive }) =>
-                  cn(
-                    "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors",
-                    isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  )
-                }
-              >
-                <link.icon className="size-4" />
-                {t(link.key)}
-              </NavLink>
-            ))}
-          </nav>
+          <div className="flex flex-wrap items-center gap-2">
+            <nav className="flex items-center gap-1 rounded-xl bg-card/80 p-1 ring-1 ring-foreground/10 backdrop-blur">
+              {links.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  end={link.to === "/"}
+                  className={({ isActive }) =>
+                    cn(
+                      "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors",
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )
+                  }
+                >
+                  <link.icon className="size-4" />
+                  {t(link.key)}
+                </NavLink>
+              ))}
+            </nav>
+            <LanguageToggle />
+          </div>
         </header>
-        <main className="flex-1 pb-10">
+        <main className="flex-1 pb-8">
           <Outlet />
         </main>
       </div>
+    </div>
+  );
+}
+
+function LanguageToggle() {
+  const { t, i18n } = useTranslation();
+  const { setSetting } = useDatabase();
+  const current = i18n.resolvedLanguage ?? "zh-CN";
+
+  return (
+    <div
+      className="inline-flex items-center rounded-xl bg-card/80 p-1 text-xs ring-1 ring-foreground/10 backdrop-blur"
+      role="group"
+      aria-label={t("settings.language")}
+    >
+      {[
+        { value: "en", label: t("settings.langShortEn") },
+        { value: "zh-CN", label: t("settings.langShortZh") },
+      ].map((item) => {
+        const active = current === item.value || (item.value === "zh-CN" && current.startsWith("zh"));
+        return (
+          <button
+            key={item.value}
+            type="button"
+            onClick={() => persistLanguage(item.value, setSetting)}
+            className={cn(
+              "rounded-lg px-2.5 py-1.5 font-medium transition-colors",
+              active
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            {item.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
