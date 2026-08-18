@@ -6,6 +6,13 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.7.6] - 2026-08-18
+
+### Changed
+
+- Destructive and data-loss prompts use in-app shadcn AlertDialogs instead of `window.confirm`: delete pool, reset local database, demo re-apply, import, and import replace-all. First-time demo seed applies without an extra confirm. Titles and actions are i18n zh-CN / en.
+- Version 0.7.6.
+
 ## [0.7.5] - 2026-08-18
 
 ### Added

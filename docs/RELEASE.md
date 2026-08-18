@@ -2,6 +2,11 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.7.6
+
+- Native browser confirm dialogs are gone. Delete pool, reset local database, demo re-apply, import, and import replace-all use in-app AlertDialogs with zh-CN / en titles and actions. First-time demo seed applies immediately; a second load still confirms because `demo_seeded=1`.
+- Version 0.7.6. JSON backup, demo seed, displayPoolName, sql.js Vite include, Tauri sources, and CI are unchanged.
+
 ## v0.7.5
 
 - Settings → Local data can load demo usage for the four preset pools (last 10 days, English notes) so charts and the advisor look alive. A second load needs confirm because `demo_seeded=1`.
