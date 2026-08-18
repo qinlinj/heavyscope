@@ -9,6 +9,7 @@ export const SETTING_CURSOR_SNAPSHOT_HASH = "cursor_snapshot_hash";
 export const SETTING_SYNC_LAST_AT = "sync_last_at";
 export const SETTING_SYNC_LAST_STATUS = "sync_last_status";
 export const SETTING_SYNC_LAST_MESSAGE = "sync_last_message";
+export const SETTING_DEMO_SEEDED = "demo_seeded";
 
 export const DEFAULT_LANGUAGE = "zh-CN";
 export const DEFAULT_WARN_PERCENT = 70;
