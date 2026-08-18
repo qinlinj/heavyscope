@@ -6,6 +6,17 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-08-18
+
+### Added
+
+- React class ErrorBoundary around the app. A render crash shows a bilingual fallback (ErrorState + i18n) instead of a blank page. Reset reloads the window.
+- Sample Cursor snapshot at docs/cursor-snapshot.example.json (fake demo numbers, marked SAMPLE ONLY) linked from the README.
+
+### Changed
+
+- Version 0.7.2. Settings About reads Vite __APP_VERSION__ from package.json (no leftover 0.5.0).
+
 ## [0.7.1] - 2026-08-18
 
 ### Added
