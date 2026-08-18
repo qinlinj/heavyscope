@@ -6,6 +6,16 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-08-18
+
+### Added
+
+- `displayPoolName(pool, t)` plus i18n keys for the four preset pools. Dashboard cards, Settings, History, Advisor, Charts, and dialogs show localized names. Custom pools still use `pool.name`. Stored rows are not rewritten.
+
+### Changed
+
+- Version 0.7.3.
+
 ## [0.7.2] - 2026-08-18
 
 ### Added

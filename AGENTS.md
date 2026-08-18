@@ -43,6 +43,7 @@ https://github.com/qinlinj/heavyscope
 - Phase 7 — packaging / tests / docs (done)
 - 0.7.1 polish — CI, DB error UI, quota cycle rollover (done)
 - 0.7.2 polish — render ErrorBoundary, sample Cursor snapshot (done)
+- 0.7.3 polish — localize preset pool display names (done)
 
 ## Commits
 

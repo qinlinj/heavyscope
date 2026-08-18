@@ -56,6 +56,10 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Desktop packaging / installers (Linux .deb can be built locally; macOS menu bar must be built on a Mac)
 - [x] Release notes and 0.7.0 polish (README, CHANGELOG, docs/RELEASE.md)
 
+## Polish / leftover gaps (0.7.3)
+
+- [x] Preset pool display names via i18n (`displayPoolName`); stored names stay English
+
 ## Polish / leftover gaps (0.7.2)
 
 - [x] Render ErrorBoundary + bilingual fallback (reload)
