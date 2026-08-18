@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/card";
 import type { Pool, UsageRecord } from "@/db/schema";
 import { dailySeries, poolShare, seriesHasUsage, weeklySeries } from "@/lib/charts";
+import { displayPoolName } from "@/lib/poolName";
 
 type Props = {
   pools: Pool[];
@@ -50,7 +51,10 @@ export function ChartsPanel({ pools, records }: Props) {
 
   const daily = useMemo(() => dailySeries(records, pools, 14), [records, pools]);
   const weekly = useMemo(() => weeklySeries(records, 8, pools), [records, pools]);
-  const share = useMemo(() => poolShare(pools), [pools]);
+  const share = useMemo(
+    () => poolShare(pools, undefined, (pool) => displayPoolName(pool, t)),
+    [pools, t],
+  );
   const showDaily = seriesHasUsage(daily);
   const showWeekly = seriesHasUsage(weekly);
   const showShare = share.length > 0;
@@ -86,7 +90,7 @@ export function ChartsPanel({ pools, records }: Props) {
                       key={pool.id}
                       type="monotone"
                       dataKey={pool.id}
-                      name={pool.name}
+                      name={displayPoolName(pool, t)}
                       stackId="usage"
                       stroke={pool.color}
                       fill={pool.color}
@@ -117,7 +121,7 @@ export function ChartsPanel({ pools, records }: Props) {
                     <Bar
                       key={pool.id}
                       dataKey={pool.id}
-                      name={pool.name}
+                      name={displayPoolName(pool, t)}
                       stackId="usage"
                       fill={pool.color}
                       radius={[3, 3, 0, 0]}
