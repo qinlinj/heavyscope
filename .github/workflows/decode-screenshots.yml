@@ -2,8 +2,7 @@ name: decode-screenshots
 on:
   push:
     paths:
-      - "docs/images/*.b64"
-      - ".github/workflows/decode-screenshots.yml"
+      - "docs/images/READY"
 permissions:
   contents: write
 jobs:
@@ -14,18 +13,11 @@ jobs:
       - name: Decode PNGs and commit
         run: |
           set -euo pipefail
-          shopt -s nullglob
-          files=(docs/images/*.b64)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "no b64 files"
-            exit 0
-          fi
-          for f in "${files[@]}"; do
-            out="${f%.b64}"
-            base64 -d "$f" > "$out"
-            file "$out"
-            rm -f "$f"
+          for name in dashboard dashboard-zh settings-backup confirm-delete; do
+            cat docs/images/parts/${name}.* | tr -d '\n' | base64 -d > "docs/images/${name}.png"
+            file "docs/images/${name}.png"
           done
+          rm -rf docs/images/parts docs/images/READY docs/images/*.b64
           rm -f .github/workflows/decode-screenshots.yml
           git config user.name "Justin Jia"
           git config user.email "129560356+qinlinj@users.noreply.github.com"
