@@ -2,6 +2,7 @@ import { Plus, ScrollText } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AdvisorPanel } from "@/components/AdvisorPanel";
+import { ChartsPanel } from "@/components/ChartsPanel";
 import { PoolCard } from "@/components/PoolCard";
 import { PoolFormDialog } from "@/components/PoolFormDialog";
 import { UsageDialog } from "@/components/UsageDialog";
@@ -95,6 +96,8 @@ export function Dashboard() {
           ))}
         </div>
       )}
+
+      <ChartsPanel pools={pools} records={records} />
 
       <PoolFormDialog
         open={formOpen}
