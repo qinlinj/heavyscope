@@ -56,9 +56,9 @@ export function ChartsPanel({ pools, records }: Props) {
   const showShare = share.length > 0;
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-2.5">
       <div>
-        <h3 className="font-heading text-lg font-semibold">{t("charts.title")}</h3>
+        <h3 className="font-heading text-base font-semibold">{t("charts.title")}</h3>
         <p className="mt-0.5 text-sm text-muted-foreground">{t("charts.subtitle")}</p>
       </div>
 
@@ -67,7 +67,7 @@ export function ChartsPanel({ pools, records }: Props) {
           {t("charts.empty")}
         </p>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-3 lg:grid-cols-2">
           <ChartCard title={t("charts.daily")} hint={t("charts.dailyHint")}>
             {showDaily ? (
               <ResponsiveContainer width="100%" height={240}>

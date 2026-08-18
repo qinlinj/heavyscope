@@ -46,9 +46,9 @@ export function History() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h2 className="font-heading text-2xl font-semibold">{t("history.title")}</h2>
+        <h2 className="font-heading text-xl font-semibold">{t("history.title")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t("history.subtitle")}</p>
       </div>
 
