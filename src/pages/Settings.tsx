@@ -30,6 +30,7 @@ import {
   SETTING_CRIT_PERCENT,
   SETTING_WARN_PERCENT,
 } from "@/lib/settings";
+import { APP_VERSION } from "@/lib/version";
 
 export function Settings() {
   const { t, i18n } = useTranslation();
@@ -231,7 +232,7 @@ export function Settings() {
             Recharts + react-i18next + sql.js
           </p>
           <p>
-            {t("settings.version")}: {__APP_VERSION__}
+            {t("settings.version")}: {APP_VERSION}
           </p>
         </CardContent>
       </Card>
