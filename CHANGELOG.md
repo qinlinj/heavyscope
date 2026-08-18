@@ -4,6 +4,21 @@ All notable changes to this project are documented in this file.
 
 The format is based on Keep a Changelog, and this project uses Semantic Versioning.
 
+## [Unreleased]
+
+## [0.7.1] - 2026-08-18
+
+### Added
+
+- GitHub Actions CI on push/PR to main: Node 22, package manager from the packageManager field, then the test and build scripts.
+- Visible ErrorState when HeavyScopeDB.open() fails, so a database error is not a blank page.
+- Quota cycle rollover in src/lib/rollover.ts: overdue reset_at zeros quota_used, advances the next weekly/monthly reset, and inserts an amount=0 sync usage record with note "Cycle reset". Old usage history is kept for charts.
+
+### Changed
+
+- Version 0.7.1.
+- History date inputs stay type=date (browser locale). An i18n hint explains that.
+
 ## [0.7.0] - 2026-08-18
 
 ### Added

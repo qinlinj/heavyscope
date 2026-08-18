@@ -9,7 +9,8 @@ HeavyScope helps you see how fast you are burning weekly or monthly quotas, when
 - **Dashboard** — four preset pools plus custom services, progress bars, remaining quota, reset countdown, and usage-tone colors
 - **Advisor** — recommended daily pace, today used, waste / overspend risk, and cross-pool switch suggestions
 - **Charts** — daily stacked area (14 days), weekly stacked bars (8 weeks), and pool-share donut
-- **History** — filter usage records by pool, date range, and source
+- **History** — filter usage records by pool, date range, and source. Date pickers follow the browser locale.
+- **Cycle rollover** — when a pool reset_at is past, quota used resets to 0, the next weekly/monthly date is set, and a Cycle reset usage note is stored. History is not deleted.
 - **Settings** — pool management, alert thresholds, language (EN / 中文)
 - **Adapters** — paste a Cursor usage snapshot (JSON or CSV); optional auto-sync re-applies the last import; Grok adapter is reserved (Coming soon)
 - **Tauri desktop** — tray / macOS menu-bar shell around the same web UI and sql.js database
@@ -24,6 +25,7 @@ Manual entry remains the source of truth. Adapters never scrape Cursor or Grok c
 - sql.js SQLite (web and Tauri webview)
 - Tauri 2 tray shell in `src-tauri`
 - Vitest for unit tests
+- GitHub Actions CI (Node 22, package manager from packageManager)
 
 ## Develop
 
