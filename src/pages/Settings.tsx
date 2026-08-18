@@ -1,5 +1,5 @@
-import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Download, Pencil, Plus, Trash2 } from "lucide-react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { DataSourcesCard } from "@/components/DataSourcesCard";
 import { PoolFormDialog } from "@/components/PoolFormDialog";
@@ -24,6 +24,11 @@ import {
 import type { Pool, PoolDraft } from "@/db/schema";
 import { persistLanguage } from "@/i18n";
 import { useDatabase } from "@/hooks/useDatabase";
+import {
+  BACKUP_FILENAME,
+  parseBackup,
+  type BackupMode,
+} from "@/lib/backup";
 import { formatAmount, usagePercent } from "@/lib/format";
 import { displayPoolName } from "@/lib/poolName";
 import {
@@ -32,6 +37,18 @@ import {
   SETTING_WARN_PERCENT,
 } from "@/lib/settings";
 import { APP_VERSION } from "@/lib/version";
+
+function downloadText(filename: string, text: string): void {
+  const blob = new Blob([text], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
 
 export function Settings() {
   const { t, i18n } = useTranslation();
@@ -44,11 +61,16 @@ export function Settings() {
     updatePool,
     deletePool,
     thresholds,
+    exportLocalBackup,
+    importLocalBackup,
   } = useDatabase();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Pool | null>(null);
   const [warnInput, setWarnInput] = useState(String(thresholds.warn));
   const [critInput, setCritInput] = useState(String(thresholds.crit));
+  const [backupDraft, setBackupDraft] = useState("");
+  const [backupMode, setBackupMode] = useState<BackupMode>("merge");
+  const [backupFlash, setBackupFlash] = useState<string | null>(null);
 
   useEffect(() => {
     setWarnInput(String(thresholds.warn));
@@ -75,6 +97,45 @@ export function Settings() {
     if (editing) updatePool(editing.id, draft);
     else createPool(draft);
     setEditing(null);
+  }
+
+  function handleExport() {
+    const json = exportLocalBackup();
+    if (!json) return;
+    downloadText(BACKUP_FILENAME, json);
+  }
+
+  async function onBackupFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const text = await file.text();
+    setBackupDraft(text);
+    setBackupFlash(null);
+  }
+
+  function handleImport() {
+    if (!backupDraft.trim()) {
+      setBackupFlash(t("settings.backupEmpty"));
+      return;
+    }
+    const parsed = parseBackup(backupDraft);
+    if (!parsed.ok) {
+      setBackupFlash(t("settings.backupInvalid"));
+      return;
+    }
+    if (!window.confirm(t("settings.backupConfirm"))) return;
+    if (backupMode === "replace" && !window.confirm(t("settings.backupConfirmReplace"))) {
+      return;
+    }
+    const report = importLocalBackup(parsed.backup, backupMode);
+    setBackupFlash(
+      t("settings.backupApplied", {
+        pools: report.poolsUpserted,
+        inserted: report.recordsInserted,
+        skipped: report.recordsSkipped,
+      }),
+    );
   }
 
   return (
@@ -149,7 +210,6 @@ export function Settings() {
           )}
         </CardContent>
       </Card>
-
 
       <DataSourcesCard />
 
@@ -243,17 +303,89 @@ export function Settings() {
           <CardTitle>{t("settings.data")}</CardTitle>
           <CardDescription>{t("settings.dataHint")}</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">{t("settings.resetDataHint")}</p>
-          <Button
-            variant="destructive"
-            disabled={!ready}
-            onClick={() => {
-              if (window.confirm(t("form.confirmDelete"))) resetLocalData();
-            }}
-          >
-            {t("settings.resetData")}
-          </Button>
+        <CardContent className="space-y-5">
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">{t("settings.backupExportHint")}</p>
+            <Button size="sm" disabled={!ready} onClick={handleExport}>
+              <Download data-icon="inline-start" />
+              {t("settings.backupExport")}
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="backup-json">{t("settings.backupImport")}</Label>
+            <p className="text-sm text-muted-foreground">{t("settings.backupImportHint")}</p>
+            <textarea
+              id="backup-json"
+              value={backupDraft}
+              onChange={(event) => {
+                setBackupDraft(event.target.value);
+                setBackupFlash(null);
+              }}
+              placeholder={t("settings.backupPlaceholder")}
+              rows={8}
+              className="min-h-32 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 font-mono text-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" disabled={!ready} asChild>
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    accept=".json,application/json"
+                    className="sr-only"
+                    onChange={(event) => void onBackupFile(event)}
+                  />
+                  {t("settings.backupFile")}
+                </label>
+              </Button>
+              <Button
+                size="sm"
+                disabled={!ready || !backupDraft.trim()}
+                onClick={handleImport}
+              >
+                {t("settings.backupApply")}
+              </Button>
+            </div>
+            <fieldset className="space-y-1.5">
+              <legend className="sr-only">{t("settings.backupImport")}</legend>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="backup-mode"
+                  value="merge"
+                  checked={backupMode === "merge"}
+                  onChange={() => setBackupMode("merge")}
+                  className="size-4 accent-primary"
+                />
+                {t("settings.backupModeMerge")}
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="backup-mode"
+                  value="replace"
+                  checked={backupMode === "replace"}
+                  onChange={() => setBackupMode("replace")}
+                  className="size-4 accent-primary"
+                />
+                {t("settings.backupModeReplace")}
+              </label>
+            </fieldset>
+            {backupFlash && <p className="text-xs text-foreground/80">{backupFlash}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">{t("settings.resetDataHint")}</p>
+            <Button
+              variant="destructive"
+              disabled={!ready}
+              onClick={() => {
+                if (window.confirm(t("form.confirmDelete"))) resetLocalData();
+              }}
+            >
+              {t("settings.resetData")}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
