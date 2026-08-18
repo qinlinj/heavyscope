@@ -131,8 +131,14 @@ export function Settings() {
   }
 
   async function handlePaste() {
+    setBackupFlash(t("settings.backupPastePending"));
     try {
-      const text = await navigator.clipboard.readText();
+      const text = await Promise.race([
+        navigator.clipboard.readText(),
+        new Promise<never>((_, reject) => {
+          window.setTimeout(() => reject(new Error("clipboard-timeout")), 3000);
+        }),
+      ]);
       if (!text.trim()) {
         setBackupFlash(t("settings.backupPasteEmpty"));
         return;

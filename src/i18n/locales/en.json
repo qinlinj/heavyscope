@@ -85,6 +85,7 @@
     "backupPlaceholder": "Paste a HeavyScope backup JSON…",
     "backupFile": "Import file",
     "backupPaste": "Paste JSON",
+    "backupPastePending": "Reading clipboard…",
     "backupPasted": "Pasted backup JSON from the clipboard.",
     "backupPasteFailed": "Could not read backup JSON from the clipboard.",
     "backupPasteEmpty": "Clipboard is empty.",
