@@ -111,6 +111,7 @@ function useDatabaseState(): DatabaseApi {
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback((store: HeavyScopeDB) => {
+    store.applyDueRollovers();
     setPools(store.listPools());
     setRecords(store.listUsage());
     setSettings(store.listSettings());
