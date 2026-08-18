@@ -11,7 +11,7 @@ export function useDatabase() {
 
   const refresh = useCallback((store: HeavyScopeDB) => {
     setPools(store.listPools());
-    setRecords(store.listUsage(undefined, 80));
+    setRecords(store.listUsage());
   }, []);
 
   useEffect(() => {

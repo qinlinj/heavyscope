@@ -1,10 +1,11 @@
-import { Gauge, Settings2 } from "lucide-react";
+import { Gauge, History, Settings2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const links = [
   { to: "/", key: "nav.dashboard", icon: Gauge },
+  { to: "/history", key: "nav.history", icon: History },
   { to: "/settings", key: "nav.settings", icon: Settings2 },
 ] as const;
 
