@@ -1,0 +1,263 @@
+import initSqlJs from "sql.js";
+import type { Database as SqlDatabase } from "sql.js";
+import wasmUrl from "sql.js/dist/sql-wasm.wasm?url";
+import { defaultPools } from "./defaults";
+import {
+  SCHEMA_SQL,
+  SCHEMA_VERSION,
+  type Pool,
+  type PoolDraft,
+  type UsageRecord,
+  type UsageSource,
+} from "./schema";
+
+const STORAGE_KEY = "heavyscope.sqlite.v1";
+const VERSION_KEY = "schema_version";
+
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+function newId(prefix: string): string {
+  return `${prefix}-${crypto.randomUUID()}`;
+}
+
+function rowToPool(row: Record<string, unknown>): Pool {
+  return {
+    id: String(row.id),
+    name: String(row.name),
+    type: row.type as Pool["type"],
+    quota_total: Number(row.quota_total),
+    quota_used: Number(row.quota_used),
+    reset_at: row.reset_at == null ? null : String(row.reset_at),
+    reset_cycle: row.reset_cycle as Pool["reset_cycle"],
+    unit: String(row.unit),
+    color: String(row.color),
+    is_preset: Number(row.is_preset),
+    created_at: String(row.created_at),
+    updated_at: String(row.updated_at),
+  };
+}
+
+function rowToUsage(row: Record<string, unknown>): UsageRecord {
+  return {
+    id: String(row.id),
+    pool_id: String(row.pool_id),
+    amount: Number(row.amount),
+    recorded_at: String(row.recorded_at),
+    note: row.note == null ? null : String(row.note),
+    source: row.source as UsageSource,
+  };
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(value: string): Uint8Array {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function queryAll(
+  db: SqlDatabase,
+  sql: string,
+  params: (string | number | null)[] = [],
+): Record<string, unknown>[] {
+  const stmt = db.prepare(sql);
+  stmt.bind(params);
+  const rows: Record<string, unknown>[] = [];
+  while (stmt.step()) {
+    rows.push(stmt.getAsObject());
+  }
+  stmt.free();
+  return rows;
+}
+
+export class HeavyScopeDB {
+  private readonly db: SqlDatabase;
+
+  private constructor(db: SqlDatabase) {
+    this.db = db;
+  }
+
+  static async open(): Promise<HeavyScopeDB> {
+    const SQL = await initSqlJs({ locateFile: () => wasmUrl });
+    const saved = localStorage.getItem(STORAGE_KEY);
+    const raw = saved ? new SQL.Database(base64ToBytes(saved)) : new SQL.Database();
+    const store = new HeavyScopeDB(raw);
+    store.migrate();
+    store.seedIfEmpty();
+    store.persist();
+    return store;
+  }
+
+  persist(): void {
+    localStorage.setItem(STORAGE_KEY, bytesToBase64(this.db.export()));
+  }
+
+  private migrate(): void {
+    this.db.run("PRAGMA foreign_keys = ON;");
+    this.db.run(SCHEMA_SQL);
+    const version = this.getSetting(VERSION_KEY);
+    if (!version) {
+      this.setSetting(VERSION_KEY, String(SCHEMA_VERSION));
+    }
+  }
+
+  private seedIfEmpty(): void {
+    const count = queryAll(this.db, "SELECT COUNT(*) AS n FROM pools")[0];
+    if (Number(count?.n ?? 0) > 0) return;
+    const insert = this.db.prepare(`
+      INSERT INTO pools (
+        id, name, type, quota_total, quota_used, reset_at, reset_cycle,
+        unit, color, is_preset, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const pool of defaultPools()) {
+      insert.run([
+        pool.id,
+        pool.name,
+        pool.type,
+        pool.quota_total,
+        pool.quota_used,
+        pool.reset_at,
+        pool.reset_cycle,
+        pool.unit,
+        pool.color,
+        pool.is_preset,
+        pool.created_at,
+        pool.updated_at,
+      ]);
+    }
+    insert.free();
+    this.setSetting("language", localStorage.getItem("heavyscope.lang") ?? "zh-CN");
+  }
+
+  getSetting(key: string): string | null {
+    const rows = queryAll(this.db, "SELECT value FROM settings WHERE key = ?", [key]);
+    return rows[0] ? String(rows[0].value) : null;
+  }
+
+  setSetting(key: string, value: string): void {
+    this.db.run(
+      "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+      [key, value],
+    );
+    this.persist();
+  }
+
+  listPools(): Pool[] {
+    return queryAll(
+      this.db,
+      "SELECT * FROM pools ORDER BY is_preset DESC, created_at ASC",
+    ).map(rowToPool);
+  }
+
+  getPool(id: string): Pool | null {
+    const rows = queryAll(this.db, "SELECT * FROM pools WHERE id = ?", [id]);
+    return rows[0] ? rowToPool(rows[0]) : null;
+  }
+
+  createPool(draft: PoolDraft): Pool {
+    const id = newId("pool");
+    const ts = nowIso();
+    this.db.run(
+      `INSERT INTO pools (
+        id, name, type, quota_total, quota_used, reset_at, reset_cycle,
+        unit, color, is_preset, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+      [
+        id,
+        draft.name,
+        draft.type,
+        draft.quota_total,
+        draft.quota_used,
+        draft.reset_at,
+        draft.reset_cycle,
+        draft.unit,
+        draft.color,
+        ts,
+        ts,
+      ],
+    );
+    this.persist();
+    return this.getPool(id)!;
+  }
+
+  updatePool(id: string, draft: PoolDraft): Pool {
+    this.db.run(
+      `UPDATE pools SET
+        name = ?, type = ?, quota_total = ?, quota_used = ?, reset_at = ?,
+        reset_cycle = ?, unit = ?, color = ?, updated_at = ?
+      WHERE id = ?`,
+      [
+        draft.name,
+        draft.type,
+        draft.quota_total,
+        draft.quota_used,
+        draft.reset_at,
+        draft.reset_cycle,
+        draft.unit,
+        draft.color,
+        nowIso(),
+        id,
+      ],
+    );
+    this.persist();
+    return this.getPool(id)!;
+  }
+
+  deletePool(id: string): void {
+    this.db.run("DELETE FROM usage_records WHERE pool_id = ?", [id]);
+    this.db.run("DELETE FROM pools WHERE id = ?", [id]);
+    this.persist();
+  }
+
+  listUsage(poolId?: string, limit = 50): UsageRecord[] {
+    const sql = poolId
+      ? "SELECT * FROM usage_records WHERE pool_id = ? ORDER BY recorded_at DESC LIMIT ?"
+      : "SELECT * FROM usage_records ORDER BY recorded_at DESC LIMIT ?";
+    const params = poolId ? [poolId, limit] : [limit];
+    return queryAll(this.db, sql, params).map(rowToUsage);
+  }
+
+  addUsage(poolId: string, amount: number, note: string | null, source: UsageSource = "manual"): UsageRecord {
+    const pool = this.getPool(poolId);
+    if (!pool) throw new Error(`Pool not found: ${poolId}`);
+    const id = newId("usage");
+    const ts = nowIso();
+    const nextUsed = Math.max(0, pool.quota_used + amount);
+    this.db.run(
+      `INSERT INTO usage_records (id, pool_id, amount, recorded_at, note, source)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [id, poolId, amount, ts, note, source],
+    );
+    this.db.run(
+      "UPDATE pools SET quota_used = ?, updated_at = ? WHERE id = ?",
+      [nextUsed, ts, poolId],
+    );
+    this.persist();
+    return {
+      id,
+      pool_id: poolId,
+      amount,
+      recorded_at: ts,
+      note,
+      source,
+    };
+  }
+
+  resetLocalData(): void {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+}

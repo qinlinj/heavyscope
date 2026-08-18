@@ -1,0 +1,76 @@
+{
+  "app": {
+    "name": "HeavyScope",
+    "tagline": "Multi-quota monitor for SuperGrok Heavy + Cursor Ultra"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "title": "Quota overview",
+    "subtitle": "Local-first. Data lives in a browser SQLite database.",
+    "addPool": "Add pool",
+    "recordUsage": "Record usage",
+    "empty": "No pools yet. Add one to get started."
+  },
+  "pool": {
+    "used": "Used",
+    "remaining": "Remaining",
+    "total": "Total",
+    "reset": "Resets in",
+    "edit": "Edit",
+    "delete": "Delete",
+    "percent": "Usage",
+    "preset": "Preset",
+    "custom": "Custom",
+    "recent": "Recent records"
+  },
+  "form": {
+    "name": "Name",
+    "type": "Type",
+    "quotaTotal": "Quota total",
+    "quotaUsed": "Quota used",
+    "unit": "Unit",
+    "resetCycle": "Reset cycle",
+    "resetAt": "Next reset",
+    "color": "Color",
+    "note": "Note",
+    "amount": "Amount",
+    "pool": "Pool",
+    "save": "Save",
+    "cancel": "Cancel",
+    "create": "Create",
+    "confirmDelete": "Delete this pool and its usage records?",
+    "types": {
+      "credits": "Credits",
+      "requests": "Requests",
+      "usd": "USD",
+      "custom": "Custom"
+    },
+    "cycles": {
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "none": "No reset"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "languageHint": "Takes effect immediately and is stored in localStorage.",
+    "zh": "简体中文",
+    "en": "English",
+    "about": "About",
+    "aboutBody": "HeavyScope is a local multi-quota panel for SuperGrok Heavy and Cursor Ultra. Web first, Tauri 2 macOS menu bar later.",
+    "data": "Local data",
+    "dataHint": "SQLite runs in the browser via sql.js and is persisted to localStorage.",
+    "resetData": "Reset local database",
+    "resetDataHint": "Deletes every pool and usage record, then reseeds the four preset pools.",
+    "stack": "Stack",
+    "version": "Version"
+  },
+  "common": {
+    "ok": "OK",
+    "loading": "Loading local database…"
+  }
+}
