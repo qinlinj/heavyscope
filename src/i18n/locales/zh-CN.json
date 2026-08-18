@@ -118,7 +118,13 @@
     "syncStatusError": "失败",
     "noSnapshot": "请先导入快照，自动同步才会运行。",
     "manualTruth": "适配器失败或快照过期时，仍以手动记录为准。",
-    "grokReserved": "Grok / xAI 适配器已预留，即将推出。不会读取凭证或实时用量。"
+    "grokReserved": "Grok / xAI 适配器已预留，即将推出。不会读取凭证或实时用量。",
+    "demoLoad": "载入演示数据",
+    "demoHint": "为四个预置额度池写入最近 10 天的示例用量，让图表和顾问看起来更生动。备注为英文。不会覆盖现有记录。",
+    "demoConfirm": "为四个预置额度池添加演示用量记录？",
+    "demoConfirmAgain": "已经载入过演示数据。再添加一套示例记录？",
+    "demoApplied": "已载入 {{count}} 条演示用量记录。",
+    "demoSkipped": "演示数据已载入过。"
   },
   "common": {
     "ok": "确定",
