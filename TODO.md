@@ -56,6 +56,10 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Desktop packaging / installers (Linux .deb can be built locally; macOS menu bar must be built on a Mac)
 - [x] Release notes and 0.7.0 polish (README, CHANGELOG, docs/RELEASE.md)
 
+## Polish / leftover gaps (0.7.5)
+
+- [x] Demo usage seed from Settings → Local data (`src/lib/demoSeed.ts`); skip unless confirm again
+
 ## Polish / leftover gaps (0.7.4)
 
 - [x] JSON export / import of local data (`src/lib/backup.ts`); merge default, optional replace-all
