@@ -132,13 +132,15 @@ export function Settings() {
 
   async function handlePaste() {
     setBackupFlash(t("settings.backupPastePending"));
+    let timeoutId = 0;
     try {
       const text = await Promise.race([
         navigator.clipboard.readText(),
         new Promise<never>((_, reject) => {
-          window.setTimeout(() => reject(new Error("clipboard-timeout")), 3000);
+          timeoutId = window.setTimeout(() => reject(new Error("clipboard-timeout")), 3000);
         }),
       ]);
+      window.clearTimeout(timeoutId);
       if (!text.trim()) {
         setBackupFlash(t("settings.backupPasteEmpty"));
         return;
@@ -146,6 +148,7 @@ export function Settings() {
       setBackupDraft(text);
       setBackupFlash(t("settings.backupPasted"));
     } catch {
+      window.clearTimeout(timeoutId);
       setBackupFlash(t("settings.backupPasteFailed"));
     }
   }
