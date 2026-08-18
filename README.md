@@ -12,8 +12,9 @@ Demo-first: a polished Web app now, Tauri 2 macOS menu bar later. All quota data
 - Burn Rate Advisor with recommended daily pace and waste / overspend risk
 - Daily / weekly usage trend charts and pool-share donut
 - Usage history with pool, date, and source filters
-- Progress color shifts green to yellow to red as usage rises
-- Chinese UI by default, English available, language stored in localStorage
+- Progress color shifts green to yellow to red using configurable warn / crit thresholds
+- Settings page for language, alert thresholds, and pool management
+- Chinese UI by default, English available; language stored in localStorage and the settings table
 
 ## Stack
 

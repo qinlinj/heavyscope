@@ -1,4 +1,5 @@
 import type { Pool } from "@/db/schema";
+import { DEFAULT_CRIT_PERCENT, DEFAULT_WARN_PERCENT } from "@/lib/settings";
 
 export function usagePercent(pool: Pool): number {
   if (pool.quota_total <= 0) return 0;
@@ -9,9 +10,13 @@ export function remaining(pool: Pool): number {
   return Math.max(0, pool.quota_total - pool.quota_used);
 }
 
-export function usageTone(percent: number): "ok" | "warn" | "crit" {
-  if (percent >= 90) return "crit";
-  if (percent >= 70) return "warn";
+export function usageTone(
+  percent: number,
+  warn: number = DEFAULT_WARN_PERCENT,
+  crit: number = DEFAULT_CRIT_PERCENT,
+): "ok" | "warn" | "crit" {
+  if (percent >= crit) return "crit";
+  if (percent >= warn) return "warn";
   return "ok";
 }
 

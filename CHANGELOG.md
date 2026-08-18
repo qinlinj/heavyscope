@@ -4,6 +4,19 @@ All notable changes to this project are documented in this file.
 
 The format is based on Keep a Changelog, and this project uses Semantic Versioning.
 
+## [0.4.0] - 2026-08-18
+
+### Added
+
+- Settings now include pool management (add / edit / delete) and alert thresholds.
+- Header language toggle (EN / 中文) plus language persisted in localStorage and the settings table.
+- Default settings seed: `language=zh-CN`, `warn_percent=70`, `crit_percent=90`.
+
+### Changed
+
+- `usageTone` reads warn / crit thresholds from settings instead of hardcoded 70 / 90.
+- Denser dashboard cards, tighter section headers, and version read from `package.json`.
+
 ## [0.3.0] - 2026-08-18
 
 ### Added

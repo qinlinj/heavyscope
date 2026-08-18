@@ -37,7 +37,7 @@ https://github.com/qinlinj/heavyscope
 - Phase 1 — data model + manual entry + basic dashboard + i18n (done)
 - Phase 2 — Burn Rate Advisor (done)
 - Phase 3 — charts + history (done)
-- Phase 4 — UI polish + Settings + i18n persist (pending)
+- Phase 4 — UI polish + Settings + i18n persist (done)
 - Phase 5 — Tauri 2 macOS menu bar (pending)
 - Phase 6 — data source adapters (Cursor first, Grok reserved) (pending)
 - Phase 7 — packaging / tests / docs (pending)

@@ -37,9 +37,9 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Reset rollover that archives the previous window (deferred; official Phase 3 is charts + history)
 
 ## Phase 4 — UI polish + Settings + i18n persist
-- [ ] Dashboard density and visual polish
-- [ ] Settings refinements
-- [ ] Confirm language + other prefs persist across sessions
+- [x] Dashboard density and visual polish
+- [x] Settings refinements (pool management + alert thresholds)
+- [x] Confirm language + other prefs persist across sessions
 
 ## Phase 5 — Tauri 2 macOS menu bar
 - [ ] Tauri 2 macOS menu bar

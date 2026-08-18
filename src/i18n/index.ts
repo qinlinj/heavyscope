@@ -25,3 +25,13 @@ void i18n
   });
 
 export default i18n;
+
+export function persistLanguage(
+  next: string,
+  persistSetting?: (key: string, value: string) => void,
+): void {
+  void i18n.changeLanguage(next);
+  localStorage.setItem(LANG_STORAGE_KEY, next);
+  document.documentElement.lang = next;
+  persistSetting?.("language", next);
+}
