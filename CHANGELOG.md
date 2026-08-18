@@ -6,6 +6,16 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.7.5] - 2026-08-18
+
+### Added
+
+- Settings → Local data: Load demo data inserts sample `usage_records` for the four preset pools across the last 10 days and bumps `quota_used` so charts and the advisor look alive. English notes. Skips when `demo_seeded=1` unless the user confirms again.
+
+### Changed
+
+- Version 0.7.5.
+
 ## [0.7.4] - 2026-08-18
 
 ### Added
