@@ -102,7 +102,10 @@
   },
   "common": {
     "ok": "确定",
-    "loading": "正在加载本地数据库…"
+    "loading": "正在加载本地数据库…",
+    "dbErrorTitle": "无法打开本地数据库",
+    "dbErrorBody": "HeavyScope 无法加载 sql.js 数据库。页面不是空白，错误会显示在这里。",
+    "retry": "重新加载"
   },
   "advisor": {
     "title": "消耗速率顾问",
@@ -155,7 +158,8 @@
       "manual": "手动",
       "import": "导入",
       "sync": "同步"
-    }
+    },
+    "dateHint": "日期输入遵循浏览器区域设置，HeavyScope 不会改写选择器。"
   },
   "adapters": {
     "manual": "手动录入",
