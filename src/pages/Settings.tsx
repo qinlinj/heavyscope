@@ -65,7 +65,7 @@ export function Settings() {
             Recharts + react-i18next + sql.js
           </p>
           <p>
-            {t("settings.version")}: 0.2.0
+            {t("settings.version")}: 0.3.0
           </p>
         </CardContent>
       </Card>

@@ -4,6 +4,19 @@ All notable changes to this project are documented in this file.
 
 The format is based on Keep a Changelog, and this project uses Semantic Versioning.
 
+## [0.3.0] - 2026-08-18
+
+### Added
+
+- Daily stacked area chart (last 14 days) and weekly stacked bar chart (last 8 weeks).
+- Pool share donut based on `quota_used`.
+- Usage history page at `/history` with pool, date range, and source filters.
+- Dashboard / History / Settings navigation.
+
+### Fixed
+
+- Prebundle `sql.js` in Vite (`optimizeDeps.include`) so the dev app boots instead of a blank page.
+
 ## [0.2.0] - 2026-08-18
 
 ### Added

@@ -32,9 +32,9 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] i18n keys for zh-CN and en
 
 ## Phase 3 — charts + history
-- [ ] Per-pool usage history page
-- [ ] Burn / remaining charts
-- [ ] Reset rollover that archives the previous window
+- [x] Per-pool usage history page (`/history` with pool / date / source filters)
+- [x] Daily, weekly, and pool-share charts on the dashboard
+- [ ] Reset rollover that archives the previous window (deferred; official Phase 3 is charts + history)
 
 ## Phase 4 — UI polish + Settings + i18n persist
 - [ ] Dashboard density and visual polish
