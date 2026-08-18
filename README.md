@@ -11,7 +11,7 @@ HeavyScope helps you see how fast you are burning weekly or monthly quotas, when
 - **Charts** — daily stacked area (14 days), weekly stacked bars (8 weeks), and pool-share donut
 - **History** — filter usage records by pool, date range, and source. Date pickers follow the browser locale.
 - **Cycle rollover** — when a pool reset_at is past, quota used resets to 0, the next weekly/monthly date is set, and a Cycle reset usage note is stored. History is not deleted.
-- **Settings** — pool management, alert thresholds, language (EN / 中文)
+- **Settings** — pool management, alert thresholds, language (EN / 中文), JSON backup export / import
 - **Adapters** — paste a Cursor usage snapshot (JSON or CSV); optional auto-sync re-applies the last import; Grok adapter is reserved (Coming soon)
 - **Tauri desktop** — tray / macOS menu-bar shell around the same web UI and sql.js database
 
@@ -92,7 +92,7 @@ cursor_other,40.5,other models
 
 ## Privacy
 
-All quota data stays local. The database is a sql.js file encoded in localStorage under heavyscope.sqlite.v1. Reset it from Settings. There is no HeavyScope cloud, analytics, or remote sync.
+All quota data stays local. The database is a sql.js file encoded in localStorage under heavyscope.sqlite.v1. Export or import a JSON backup (or reset) from Settings. There is no HeavyScope cloud, analytics, or remote sync.
 
 ## License
 

@@ -14,6 +14,7 @@ import { getAdapter } from "@/adapters/registry";
 import type { ApplyReport } from "@/adapters/types";
 import { HeavyScopeDB } from "@/db/database";
 import type { Pool, PoolDraft, UsageRecord, UsageSource } from "@/db/schema";
+import type { BackupApplyReport, BackupMode, BackupPayload } from "@/lib/backup";
 import i18n, { LANG_STORAGE_KEY } from "@/i18n";
 import { syncTraySummary } from "@/lib/desktop";
 import {
@@ -45,6 +46,8 @@ type DatabaseApi = {
   addUsage: (poolId: string, amount: number, note: string | null, source?: UsageSource) => void;
   setSetting: (key: string, value: string) => void;
   resetLocalData: () => void;
+  exportLocalBackup: () => string;
+  importLocalBackup: (backup: BackupPayload, mode: BackupMode) => BackupApplyReport;
   applyImportedSnapshot: (raw: string) => Promise<ApplyReport>;
   applyStoredSnapshot: () => Promise<ApplyReport>;
 };
@@ -206,6 +209,30 @@ function useDatabaseState(): DatabaseApi {
     window.location.reload();
   }, [db]);
 
+  const exportLocalBackup = useCallback(() => {
+    if (!db) return "";
+    return db.exportJson();
+  }, [db]);
+
+  const importLocalBackup = useCallback(
+    (backup: BackupPayload, mode: BackupMode): BackupApplyReport => {
+      if (!db) {
+        return {
+          mode,
+          poolsUpserted: 0,
+          recordsInserted: 0,
+          recordsSkipped: 0,
+          recordsOrphaned: 0,
+          settingsMerged: 0,
+        };
+      }
+      const report = db.importBackup(backup, mode);
+      refresh(db);
+      return report;
+    },
+    [db, refresh],
+  );
+
   const applyImportedSnapshot = useCallback(
     async (raw: string) => {
       if (!db) return idleReport("Database not ready");
@@ -249,6 +276,8 @@ function useDatabaseState(): DatabaseApi {
     addUsage,
     setSetting,
     resetLocalData,
+    exportLocalBackup,
+    importLocalBackup,
     applyImportedSnapshot,
     applyStoredSnapshot,
   };
