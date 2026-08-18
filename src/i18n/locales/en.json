@@ -118,7 +118,13 @@
     "syncStatusError": "Failed",
     "noSnapshot": "Import a snapshot before auto-sync can run.",
     "manualTruth": "Manual entry remains the source of truth when adapters fail or a snapshot is stale.",
-    "grokReserved": "Grok / xAI adapter is reserved and coming soon. It does not read credentials or live usage."
+    "grokReserved": "Grok / xAI adapter is reserved and coming soon. It does not read credentials or live usage.",
+    "demoLoad": "Load demo data",
+    "demoHint": "Insert sample usage across the last 10 days for the four preset pools so charts and the advisor look alive. Notes are English. Existing records stay.",
+    "demoConfirm": "Add demo usage records to the four preset pools?",
+    "demoConfirmAgain": "Demo data was already loaded. Add another set of sample records?",
+    "demoApplied": "Loaded {{count}} demo usage records.",
+    "demoSkipped": "Demo data is already loaded."
   },
   "common": {
     "ok": "OK",
