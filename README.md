@@ -20,6 +20,24 @@ Current product version is **0.7.6**.
 
 Manual entry remains the source of truth. Adapters never scrape Cursor or Grok credentials, cookies, or private APIs.
 
+## Screenshots
+
+Dashboard with demo usage, pool cards, burn-rate advisor, and charts:
+
+![Dashboard](docs/images/dashboard.png)
+
+Chinese dashboard with the four preset pools:
+
+![Chinese dashboard](docs/images/dashboard-zh.png)
+
+Settings — pool list and JSON backup export / import:
+
+![Settings backup](docs/images/settings-backup.png)
+
+In-app confirm dialog when deleting a pool:
+
+![Delete pool confirm](docs/images/confirm-delete.png)
+
 ## Stack
 
 - Vite + React + TypeScript
