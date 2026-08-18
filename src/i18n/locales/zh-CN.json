@@ -72,5 +72,25 @@
   "common": {
     "ok": "确定",
     "loading": "正在加载本地数据库…"
+  },
+  "advisor": {
+    "title": "消耗速率顾问",
+    "subtitle": "按日分配额度，既避免浪费，也不在重置前耗尽。",
+    "tightest": "最紧张的额度池",
+    "recommendedDaily": "建议日用量",
+    "todayUsed": "今日已用",
+    "todaySafe": "今日还可安全使用",
+    "averageDaily": "日均已用",
+    "vsRecommended": "对比建议",
+    "daysLeft": "剩余天数",
+    "daysLeftValue": "{{days}} 天",
+    "perDay": "天",
+    "projection": "重置时预估用量",
+    "riskOk": "节奏正常",
+    "riskWaste": "浪费风险",
+    "riskOverspend": "超支风险",
+    "switchTitle": "切换建议",
+    "switchSuggestion": "{{from}} 消耗过快。把新任务切到仍有余量的 {{to}}。",
+    "noReset": "未设置重置"
   }
 }

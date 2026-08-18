@@ -1,14 +1,16 @@
 # TODO
 
-## Phase 0 — bootstrap
+GitHub: https://github.com/qinlinj/heavyscope
+
+## Phase 0 — environment / repo / scaffold
 - [x] Observe box toolchain (Node 22, package manager, git, gh, Rust)
 - [x] Initialize Vite + React + TypeScript project
 - [x] Add Tailwind CSS, shadcn/ui, react-i18next
 - [x] Write AGENTS.md, TODO.md, CHANGELOG.md, README.md
-- [x] Define SQLite schema (pools, usage_records, settings)
-- [ ] Private GitHub repository + push (gh not logged in; GitHub MCP create returned 403)
+- [x] Private GitHub repository at https://github.com/qinlinj/heavyscope
 
-## Phase 1 — Web MVP
+## Phase 1 — data model + manual entry + basic dashboard + i18n
+- [x] Define SQLite schema (pools, usage_records, settings)
 - [x] sql.js local database wrapper (init, migrate, CRUD)
 - [x] Pool CRUD + four preset pools
 - [x] Manual usage records
@@ -18,31 +20,37 @@
 - [x] Dashboard / Settings routes
 - [x] Dark modern UI
 - [x] Production build green
-- [ ] Push feat commit to GitHub (blocked on repo-create token)
+- [x] Upload Phase 0-1 source to GitHub
 
-## Phase 2 — history
+## Phase 2 — Burn Rate Advisor
+- [x] Pure burn-rate helpers in src/lib/burnRate.ts
+- [x] Recommended daily, today used, today still safe
+- [x] Average vs recommended pace
+- [x] Waste / overspend risk badges
+- [x] Cross-pool switch suggestion
+- [x] Advisor section above the pool grid + compact PoolCard lines
+- [x] i18n keys for zh-CN and en
+
+## Phase 3 — charts + history
 - [ ] Per-pool usage history page
+- [ ] Burn / remaining charts
 - [ ] Reset rollover that archives the previous window
-- [ ] JSON export / import
 
-## Phase 3 — adapters
-- [ ] Optional Cursor local usage adapter (read-only)
-- [ ] Optional Grok / xAI usage adapter
-- [ ] Keep manual entry as the source of truth when adapters fail
+## Phase 4 — UI polish + Settings + i18n persist
+- [ ] Dashboard density and visual polish
+- [ ] Settings refinements
+- [ ] Confirm language + other prefs persist across sessions
 
-## Phase 4 — alerts
-- [ ] Threshold notifications
-- [ ] Custom pool templates
-- [ ] Dashboard density options
-
-## Phase 5 — desktop
+## Phase 5 — Tauri 2 macOS menu bar
 - [ ] Tauri 2 macOS menu bar
 - [ ] Share the same SQLite schema
 
-## Phase 6 — packaging
-- [ ] Desktop installers
-- [ ] Auto-update sketch
+## Phase 6 — data source adapters (Cursor first, Grok reserved)
+- [ ] Optional Cursor local usage adapter (read-only)
+- [ ] Grok / xAI adapter reserved
+- [ ] Keep manual entry as the source of truth when adapters fail
 
-## Phase 7 — harden
-- [ ] Tests for schema, reset math, and CRUD
+## Phase 7 — packaging / tests / docs
+- [ ] Tests for burn-rate math, schema, and CRUD
+- [ ] Desktop packaging / installers
 - [ ] Release notes and 1.0 polish

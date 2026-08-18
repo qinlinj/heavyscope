@@ -72,5 +72,25 @@
   "common": {
     "ok": "OK",
     "loading": "Loading local database…"
+  },
+  "advisor": {
+    "title": "Burn Rate Advisor",
+    "subtitle": "Pace each pool so you neither waste leftover quota nor run out before reset.",
+    "tightest": "Tightest pool",
+    "recommendedDaily": "Recommended daily",
+    "todayUsed": "Today used",
+    "todaySafe": "Still safe today",
+    "averageDaily": "Average daily",
+    "vsRecommended": "vs recommended",
+    "daysLeft": "Days left",
+    "daysLeftValue": "{{days}} days",
+    "perDay": "day",
+    "projection": "Projected at reset",
+    "riskOk": "On pace",
+    "riskWaste": "Waste risk",
+    "riskOverspend": "Overspend risk",
+    "switchTitle": "Switch suggestion",
+    "switchSuggestion": "{{from}} is running hot. Switch new work to {{to}} while it still has headroom.",
+    "noReset": "No reset scheduled"
   }
 }

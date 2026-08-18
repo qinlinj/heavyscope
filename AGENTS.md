@@ -27,16 +27,20 @@ Never wait for the user to unblock routine decisions.
 - Package manager listed in package.json packageManager field
 - Later: Tauri 2 macOS menu bar (Phase 5)
 
+## Repository
+
+https://github.com/qinlinj/heavyscope
+
 ## Phases
 
-- Phase 0 — environment, repo, docs, schema, first push
-- Phase 1 — runnable Web MVP (pools, usage, dashboard, i18n)
-- Phase 2 — history charts, better reset logic, export/import
-- Phase 3 — Cursor / Grok adapters (read-only local sources)
-- Phase 4 — notifications, usage alerts, polish
-- Phase 5 — Tauri 2 macOS menu bar
-- Phase 6 — packaging and auto-update
-- Phase 7 — hardening, tests, release notes
+- Phase 0 — environment, repo, scaffold (done)
+- Phase 1 — data model + manual entry + basic dashboard + i18n (done)
+- Phase 2 — Burn Rate Advisor (done)
+- Phase 3 — charts + history (pending)
+- Phase 4 — UI polish + Settings + i18n persist (pending)
+- Phase 5 — Tauri 2 macOS menu bar (pending)
+- Phase 6 — data source adapters (Cursor first, Grok reserved) (pending)
+- Phase 7 — packaging / tests / docs (pending)
 
 ## Commits
 

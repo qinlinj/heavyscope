@@ -4,6 +4,16 @@ All notable changes to this project are documented in this file.
 
 The format is based on Keep a Changelog, and this project uses Semantic Versioning.
 
+## [0.2.0] - 2026-08-18
+
+### Added
+
+- Burn Rate Advisor with pure helpers in `src/lib/burnRate.ts`.
+- Recommended daily quota, today used, and today-still-safe remaining.
+- Average daily vs recommended pace, plus waste / overspend risk badges.
+- Cross-pool switch suggestion when one pool is hot and another has headroom.
+- Advisor summary above the dashboard pool grid and compact per-pool advisor lines.
+
 ## [0.1.0] - 2026-08-18
 
 ### Added
@@ -16,7 +26,3 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 - zh-CN / en i18n with localStorage persistence.
 - Dashboard and Settings routes.
 - Production build succeeds.
-
-### Known
-
-- GitHub private repo creation is blocked. `gh` has no login, and the connected GitHub MCP token returns 403 on `user/repos` (missing repository-create scope). Local commits are on `main` and ready to push once a repo-capable token is available.
