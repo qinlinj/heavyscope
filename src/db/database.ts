@@ -4,9 +4,15 @@ import wasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 import {
   DEFAULT_CRIT_PERCENT,
   DEFAULT_LANGUAGE,
+  DEFAULT_SYNC_ENABLED,
+  DEFAULT_SYNC_INTERVAL_MIN,
+  DEFAULT_SYNC_SOURCE,
   DEFAULT_WARN_PERCENT,
   SETTING_CRIT_PERCENT,
   SETTING_LANGUAGE,
+  SETTING_SYNC_ENABLED,
+  SETTING_SYNC_INTERVAL_MIN,
+  SETTING_SYNC_SOURCE,
   SETTING_WARN_PERCENT,
 } from "@/lib/settings";
 import { defaultPools } from "./defaults";
@@ -178,6 +184,15 @@ export class HeavyScopeDB {
     if (!this.getSetting(SETTING_CRIT_PERCENT)) {
       this.writeSetting(SETTING_CRIT_PERCENT, String(DEFAULT_CRIT_PERCENT));
     }
+    if (!this.getSetting(SETTING_SYNC_ENABLED)) {
+      this.writeSetting(SETTING_SYNC_ENABLED, DEFAULT_SYNC_ENABLED);
+    }
+    if (!this.getSetting(SETTING_SYNC_INTERVAL_MIN)) {
+      this.writeSetting(SETTING_SYNC_INTERVAL_MIN, String(DEFAULT_SYNC_INTERVAL_MIN));
+    }
+    if (!this.getSetting(SETTING_SYNC_SOURCE)) {
+      this.writeSetting(SETTING_SYNC_SOURCE, DEFAULT_SYNC_SOURCE);
+    }
   }
 
   getSetting(key: string): string | null {
@@ -276,11 +291,18 @@ export class HeavyScopeDB {
     return queryAll(this.db, sql, params).map(rowToUsage);
   }
 
-  addUsage(poolId: string, amount: number, note: string | null, source: UsageSource = "manual"): UsageRecord {
+  addUsage(
+    poolId: string,
+    amount: number,
+    note: string | null,
+    source: UsageSource = "manual",
+    recordedAt?: string,
+  ): UsageRecord {
     const pool = this.getPool(poolId);
     if (!pool) throw new Error(`Pool not found: ${poolId}`);
     const id = newId("usage");
-    const ts = nowIso();
+    const ts = recordedAt && !Number.isNaN(Date.parse(recordedAt)) ? recordedAt : nowIso();
+    const updatedAt = nowIso();
     const nextUsed = Math.max(0, pool.quota_used + amount);
     this.db.run(
       `INSERT INTO usage_records (id, pool_id, amount, recorded_at, note, source)
@@ -289,7 +311,7 @@ export class HeavyScopeDB {
     );
     this.db.run(
       "UPDATE pools SET quota_used = ?, updated_at = ? WHERE id = ?",
-      [nextUsed, ts, poolId],
+      [nextUsed, updatedAt, poolId],
     );
     this.persist();
     return {
@@ -300,6 +322,18 @@ export class HeavyScopeDB {
       note,
       source,
     };
+  }
+
+  setQuotaTotal(id: string, total: number): void {
+    const pool = this.getPool(id);
+    if (!pool) throw new Error(`Pool not found: ${id}`);
+    if (pool.quota_total === total) return;
+    this.db.run("UPDATE pools SET quota_total = ?, updated_at = ? WHERE id = ?", [
+      total,
+      nowIso(),
+      id,
+    ]);
+    this.persist();
   }
 
   resetLocalData(): void {
