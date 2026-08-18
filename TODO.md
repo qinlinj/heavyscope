@@ -52,6 +52,6 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Keep manual entry as the source of truth when adapters fail
 
 ## Phase 7 — packaging / tests / docs
-- [ ] Tests for burn-rate math, schema, and CRUD
-- [ ] Desktop packaging / installers
-- [ ] Release notes and 1.0 polish
+- [x] Tests for burn-rate math, charts, and adapter apply (Vitest)
+- [x] Desktop packaging / installers (Linux .deb can be built locally; macOS menu bar must be built on a Mac)
+- [x] Release notes and 0.7.0 polish (README, CHANGELOG, docs/RELEASE.md)
