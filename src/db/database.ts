@@ -1,4 +1,4 @@
-import initSqlJs from "sql.js";
+import * as sqlJsModule from "sql.js";
 import type { Database as SqlDatabase } from "sql.js";
 import wasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 import { defaultPools } from "./defaults";
@@ -10,6 +10,12 @@ import {
   type UsageRecord,
   type UsageSource,
 } from "./schema";
+
+type InitSqlJsFn = (typeof import("sql.js"))["default"];
+
+const initSqlJs: InitSqlJsFn =
+  (sqlJsModule as unknown as { default?: InitSqlJsFn }).default ??
+  (sqlJsModule as unknown as InitSqlJsFn);
 
 const STORAGE_KEY = "heavyscope.sqlite.v1";
 const VERSION_KEY = "schema_version";
@@ -223,11 +229,13 @@ export class HeavyScopeDB {
     this.persist();
   }
 
-  listUsage(poolId?: string, limit = 50): UsageRecord[] {
-    const sql = poolId
-      ? "SELECT * FROM usage_records WHERE pool_id = ? ORDER BY recorded_at DESC LIMIT ?"
-      : "SELECT * FROM usage_records ORDER BY recorded_at DESC LIMIT ?";
-    const params = poolId ? [poolId, limit] : [limit];
+  listUsage(poolId?: string, limit?: number): UsageRecord[] {
+    const where = poolId ? "WHERE pool_id = ?" : "";
+    const limiter = limit != null ? "LIMIT ?" : "";
+    const sql = `SELECT * FROM usage_records ${where} ORDER BY recorded_at DESC ${limiter}`.trim();
+    const params: (string | number)[] = [];
+    if (poolId) params.push(poolId);
+    if (limit != null) params.push(limit);
     return queryAll(this.db, sql, params).map(rowToUsage);
   }
 
