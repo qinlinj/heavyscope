@@ -20,6 +20,7 @@ import {
   usagePercent,
   usageTone,
 } from "@/lib/format";
+import { displayPoolName } from "@/lib/poolName";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -54,7 +55,7 @@ export function PoolCard({
             className="size-2.5 shrink-0 rounded-full"
             style={{ backgroundColor: pool.color }}
           />
-          {pool.name}
+          {displayPoolName(pool, t)}
         </CardTitle>
         <CardDescription>
           {pool.is_preset ? t("pool.preset") : t("pool.custom")} · {pool.unit}

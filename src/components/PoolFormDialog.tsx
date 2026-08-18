@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { computeResetAt } from "@/db/defaults";
 import type { Pool, PoolDraft, PoolType, ResetCycle } from "@/db/schema";
+import { displayPoolName } from "@/lib/poolName";
 
 const TYPES: PoolType[] = ["credits", "requests", "usd", "custom"];
 const CYCLES: ResetCycle[] = ["weekly", "monthly", "none"];
@@ -65,7 +66,9 @@ export function PoolFormDialog({ open, pool, onOpenChange, onSubmit }: Props) {
       <DialogContent className="sm:max-w-md">
         <form onSubmit={handleSubmit} className="grid gap-4">
           <DialogHeader>
-            <DialogTitle>{pool ? t("pool.edit") : t("dashboard.addPool")}</DialogTitle>
+            <DialogTitle>
+              {pool ? `${t("pool.edit")} · ${displayPoolName(pool, t)}` : t("dashboard.addPool")}
+            </DialogTitle>
             <DialogDescription>{t("app.tagline")}</DialogDescription>
           </DialogHeader>
           <Field label={t("form.name")}>
