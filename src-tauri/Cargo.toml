@@ -1,6 +1,6 @@
 [package]
 name = "heavyscope"
-version = "0.7.3"
+version = "0.7.4"
 description = "Multi-quota monitor for SuperGrok Heavy and Cursor Ultra"
 authors = ["Justin Jia"]
 license = "MIT"
