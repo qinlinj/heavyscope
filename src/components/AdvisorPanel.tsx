@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { Pool } from "@/db/schema";
-import { formatAmount } from "@/lib/format";
+import { formatAmount, usageTone } from "@/lib/format";
 import {
   type CrossPoolAdvice,
   type PoolAdvice,
@@ -22,9 +22,18 @@ type Props = {
   advices: PoolAdvice[];
   tightest: PoolAdvice | null;
   switchAdvice: CrossPoolAdvice | null;
+  warnPercent?: number;
+  critPercent?: number;
 };
 
-export function AdvisorPanel({ pools, advices, tightest, switchAdvice }: Props) {
+export function AdvisorPanel({
+  pools,
+  advices,
+  tightest,
+  switchAdvice,
+  warnPercent,
+  critPercent,
+}: Props) {
   const { t } = useTranslation();
   if (!tightest || pools.length === 0) return null;
 
@@ -39,9 +48,9 @@ export function AdvisorPanel({ pools, advices, tightest, switchAdvice }: Props) 
     : undefined;
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-2.5">
       <div>
-        <h3 className="font-heading text-lg font-semibold">{t("advisor.title")}</h3>
+        <h3 className="font-heading text-base font-semibold">{t("advisor.title")}</h3>
         <p className="mt-0.5 text-sm text-muted-foreground">{t("advisor.subtitle")}</p>
       </div>
 
@@ -62,7 +71,12 @@ export function AdvisorPanel({ pools, advices, tightest, switchAdvice }: Props) 
             <RiskBadge level={tightest.risk} />
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
+          <Metric
+            label={t("pool.percent")}
+            value={`${tightest.usagePercent.toFixed(0)}%`}
+            tone={usageTone(tightest.usagePercent, warnPercent, critPercent)}
+          />
           <Metric
             label={t("advisor.recommendedDaily")}
             value={formatAmount(tightest.recommendedDaily, pool.unit)}

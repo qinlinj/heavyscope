@@ -26,18 +26,28 @@ type Props = {
   pool: Pool;
   records: UsageRecord[];
   advice?: PoolAdvice;
+  warnPercent?: number;
+  critPercent?: number;
   onEdit: (pool: Pool) => void;
   onDelete: (pool: Pool) => void;
 };
 
-export function PoolCard({ pool, records, advice, onEdit, onDelete }: Props) {
+export function PoolCard({
+  pool,
+  records,
+  advice,
+  warnPercent,
+  critPercent,
+  onEdit,
+  onDelete,
+}: Props) {
   const { t, i18n } = useTranslation();
   const percent = usagePercent(pool);
-  const tone = usageTone(percent);
+  const tone = usageTone(percent, warnPercent, critPercent);
   const left = remaining(pool);
 
   return (
-    <Card className="bg-card/90 backdrop-blur">
+    <Card size="sm" className="bg-card/90 backdrop-blur">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 pr-16">
           <span
@@ -60,17 +70,17 @@ export function PoolCard({ pool, records, advice, onEdit, onDelete }: Props) {
           </Button>
         </CardAction>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         <div className="flex items-end justify-between gap-3">
           <div>
             <p className="text-xs text-muted-foreground">{t("pool.used")}</p>
-            <p className="font-heading text-3xl font-semibold tracking-tight">
+            <p className="font-heading text-2xl font-semibold tracking-tight">
               {formatAmount(pool.quota_used, pool.unit)}
             </p>
           </div>
           <p
             className={cn(
-              "text-2xl font-semibold tabular-nums",
+              "text-xl font-semibold tabular-nums",
               tone === "ok" && "text-emerald-400",
               tone === "warn" && "text-amber-400",
               tone === "crit" && "text-red-400",
@@ -88,7 +98,7 @@ export function PoolCard({ pool, records, advice, onEdit, onDelete }: Props) {
             tone === "crit" && "[&_[data-slot=progress-indicator]]:bg-red-400",
           )}
         />
-        <div className="grid grid-cols-3 gap-3 text-xs">
+        <div className="grid grid-cols-3 gap-2 text-xs">
           <Stat label={t("pool.remaining")} value={formatAmount(left, pool.unit)} />
           <Stat label={t("pool.total")} value={formatAmount(pool.quota_total, pool.unit)} />
           <Stat
