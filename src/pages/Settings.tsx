@@ -1,4 +1,4 @@
-import { Download, Pencil, Plus, Trash2 } from "lucide-react";
+import { Download, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { DataSourcesCard } from "@/components/DataSourcesCard";
@@ -29,6 +29,7 @@ import {
   parseBackup,
   type BackupMode,
 } from "@/lib/backup";
+import { isDemoSeeded } from "@/lib/demoSeed";
 import { formatAmount, usagePercent } from "@/lib/format";
 import { displayPoolName } from "@/lib/poolName";
 import {
@@ -63,6 +64,8 @@ export function Settings() {
     thresholds,
     exportLocalBackup,
     importLocalBackup,
+    applyDemoSeed,
+    settings,
   } = useDatabase();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Pool | null>(null);
@@ -71,6 +74,7 @@ export function Settings() {
   const [backupDraft, setBackupDraft] = useState("");
   const [backupMode, setBackupMode] = useState<BackupMode>("merge");
   const [backupFlash, setBackupFlash] = useState<string | null>(null);
+  const [demoFlash, setDemoFlash] = useState<string | null>(null);
 
   useEffect(() => {
     setWarnInput(String(thresholds.warn));
@@ -103,6 +107,21 @@ export function Settings() {
     const json = exportLocalBackup();
     if (!json) return;
     downloadText(BACKUP_FILENAME, json);
+  }
+
+  function handleDemoSeed() {
+    const already = isDemoSeeded(settings);
+    if (already) {
+      if (!window.confirm(t("settings.demoConfirmAgain"))) return;
+    } else if (!window.confirm(t("settings.demoConfirm"))) {
+      return;
+    }
+    const report = applyDemoSeed(already);
+    if (report.skipped) {
+      setDemoFlash(t("settings.demoSkipped"));
+      return;
+    }
+    setDemoFlash(t("settings.demoApplied", { count: report.inserted }));
   }
 
   async function onBackupFile(event: ChangeEvent<HTMLInputElement>) {
@@ -304,6 +323,15 @@ export function Settings() {
           <CardDescription>{t("settings.dataHint")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">{t("settings.demoHint")}</p>
+            <Button size="sm" disabled={!ready} onClick={handleDemoSeed}>
+              <Sparkles data-icon="inline-start" />
+              {t("settings.demoLoad")}
+            </Button>
+            {demoFlash && <p className="text-xs text-foreground/80">{demoFlash}</p>}
+          </div>
+
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">{t("settings.backupExportHint")}</p>
             <Button size="sm" disabled={!ready} onClick={handleExport}>
