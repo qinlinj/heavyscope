@@ -9,6 +9,9 @@ Demo-first: a polished Web app now, Tauri 2 macOS menu bar later. All quota data
 - Four preset pools plus custom services
 - Manual usage recording
 - Dashboard cards with percent used, remaining amount, and reset countdown
+- Burn Rate Advisor with recommended daily pace and waste / overspend risk
+- Daily / weekly usage trend charts and pool-share donut
+- Usage history with pool, date, and source filters
 - Progress color shifts green to yellow to red as usage rises
 - Chinese UI by default, English available, language stored in localStorage
 
