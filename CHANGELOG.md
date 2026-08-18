@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Added
 
+- Settings → Local data: Paste JSON fills the import textarea from the clipboard via `navigator.clipboard.readText`. Success and failure flash in zh-CN / en. Does not auto-apply; the user still clicks Apply backup.
 - Settings → Local data: Copy JSON writes the same backup payload to the clipboard via `navigator.clipboard.writeText`. Success and failure flash in zh-CN / en. Product version stays 0.7.6.
 - Product screenshots for the README: `docs/images/dashboard.png`, `docs/images/dashboard-zh.png`, `docs/images/settings-backup.png`, and `docs/images/confirm-delete.png`.
 
