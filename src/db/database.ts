@@ -12,6 +12,7 @@ import {
   SETTING_LANGUAGE,
   SETTING_SYNC_ENABLED,
   SETTING_SYNC_INTERVAL_MIN,
+  SETTING_DEMO_SEEDED,
   SETTING_SYNC_SOURCE,
   SETTING_WARN_PERCENT,
 } from "@/lib/settings";
@@ -23,6 +24,12 @@ import {
   type BackupMode,
   type BackupPayload,
 } from "@/lib/backup";
+import {
+  DEMO_SEEDED_VALUE,
+  buildDemoUsageRecords,
+  shouldApplyDemoSeed,
+  type DemoSeedReport,
+} from "@/lib/demoSeed";
 import { planRollovers } from "@/lib/rollover";
 import { defaultPools } from "./defaults";
 import {
@@ -367,6 +374,53 @@ export class HeavyScopeDB {
     }
     this.persist();
     return plans.length;
+  }
+
+  applyDemoSeed(force = false, now = new Date()): DemoSeedReport {
+    if (!shouldApplyDemoSeed(this.getSetting(SETTING_DEMO_SEEDED), force)) {
+      return { skipped: true, inserted: 0 };
+    }
+
+    const drafts = buildDemoUsageRecords(now);
+    const known = new Set(this.listPools().map((pool) => pool.id));
+    const usedByPool = new Map<string, number>();
+    for (const pool of this.listPools()) usedByPool.set(pool.id, pool.quota_used);
+    const ts = nowIso();
+
+    let inserted = 0;
+    this.db.run("BEGIN");
+    try {
+      const insert = this.db.prepare(`
+        INSERT INTO usage_records (id, pool_id, amount, recorded_at, note, source)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      for (const record of drafts) {
+        if (!known.has(record.pool_id)) continue;
+        insert.run([
+          newId("usage"),
+          record.pool_id,
+          record.amount,
+          record.recorded_at,
+          record.note,
+          record.source,
+        ]);
+        usedByPool.set(record.pool_id, Math.max(0, (usedByPool.get(record.pool_id) ?? 0) + record.amount));
+        inserted += 1;
+      }
+      insert.free();
+
+      for (const [poolId, used] of usedByPool) {
+        this.db.run("UPDATE pools SET quota_used = ?, updated_at = ? WHERE id = ?", [used, ts, poolId]);
+      }
+      this.writeSetting(SETTING_DEMO_SEEDED, DEMO_SEEDED_VALUE);
+      this.db.run("COMMIT");
+    } catch (error) {
+      this.db.run("ROLLBACK");
+      throw error;
+    }
+
+    this.persist();
+    return { skipped: false, inserted };
   }
 
   exportJson(): string {
