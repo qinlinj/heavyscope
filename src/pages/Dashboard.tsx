@@ -1,17 +1,17 @@
 import { Plus, ScrollText } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
+import { AdvisorPanel } from "@/components/AdvisorPanel";
 import { PoolCard } from "@/components/PoolCard";
 import { PoolFormDialog } from "@/components/PoolFormDialog";
 import { UsageDialog } from "@/components/UsageDialog";
 import { Button } from "@/components/ui/button";
 import type { Pool, PoolDraft } from "@/db/schema";
-import { formatDateTime } from "@/lib/format";
+import { advisePool, crossPoolAdvice, tightestAdvice } from "@/lib/burnRate";
 import { useDatabase } from "@/hooks/useDatabase";
 
 export function Dashboard() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const {
     ready,
     error,
@@ -26,17 +26,12 @@ export function Dashboard() {
   const [usageOpen, setUsageOpen] = useState(false);
   const [editing, setEditing] = useState<Pool | null>(null);
 
-  const chartData = useMemo(
-    () =>
-      [...records]
-        .reverse()
-        .slice(-12)
-        .map((record) => ({
-          time: formatDateTime(record.recorded_at, i18n.language),
-          amount: record.amount,
-        })),
-    [records, i18n.language],
+  const advices = useMemo(
+    () => pools.map((pool) => advisePool(pool, records)),
+    [pools, records],
   );
+  const tightest = useMemo(() => tightestAdvice(advices), [advices]);
+  const switchAdvice = useMemo(() => crossPoolAdvice(advices), [advices]);
 
   function handleSubmit(draft: PoolDraft) {
     if (editing) updatePool(editing.id, draft);
@@ -72,30 +67,12 @@ export function Dashboard() {
         </div>
       </div>
 
-      {chartData.length > 0 && (
-        <div className="h-36 rounded-xl bg-card/80 p-4 ring-1 ring-foreground/10">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData}>
-              <XAxis dataKey="time" hide />
-              <Tooltip
-                contentStyle={{
-                  background: "oklch(0.205 0 0)",
-                  border: "1px solid oklch(1 0 0 / 10%)",
-                  borderRadius: 8,
-                  color: "oklch(0.985 0 0)",
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="amount"
-                stroke="#38bdf8"
-                fill="#38bdf8"
-                fillOpacity={0.2}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+      <AdvisorPanel
+        pools={pools}
+        advices={advices}
+        tightest={tightest}
+        switchAdvice={switchAdvice}
+      />
 
       {pools.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("dashboard.empty")}</p>
@@ -106,6 +83,7 @@ export function Dashboard() {
               key={pool.id}
               pool={pool}
               records={records.filter((record) => record.pool_id === pool.id)}
+              advice={advices.find((item) => item.poolId === pool.id)}
               onEdit={(next) => {
                 setEditing(next);
                 setFormOpen(true);

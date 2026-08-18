@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import type { Pool, UsageRecord } from "@/db/schema";
+import { riskTone, type PoolAdvice } from "@/lib/burnRate";
 import {
   formatAmount,
   formatCountdown,
@@ -24,11 +25,12 @@ import { cn } from "@/lib/utils";
 type Props = {
   pool: Pool;
   records: UsageRecord[];
+  advice?: PoolAdvice;
   onEdit: (pool: Pool) => void;
   onDelete: (pool: Pool) => void;
 };
 
-export function PoolCard({ pool, records, onEdit, onDelete }: Props) {
+export function PoolCard({ pool, records, advice, onEdit, onDelete }: Props) {
   const { t, i18n } = useTranslation();
   const percent = usagePercent(pool);
   const tone = usageTone(percent);
@@ -94,6 +96,36 @@ export function PoolCard({ pool, records, onEdit, onDelete }: Props) {
             value={formatCountdown(pool.reset_at, i18n.language)}
           />
         </div>
+        {advice && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/40 px-2.5 py-2 text-xs">
+            <span className="text-muted-foreground">
+              {t("advisor.recommendedDaily")}:{" "}
+              <span className="font-medium text-foreground tabular-nums">
+                {formatAmount(advice.recommendedDaily, pool.unit)}
+              </span>
+            </span>
+            <span className="text-muted-foreground">
+              {t("advisor.todayUsed")}:{" "}
+              <span className="font-medium text-foreground tabular-nums">
+                {formatAmount(advice.todayUsedAmount, pool.unit)}
+              </span>
+            </span>
+            <span
+              className={cn(
+                "rounded-full px-1.5 py-0.5 font-medium",
+                riskTone(advice.risk) === "ok" && "bg-emerald-400/15 text-emerald-300",
+                riskTone(advice.risk) === "warn" && "bg-amber-400/15 text-amber-300",
+                riskTone(advice.risk) === "crit" && "bg-red-400/15 text-red-300",
+              )}
+            >
+              {advice.risk === "overspend"
+                ? t("advisor.riskOverspend")
+                : advice.risk === "waste"
+                  ? t("advisor.riskWaste")
+                  : t("advisor.riskOk")}
+            </span>
+          </div>
+        )}
       </CardContent>
       {records.length > 0 && (
         <CardFooter className="flex-col items-stretch gap-2">
