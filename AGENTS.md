@@ -46,6 +46,7 @@ https://github.com/qinlinj/heavyscope
 - 0.7.3 polish — localize preset pool display names (done)
 - 0.7.4 polish — JSON export / import of local data (done)
 - 0.7.5 polish — demo usage seed for charts (done)
+- 0.7.6 polish — in-app AlertDialogs instead of window.confirm (done)
 
 ## Commits
 
