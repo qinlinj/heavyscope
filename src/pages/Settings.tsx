@@ -1,4 +1,4 @@
-import { Download, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Copy, Download, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -75,6 +75,7 @@ export function Settings() {
   const [backupDraft, setBackupDraft] = useState("");
   const [backupMode, setBackupMode] = useState<BackupMode>("merge");
   const [backupFlash, setBackupFlash] = useState<string | null>(null);
+  const [copyFlash, setCopyFlash] = useState<string | null>(null);
   const [demoFlash, setDemoFlash] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Pool | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
@@ -113,6 +114,20 @@ export function Settings() {
     const json = exportLocalBackup();
     if (!json) return;
     downloadText(BACKUP_FILENAME, json);
+  }
+
+  async function handleCopy() {
+    const json = exportLocalBackup();
+    if (!json) {
+      setCopyFlash(t("settings.backupCopyFailed"));
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(json);
+      setCopyFlash(t("settings.backupCopied"));
+    } catch {
+      setCopyFlash(t("settings.backupCopyFailed"));
+    }
   }
 
   function runDemoSeed(force: boolean) {
@@ -345,10 +360,22 @@ export function Settings() {
 
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">{t("settings.backupExportHint")}</p>
-            <Button size="sm" disabled={!ready} onClick={handleExport}>
-              <Download data-icon="inline-start" />
-              {t("settings.backupExport")}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" disabled={!ready} onClick={handleExport}>
+                <Download data-icon="inline-start" />
+                {t("settings.backupExport")}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!ready}
+                onClick={() => void handleCopy()}
+              >
+                <Copy data-icon="inline-start" />
+                {t("settings.backupCopy")}
+              </Button>
+            </div>
+            {copyFlash && <p className="text-xs text-foreground/80">{copyFlash}</p>}
           </div>
 
           <div className="space-y-2">
