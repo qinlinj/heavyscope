@@ -58,7 +58,7 @@
   "settings": {
     "title": "设置",
     "language": "界面语言",
-    "languageHint": "选择后立即生效，并写入 localStorage。",
+    "languageHint": "选择后立即生效，并写入 localStorage 与本地设置表。",
     "zh": "简体中文",
     "en": "English",
     "about": "关于",
@@ -68,7 +68,17 @@
     "resetData": "重置本地数据库",
     "resetDataHint": "将删除所有额度池与用量记录，并重新写入四个预置池。",
     "stack": "技术栈",
-    "version": "版本"
+    "version": "版本",
+    "langShortEn": "EN",
+    "langShortZh": "中文",
+    "thresholds": "告警阈值",
+    "thresholdsHint": "用量进度条在警告百分比变为琥珀色，在危急百分比变为红色。",
+    "warnPercent": "警告百分比",
+    "critPercent": "危急百分比",
+    "thresholdsInvalid": "警告值须 ≥ 1，且严格小于危急值；危急值不能超过 100。",
+    "pools": "额度池管理",
+    "poolsHint": "在此添加、编辑或删除额度池。仪表盘也保留同样的操作。",
+    "noPools": "还没有额度池。可在此添加，或回到仪表盘添加。"
   },
   "common": {
     "ok": "确定",

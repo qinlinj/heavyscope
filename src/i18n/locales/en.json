@@ -58,7 +58,7 @@
   "settings": {
     "title": "Settings",
     "language": "Language",
-    "languageHint": "Takes effect immediately and is stored in localStorage.",
+    "languageHint": "Takes effect immediately. Stored in localStorage and the local settings table.",
     "zh": "简体中文",
     "en": "English",
     "about": "About",
@@ -68,7 +68,17 @@
     "resetData": "Reset local database",
     "resetDataHint": "Deletes every pool and usage record, then reseeds the four preset pools.",
     "stack": "Stack",
-    "version": "Version"
+    "version": "Version",
+    "langShortEn": "EN",
+    "langShortZh": "中文",
+    "thresholds": "Alert thresholds",
+    "thresholdsHint": "Usage bars turn amber at the warning percent and red at the critical percent.",
+    "warnPercent": "Warning percent",
+    "critPercent": "Critical percent",
+    "thresholdsInvalid": "Warning must be at least 1 and strictly less than critical, which cannot exceed 100.",
+    "pools": "Pool management",
+    "poolsHint": "Add, edit, or delete quota pools. The dashboard has the same actions.",
+    "noPools": "No pools yet. Add one here or from the dashboard."
   },
   "common": {
     "ok": "OK",
