@@ -1,6 +1,14 @@
 import * as sqlJsModule from "sql.js";
 import type { Database as SqlDatabase } from "sql.js";
 import wasmUrl from "sql.js/dist/sql-wasm.wasm?url";
+import {
+  DEFAULT_CRIT_PERCENT,
+  DEFAULT_LANGUAGE,
+  DEFAULT_WARN_PERCENT,
+  SETTING_CRIT_PERCENT,
+  SETTING_LANGUAGE,
+  SETTING_WARN_PERCENT,
+} from "@/lib/settings";
 import { defaultPools } from "./defaults";
 import {
   SCHEMA_SQL,
@@ -103,6 +111,7 @@ export class HeavyScopeDB {
     const store = new HeavyScopeDB(raw);
     store.migrate();
     store.seedIfEmpty();
+    store.seedSettings();
     store.persist();
     return store;
   }
@@ -146,7 +155,29 @@ export class HeavyScopeDB {
       ]);
     }
     insert.free();
-    this.setSetting("language", localStorage.getItem("heavyscope.lang") ?? "zh-CN");
+    this.writeSetting(SETTING_LANGUAGE, localStorage.getItem("heavyscope.lang") ?? DEFAULT_LANGUAGE);
+  }
+
+  private writeSetting(key: string, value: string): void {
+    this.db.run(
+      "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+      [key, value],
+    );
+  }
+
+  private seedSettings(): void {
+    if (!this.getSetting(SETTING_LANGUAGE)) {
+      this.writeSetting(
+        SETTING_LANGUAGE,
+        localStorage.getItem("heavyscope.lang") ?? DEFAULT_LANGUAGE,
+      );
+    }
+    if (!this.getSetting(SETTING_WARN_PERCENT)) {
+      this.writeSetting(SETTING_WARN_PERCENT, String(DEFAULT_WARN_PERCENT));
+    }
+    if (!this.getSetting(SETTING_CRIT_PERCENT)) {
+      this.writeSetting(SETTING_CRIT_PERCENT, String(DEFAULT_CRIT_PERCENT));
+    }
   }
 
   getSetting(key: string): string | null {
@@ -155,11 +186,17 @@ export class HeavyScopeDB {
   }
 
   setSetting(key: string, value: string): void {
-    this.db.run(
-      "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-      [key, value],
-    );
+    this.writeSetting(key, value);
     this.persist();
+  }
+
+  listSettings(): Record<string, string> {
+    const rows = queryAll(this.db, "SELECT key, value FROM settings");
+    const out: Record<string, string> = {};
+    for (const row of rows) {
+      out[String(row.key)] = String(row.value);
+    }
+    return out;
   }
 
   listPools(): Pool[] {
