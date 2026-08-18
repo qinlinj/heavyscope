@@ -61,6 +61,7 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Replace native `window.confirm` with in-app AlertDialogs (delete pool, reset DB, demo re-apply, import, replace-all)
 - [x] Confirm/AlertDialog a11y: Radix focus trap + Escape + describedby; destructive confirm type=button
 - [x] Copy JSON next to Export JSON (`navigator.clipboard.writeText` of the same backup payload; flash success/failure)
+- [x] Paste JSON next to Import file (`navigator.clipboard.readText` into the backup textarea; flash success/failure; user still clicks Apply backup)
 
 ## Polish / leftover gaps (0.7.5)
 

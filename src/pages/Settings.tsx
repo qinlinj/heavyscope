@@ -1,4 +1,4 @@
-import { Copy, Download, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { ClipboardPaste, Copy, Download, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -127,6 +127,29 @@ export function Settings() {
       setCopyFlash(t("settings.backupCopied"));
     } catch {
       setCopyFlash(t("settings.backupCopyFailed"));
+    }
+  }
+
+  async function handlePaste() {
+    setBackupFlash(t("settings.backupPastePending"));
+    let timeoutId = 0;
+    try {
+      const text = await Promise.race([
+        navigator.clipboard.readText(),
+        new Promise<never>((_, reject) => {
+          timeoutId = window.setTimeout(() => reject(new Error("clipboard-timeout")), 3000);
+        }),
+      ]);
+      window.clearTimeout(timeoutId);
+      if (!text.trim()) {
+        setBackupFlash(t("settings.backupPasteEmpty"));
+        return;
+      }
+      setBackupDraft(text);
+      setBackupFlash(t("settings.backupPasted"));
+    } catch {
+      window.clearTimeout(timeoutId);
+      setBackupFlash(t("settings.backupPasteFailed"));
     }
   }
 
@@ -403,6 +426,15 @@ export function Settings() {
                   />
                   {t("settings.backupFile")}
                 </label>
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!ready}
+                onClick={() => void handlePaste()}
+              >
+                <ClipboardPaste data-icon="inline-start" />
+                {t("settings.backupPaste")}
               </Button>
               <Button
                 size="sm"

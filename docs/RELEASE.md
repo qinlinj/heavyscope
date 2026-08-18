@@ -4,6 +4,7 @@ GitHub Releases notes. Published as a file because the GitHub MCP server has no 
 
 ## Unreleased (0.7.6)
 
+- Settings → Local data: Paste JSON fills the import textarea from the clipboard (`navigator.clipboard.readText`). Success and failure flash in zh-CN / en. A pending flash shows immediately; `readText` is raced against a 3s timeout (timeout is treated as failure). Does not auto-apply.
 - Settings → Local data: Copy JSON writes the same backup payload to the clipboard (`navigator.clipboard.writeText`). Success and failure flash in zh-CN / en. Version stays 0.7.6.
 
 ## v0.7.6
