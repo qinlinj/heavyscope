@@ -1,6 +1,7 @@
 import { Download, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DataSourcesCard } from "@/components/DataSourcesCard";
 import { PoolFormDialog } from "@/components/PoolFormDialog";
 import { Button } from "@/components/ui/button";
@@ -75,6 +76,11 @@ export function Settings() {
   const [backupMode, setBackupMode] = useState<BackupMode>("merge");
   const [backupFlash, setBackupFlash] = useState<string | null>(null);
   const [demoFlash, setDemoFlash] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Pool | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
+  const [backupOpen, setBackupOpen] = useState(false);
+  const [replaceOpen, setReplaceOpen] = useState(false);
 
   useEffect(() => {
     setWarnInput(String(thresholds.warn));
@@ -109,19 +115,21 @@ export function Settings() {
     downloadText(BACKUP_FILENAME, json);
   }
 
-  function handleDemoSeed() {
-    const already = isDemoSeeded(settings);
-    if (already) {
-      if (!window.confirm(t("settings.demoConfirmAgain"))) return;
-    } else if (!window.confirm(t("settings.demoConfirm"))) {
-      return;
-    }
-    const report = applyDemoSeed(already);
+  function runDemoSeed(force: boolean) {
+    const report = applyDemoSeed(force);
     if (report.skipped) {
       setDemoFlash(t("settings.demoSkipped"));
       return;
     }
     setDemoFlash(t("settings.demoApplied", { count: report.inserted }));
+  }
+
+  function handleDemoSeed() {
+    if (isDemoSeeded(settings)) {
+      setDemoOpen(true);
+      return;
+    }
+    runDemoSeed(false);
   }
 
   async function onBackupFile(event: ChangeEvent<HTMLInputElement>) {
@@ -131,6 +139,22 @@ export function Settings() {
     const text = await file.text();
     setBackupDraft(text);
     setBackupFlash(null);
+  }
+
+  function applyImportedBackup() {
+    const parsed = parseBackup(backupDraft);
+    if (!parsed.ok) {
+      setBackupFlash(t("settings.backupInvalid"));
+      return;
+    }
+    const report = importLocalBackup(parsed.backup, backupMode);
+    setBackupFlash(
+      t("settings.backupApplied", {
+        pools: report.poolsUpserted,
+        inserted: report.recordsInserted,
+        skipped: report.recordsSkipped,
+      }),
+    );
   }
 
   function handleImport() {
@@ -143,18 +167,7 @@ export function Settings() {
       setBackupFlash(t("settings.backupInvalid"));
       return;
     }
-    if (!window.confirm(t("settings.backupConfirm"))) return;
-    if (backupMode === "replace" && !window.confirm(t("settings.backupConfirmReplace"))) {
-      return;
-    }
-    const report = importLocalBackup(parsed.backup, backupMode);
-    setBackupFlash(
-      t("settings.backupApplied", {
-        pools: report.poolsUpserted,
-        inserted: report.recordsInserted,
-        skipped: report.recordsSkipped,
-      }),
-    );
+    setBackupOpen(true);
   }
 
   return (
@@ -286,9 +299,7 @@ export function Settings() {
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      onClick={() => {
-                        if (window.confirm(t("form.confirmDelete"))) deletePool(pool.id);
-                      }}
+                      onClick={() => setPendingDelete(pool)}
                     >
                       <Trash2 />
                       <span className="sr-only">{t("pool.delete")}</span>
@@ -407,9 +418,7 @@ export function Settings() {
             <Button
               variant="destructive"
               disabled={!ready}
-              onClick={() => {
-                if (window.confirm(t("form.confirmDelete"))) resetLocalData();
-              }}
+              onClick={() => setResetOpen(true)}
             >
               {t("settings.resetData")}
             </Button>
@@ -425,6 +434,60 @@ export function Settings() {
           if (!open) setEditing(null);
         }}
         onSubmit={handleSubmit}
+      />
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={t("form.deleteTitle")}
+        description={t("form.confirmDelete")}
+        confirmLabel={t("pool.delete")}
+        destructive
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        onConfirm={() => {
+          if (pendingDelete) deletePool(pendingDelete.id);
+          setPendingDelete(null);
+        }}
+      />
+      <ConfirmDialog
+        open={resetOpen}
+        title={t("settings.resetTitle")}
+        description={t("settings.resetDataHint")}
+        confirmLabel={t("settings.resetData")}
+        destructive
+        onOpenChange={setResetOpen}
+        onConfirm={resetLocalData}
+      />
+      <ConfirmDialog
+        open={demoOpen}
+        title={t("settings.demoTitle")}
+        description={t("settings.demoConfirmAgain")}
+        confirmLabel={t("settings.demoLoad")}
+        onOpenChange={setDemoOpen}
+        onConfirm={() => runDemoSeed(true)}
+      />
+      <ConfirmDialog
+        open={backupOpen}
+        title={t("settings.backupTitle")}
+        description={t("settings.backupConfirm")}
+        confirmLabel={t("settings.backupApply")}
+        onOpenChange={setBackupOpen}
+        onConfirm={() => {
+          if (backupMode === "replace") {
+            setReplaceOpen(true);
+            return;
+          }
+          applyImportedBackup();
+        }}
+      />
+      <ConfirmDialog
+        open={replaceOpen}
+        title={t("settings.backupReplaceTitle")}
+        description={t("settings.backupConfirmReplace")}
+        confirmLabel={t("common.confirm")}
+        destructive
+        onOpenChange={setReplaceOpen}
+        onConfirm={applyImportedBackup}
       />
     </div>
   );
