@@ -4,6 +4,19 @@ All notable changes to this project are documented in this file.
 
 The format is based on Keep a Changelog, and this project uses Semantic Versioning.
 
+## [0.5.0] - 2026-08-18
+
+### Added
+
+- Tauri 2 desktop shell around the existing Vite React app (src-tauri).
+- System tray / menu-bar icon with Open and Quit. Left-click shows the window.
+- Hide-to-tray on window close. macOS LSUIElement + macOSPrivateApi config for menu-bar style.
+- Tray tooltip/title can show the hottest pool percent from local sql.js data.
+
+### Changed
+
+- Version 0.5.0. Web scripts are unchanged (dev / build / preview).
+
 ## [0.4.0] - 2026-08-18
 
 ### Added

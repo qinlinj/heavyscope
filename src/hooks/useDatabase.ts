@@ -12,6 +12,7 @@ import { HeavyScopeDB } from "@/db/database";
 import type { Pool, PoolDraft, UsageRecord, UsageSource } from "@/db/schema";
 import i18n, { LANG_STORAGE_KEY } from "@/i18n";
 import { parseThresholds, SETTING_LANGUAGE } from "@/lib/settings";
+import { syncTraySummary } from '@/lib/desktop';
 
 type DatabaseApi = {
   ready: boolean;
@@ -73,6 +74,11 @@ function useDatabaseState(): DatabaseApi {
     localStorage.setItem(LANG_STORAGE_KEY, language);
     document.documentElement.lang = language;
   }, [ready, settings]);
+
+  useEffect(() => {
+    if (!ready) return;
+    void syncTraySummary(pools);
+  }, [ready, pools]);
 
   const createPool = useCallback(
     (draft: PoolDraft) => {
