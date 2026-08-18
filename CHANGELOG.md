@@ -4,6 +4,20 @@ All notable changes to this project are documented in this file.
 
 The format is based on Keep a Changelog, and this project uses Semantic Versioning.
 
+## [0.6.0] - 2026-08-18
+
+### Added
+
+- Usage adapter layer (`manual`, `cursor`, `grok`) with a shared `UsageAdapter` interface.
+- Cursor snapshot import (documented JSON or `pool,amount,note` CSV) from Settings.
+- Idempotent snapshot apply: only the positive delta vs current `quota_used` is recorded as `source=sync`.
+- Auto-sync interval (default 30 minutes) that re-applies the last imported Cursor snapshot.
+- Reserved Grok adapter shown as Coming soon. Manual records stay when adapters fail.
+
+### Changed
+
+- Version 0.6.0.
+
 ## [0.5.0] - 2026-08-18
 
 ### Added
