@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AdvisorPanel } from "@/components/AdvisorPanel";
 import { ChartsPanel } from "@/components/ChartsPanel";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PoolCard } from "@/components/PoolCard";
 import { PoolFormDialog } from "@/components/PoolFormDialog";
 import { UsageDialog } from "@/components/UsageDialog";
@@ -27,6 +28,7 @@ export function Dashboard() {
   const [formOpen, setFormOpen] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
   const [editing, setEditing] = useState<Pool | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Pool | null>(null);
 
   const advices = useMemo(
     () => pools.map((pool) => advisePool(pool, records)),
@@ -94,9 +96,7 @@ export function Dashboard() {
                 setEditing(next);
                 setFormOpen(true);
               }}
-              onDelete={(next) => {
-                if (window.confirm(t("form.confirmDelete"))) deletePool(next.id);
-              }}
+              onDelete={setPendingDelete}
             />
           ))}
         </div>
@@ -118,6 +118,20 @@ export function Dashboard() {
         pools={pools}
         onOpenChange={setUsageOpen}
         onSubmit={(poolId, amount, note) => addUsage(poolId, amount, note)}
+      />
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={t("form.deleteTitle")}
+        description={t("form.confirmDelete")}
+        confirmLabel={t("pool.delete")}
+        destructive
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        onConfirm={() => {
+          if (pendingDelete) deletePool(pendingDelete.id);
+          setPendingDelete(null);
+        }}
       />
     </div>
   );
