@@ -6,6 +6,10 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+### Fixed
+
+- macOS compile: `App::set_activation_policy` returns `()` in Tauri 2.11.3, so Accessory setup no longer uses `?`.
+
 ## [0.8.0] - 2026-08-19
 
 ### Added
