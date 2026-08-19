@@ -56,7 +56,7 @@ function liveOk(used: number, hint = "cursor_models"): LiveProviderResult {
 }
 
 describe("applyLiveSnapshot", () => {
-  it("sets absolute used and writes a sync record only when used changes", () => {
+  it("sets absolute used and writes a sync record only when used increases", () => {
     const { deps, pools, usages } = mockDeps([
       {
         id: "preset-cursor-models",
@@ -88,7 +88,7 @@ describe("applyLiveSnapshot", () => {
     expect(usages).toHaveLength(1);
   });
 
-  it("writes a signed record when used decreases and still updates the pool", () => {
+  it("updates the pool when used decreases but skips a negative usage record", () => {
     const { deps, pools, usages } = mockDeps([
       {
         id: "preset-cursor-models",
@@ -100,9 +100,10 @@ describe("applyLiveSnapshot", () => {
         unit: "%",
       },
     ]);
-    applyLiveSnapshot(liveOk(20), deps);
+    const report = applyLiveSnapshot(liveOk(20), deps);
     expect(pools[0]?.quota_used).toBe(20);
-    expect(usages[0]?.amount).toBe(-60);
+    expect(report.recordsAdded).toBe(0);
+    expect(usages).toEqual([]);
   });
 
   it("skips apply on error and does not wipe pools", () => {

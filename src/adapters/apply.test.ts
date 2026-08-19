@@ -159,7 +159,7 @@ describe("applyAbsoluteUsage", () => {
     return { pools, usages, deps };
   }
 
-  it("sets absolute used/total/reset_at and records only when used changes", () => {
+  it("sets absolute used/total/reset_at and records only when used increases", () => {
     const { deps, pools, usages } = absoluteDeps([
       pool({
         id: "preset-cursor-models",
@@ -198,13 +198,18 @@ describe("applyAbsoluteUsage", () => {
     expect(usages).toHaveLength(1);
   });
 
-  it("writes the lower used number after a cycle reset", () => {
+  it("writes the lower used number after a cycle reset without a usage record", () => {
     const { deps, pools, usages } = absoluteDeps([
       pool({ id: "preset-cursor-models", name: "Cursor Models", quota_used: 88, quota_total: 100 }),
     ]);
-    applyAbsoluteUsage([{ poolHint: "cursor_models", quotaUsed: 4, quotaTotal: 100 }], deps);
+    const report = applyAbsoluteUsage(
+      [{ poolHint: "cursor_models", quotaUsed: 4, quotaTotal: 100 }],
+      deps,
+    );
     expect(pools[0]?.quota_used).toBe(4);
-    expect(usages[0]?.amount).toBe(-84);
+    expect(pools[0]?.quota_total).toBe(100);
+    expect(report.added).toBe(0);
+    expect(usages).toEqual([]);
   });
 });
 

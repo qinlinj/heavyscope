@@ -145,7 +145,9 @@ export function applyAdapterResult(result: AdapterResult, deps: ApplyDeps): Appl
 /**
  * Live usage-summary values are absolute remaining-quota percents.
  * Always write quota_used / quota_total / reset_at (including a lower used
- * after a cycle reset). Insert a source=sync record only when used changed.
+ * after a cycle reset). Insert a source=sync record only when used increased
+ * (delta > epsilon). Charts sum amounts; a negative reset bar would break
+ * the heatmap/trend. Pool fields still update in both directions.
  */
 export function applyAbsoluteUsage(
   drafts: AbsoluteUsageDraft[],
@@ -179,7 +181,7 @@ export function applyAbsoluteUsage(
     deps.updatePoolFields(poolId, patch);
 
     const delta = used - previousUsed;
-    if (Math.abs(delta) > USED_EPSILON) {
+    if (delta > USED_EPSILON) {
       deps.insertUsageRecord(poolId, delta, item.note ?? "Live sync", item.recordedAt);
       added += 1;
     }
