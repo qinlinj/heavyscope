@@ -164,10 +164,10 @@ fn clamp_to_monitor(
 /// Keep the existing LSUIElement plist, then force Accessory + compact panel
 /// so the Linux 980×720 `center: true` window config cannot leak onto macOS.
 ///
-/// `App::set_activation_policy` returns `()` in Tauri 2.11.3 (do not `?`).
+/// `App::set_activation_policy` is `&mut self -> ()` in Tauri 2.11.3 (do not `?`).
 /// `AppHandle::set_activation_policy` is the `Result<()>` variant.
 #[cfg(target_os = "macos")]
-fn apply_macos_accessory_window(app: &tauri::App) {
+fn apply_macos_accessory_window(app: &mut tauri::App) {
     app.set_activation_policy(tauri::ActivationPolicy::Accessory);
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.hide();
