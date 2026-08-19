@@ -15,13 +15,13 @@ import { useDatabase } from "@/hooks/useDatabase";
 import { isMacDesktop, readCursorSessionTokenFromApp } from "@/lib/desktop";
 import { formatDateTime } from "@/lib/format";
 import {
-  parseLiveSyncInterval,
   parseSyncInterval,
+  parseSyncSource,
+  syncSourceHas,
   SETTING_CURSOR_CONNECTED,
   SETTING_CURSOR_LAST_SYNCED_AT,
   SETTING_CURSOR_SESSION_TOKEN,
   SETTING_CURSOR_SNAPSHOT,
-  SETTING_CURSOR_SYNC_INTERVAL_MIN,
   SETTING_CURSOR_SYNC_MESSAGE,
   SETTING_CURSOR_SYNC_SOURCE,
   SETTING_GROK_BEARER_TOKEN,
@@ -29,7 +29,6 @@ import {
   SETTING_GROK_CONNECTED,
   SETTING_GROK_LAST_SYNCED_AT,
   SETTING_GROK_SESSION_TOKEN,
-  SETTING_GROK_SYNC_INTERVAL_MIN,
   SETTING_GROK_SYNC_MESSAGE,
   SETTING_GROK_SYNC_SOURCE,
   SETTING_SYNC_ENABLED,
@@ -78,7 +77,7 @@ export function DataSourcesCard() {
   }, [storedSnapshot]);
 
   const enabled = settings[SETTING_SYNC_ENABLED] === "true";
-  const source = settings[SETTING_SYNC_SOURCE] === "cursor" ? "cursor" : "none";
+  const source = parseSyncSource(settings[SETTING_SYNC_SOURCE]);
   const interval = String(parseSyncInterval(settings[SETTING_SYNC_INTERVAL_MIN]));
   const lastAt = settings[SETTING_SYNC_LAST_AT];
   const lastStatus = settings[SETTING_SYNC_LAST_STATUS];
@@ -88,8 +87,6 @@ export function DataSourcesCard() {
   const grokHasToken = Boolean(
     settings[SETTING_GROK_SESSION_TOKEN]?.trim() || settings[SETTING_GROK_BEARER_TOKEN]?.trim(),
   );
-  const cursorInterval = String(parseLiveSyncInterval(settings[SETTING_CURSOR_SYNC_INTERVAL_MIN]));
-  const grokInterval = String(parseLiveSyncInterval(settings[SETTING_GROK_SYNC_INTERVAL_MIN]));
   const showMacHelper = isMacDesktop();
 
   async function applyDraft() {
@@ -246,21 +243,6 @@ export function DataSourcesCard() {
               </Button>
             )}
           </div>
-          <div className="grid max-w-xs gap-1.5">
-            <Label htmlFor="cursor-live-interval">{t("live.interval")}</Label>
-            <Input
-              id="cursor-live-interval"
-              type="number"
-              min={1}
-              max={60}
-              step={1}
-              value={cursorInterval}
-              disabled={!ready}
-              onChange={(event) => {
-                setSetting(SETTING_CURSOR_SYNC_INTERVAL_MIN, String(parseLiveSyncInterval(event.target.value)));
-              }}
-            />
-          </div>
           <p className="text-xs text-muted-foreground">
             {t("live.lastSynced")}:{" "}
             {settings[SETTING_CURSOR_LAST_SYNCED_AT]
@@ -342,21 +324,6 @@ export function DataSourcesCard() {
               {t("live.refreshNow")}
             </Button>
           </div>
-          <div className="grid max-w-xs gap-1.5">
-            <Label htmlFor="grok-live-interval">{t("live.interval")}</Label>
-            <Input
-              id="grok-live-interval"
-              type="number"
-              min={1}
-              max={60}
-              step={1}
-              value={grokInterval}
-              disabled={!ready}
-              onChange={(event) => {
-                setSetting(SETTING_GROK_SYNC_INTERVAL_MIN, String(parseLiveSyncInterval(event.target.value)));
-              }}
-            />
-          </div>
           <p className="text-xs text-muted-foreground">
             {t("live.lastSynced")}:{" "}
             {settings[SETTING_GROK_LAST_SYNCED_AT]
@@ -434,7 +401,7 @@ export function DataSourcesCard() {
               id="sync-interval"
               type="number"
               min={1}
-              max={1440}
+              max={60}
               step={1}
               value={interval}
               disabled={!ready}
@@ -457,12 +424,17 @@ export function DataSourcesCard() {
               <SelectContent>
                 <SelectItem value="none">{t("settings.syncSourceNone")}</SelectItem>
                 <SelectItem value="cursor">{t("settings.syncSourceCursor")}</SelectItem>
+                <SelectItem value="grok">{t("settings.syncSourceGrok")}</SelectItem>
+                <SelectItem value="both">{t("settings.syncSourceBoth")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        {enabled && source === "cursor" && !storedSnapshot && (
+        {enabled &&
+          syncSourceHas(source, "cursor") &&
+          !cursorHasToken &&
+          !storedSnapshot && (
           <p className="text-xs text-amber-400">{t("settings.noSnapshot")}</p>
         )}
 

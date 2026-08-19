@@ -13,8 +13,6 @@ export const SETTING_DEMO_SEEDED = "demo_seeded";
 export const SETTING_CURSOR_SESSION_TOKEN = "cursor_session_token";
 export const SETTING_GROK_SESSION_TOKEN = "grok_session_token";
 export const SETTING_GROK_BEARER_TOKEN = "grok_bearer_token";
-export const SETTING_CURSOR_SYNC_INTERVAL_MIN = "cursor_sync_interval_min";
-export const SETTING_GROK_SYNC_INTERVAL_MIN = "grok_sync_interval_min";
 export const SETTING_CURSOR_LAST_SYNCED_AT = "cursor_last_synced_at";
 export const SETTING_CURSOR_SYNC_SOURCE = "cursor_sync_source";
 export const SETTING_CURSOR_SYNC_MESSAGE = "cursor_sync_message";
@@ -35,16 +33,19 @@ export const DEFAULT_LANGUAGE = "zh-CN";
 export const DEFAULT_WARN_PERCENT = 70;
 export const DEFAULT_CRIT_PERCENT = 90;
 export const DEFAULT_SYNC_ENABLED = "false";
-export const DEFAULT_SYNC_INTERVAL_MIN = 30;
+/** Shared auto-sync interval for live Cursor / Grok (and snapshot fallback). */
+export const DEFAULT_SYNC_INTERVAL_MIN = 5;
 export const DEFAULT_SYNC_SOURCE = "none";
-export const DEFAULT_LIVE_SYNC_INTERVAL_MIN = 5;
+export const LEGACY_SYNC_INTERVAL_MIN = 30;
 
 export type AlertThresholds = {
   warn: number;
   crit: number;
 };
 
-export type SyncSource = "cursor" | "none";
+export const SYNC_SOURCES = ["none", "cursor", "grok", "both"] as const;
+export type SyncSource = (typeof SYNC_SOURCES)[number];
+export type SyncProvider = "cursor" | "grok";
 export type LiveSyncSource = "api" | "session" | "error";
 export type ConnectorState = "true" | "false" | "expired";
 export type PoolSyncBadge = "api" | "session" | "manual" | "import" | "error";
@@ -60,17 +61,30 @@ export function parseThresholds(settings: Record<string, string>): AlertThreshol
   return { warn: DEFAULT_WARN_PERCENT, crit: DEFAULT_CRIT_PERCENT };
 }
 
+/** Shared live interval: 1–60 minutes, default 5. */
 export function parseSyncInterval(value: string | null | undefined): number {
   const minutes = Number(value ?? DEFAULT_SYNC_INTERVAL_MIN);
   if (!Number.isFinite(minutes)) return DEFAULT_SYNC_INTERVAL_MIN;
-  return Math.min(1440, Math.max(1, Math.round(minutes)));
+  return Math.min(60, Math.max(1, Math.round(minutes)));
 }
 
-/** Live provider interval: 1–60 minutes, default 5. */
-export function parseLiveSyncInterval(value: string | null | undefined): number {
-  const minutes = Number(value ?? DEFAULT_LIVE_SYNC_INTERVAL_MIN);
-  if (!Number.isFinite(minutes)) return DEFAULT_LIVE_SYNC_INTERVAL_MIN;
-  return Math.min(60, Math.max(1, Math.round(minutes)));
+export function parseSyncSource(value: string | null | undefined): SyncSource {
+  if (value === "cursor" || value === "grok" || value === "both") return value;
+  return "none";
+}
+
+export function syncSourceHas(source: SyncSource, provider: SyncProvider): boolean {
+  if (source === "both") return true;
+  return source === provider;
+}
+
+export function withSyncProvider(current: SyncSource, provider: SyncProvider, on: boolean): SyncSource {
+  const cursor = provider === "cursor" ? on : syncSourceHas(current, "cursor");
+  const grok = provider === "grok" ? on : syncSourceHas(current, "grok");
+  if (cursor && grok) return "both";
+  if (cursor) return "cursor";
+  if (grok) return "grok";
+  return "none";
 }
 
 export function redactSettings(settings: Record<string, string>): Record<string, string> {

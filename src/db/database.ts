@@ -15,9 +15,6 @@ import {
   SETTING_DEMO_SEEDED,
   SETTING_SYNC_SOURCE,
   SETTING_WARN_PERCENT,
-  SETTING_CURSOR_SYNC_INTERVAL_MIN,
-  SETTING_GROK_SYNC_INTERVAL_MIN,
-  DEFAULT_LIVE_SYNC_INTERVAL_MIN,
   liveConnectorOwnsPool,
 } from "@/lib/settings";
 import {
@@ -214,12 +211,6 @@ export class HeavyScopeDB {
     }
     if (!this.getSetting(SETTING_SYNC_SOURCE)) {
       this.writeSetting(SETTING_SYNC_SOURCE, DEFAULT_SYNC_SOURCE);
-    }
-    if (!this.getSetting(SETTING_CURSOR_SYNC_INTERVAL_MIN)) {
-      this.writeSetting(SETTING_CURSOR_SYNC_INTERVAL_MIN, String(DEFAULT_LIVE_SYNC_INTERVAL_MIN));
-    }
-    if (!this.getSetting(SETTING_GROK_SYNC_INTERVAL_MIN)) {
-      this.writeSetting(SETTING_GROK_SYNC_INTERVAL_MIN, String(DEFAULT_LIVE_SYNC_INTERVAL_MIN));
     }
   }
 

@@ -10,7 +10,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Added
 
-- Live Cursor usage sync from unofficial `GET https://cursor.com/api/usage-summary` using a user-pasted `WorkosCursorSessionToken`. Maps Auto/Composer (`autoPercentUsed`) and Other/API (`apiPercentUsed`) onto the two Cursor preset pools as percent-of-100. Default auto-refresh is 5 minutes.
+- Live Cursor usage sync from unofficial `GET https://cursor.com/api/usage-summary` using a user-pasted `WorkosCursorSessionToken`. Maps Auto/Composer (`autoPercentUsed`) and Other/API (`apiPercentUsed`) onto the two Cursor preset pools as percent-of-100. Live apply writes absolute `quota_used` / `quota_total` / `reset_at` (including a lower used after reset) and inserts a sync record only when used changed.
 - Live Grok usage sync from unofficial `POST https://grok.com/grok_api_v2.GrokBuildBilling/GetGrokCreditsConfig` (gRPC-web empty body). Maps SuperGrok Heavy `credit_usage_percent`. Grok Bot is updated only when a Bot / Agents product segment is present.
 - Settings → Data sources live connect panels (password fields, Connect / Disconnect / Refresh now) above the existing snapshot importer. Dashboard Refresh now syncs configured providers.
 - Vite dev proxies `/proxy/cursor` and `/proxy/grok`. Tauri desktop uses `@tauri-apps/plugin-http` to bypass CORS.
@@ -20,6 +20,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Changed
 
+- Auto-sync reuses `sync_enabled`, `sync_interval_min` (default **5**, was 30), `sync_last_at` / `sync_last_status` / `sync_last_message`, and `useSync`. `sync_source` is now `none` | `cursor` | `grok` | `both`. A connected session token is the auto-sync path; snapshot re-apply is fallback only.
 - Version 0.8.0. Snapshot import and manual CRUD stay. `optimizeDeps.include: ["sql.js"]` and `fallbackLng` are unchanged.
 
 ## [0.7.6] docs / clipboard follow-up

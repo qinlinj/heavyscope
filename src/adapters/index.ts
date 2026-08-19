@@ -1,4 +1,4 @@
-export { applyAdapterResult, HINT_TO_POOL_ID, resolvePoolId } from "./apply";
+export { applyAbsoluteUsage, applyAdapterResult, HINT_TO_POOL_ID, resolvePoolId } from "./apply";
 export { cursorAdapter, parseCursorInput } from "./cursor";
 export {
   cursorCookieHeader,

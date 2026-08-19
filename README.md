@@ -102,7 +102,7 @@ Live mapping (unofficial `GET https://cursor.com/api/usage-summary`, same two-po
 - `preset-cursor-other` = Other Models from `apiPercentUsed`. If that field is missing and on-demand has a numeric limit, on-demand % may be used. When on-demand is enabled with a numeric limit, the pool note can also show $ used/limit.
 - `reset_at` = `billingCycleEnd` for both pools. `reset_cycle` = monthly.
 
-Auto-refresh defaults to 5 minutes (1–60). Refresh now is on the dashboard and in Settings. A 401 marks the connector expired and does not wipe pools.
+Auto-refresh uses the existing `sync_enabled` / `sync_interval_min` / `sync_source` settings. Default interval is **5 minutes** (1–60). `sync_source` can be `cursor`, `grok`, or `both` so both live connectors can run on one ticker. Live values are **absolute**: `quota_used`, `quota_total`, and `reset_at` are written even when used goes down (cycle reset). A `source=sync` record is inserted only when used changed. A 401 marks the connector expired and does not wipe pools. Refresh now is on the dashboard and in Settings.
 
 These endpoints are unofficial and may change.
 
@@ -138,7 +138,7 @@ Apply rules:
 - If snapshot `used` is less than or equal to current used, nothing is subtracted. Manual history is kept.
 - Re-applying the same snapshot is idempotent. HeavyScope stores a hash of the last applied used/total values and skips duplicates.
 
-Auto-sync re-reads the last imported snapshot on the configured interval when live Cursor is not connected.
+Auto-sync re-reads the last imported snapshot on the shared interval only when Cursor is in `sync_source` and no Cursor session token is stored. Once a session token is connected, the ticker fetches live usage-summary instead of re-applying the snapshot string.
 
 Example JSON:
 

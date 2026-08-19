@@ -63,7 +63,8 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Grok `GetGrokCreditsConfig` proto walker → preset-grok-heavy; Bot only if a product segment exists
 - [x] Vite `/proxy/cursor` + `/proxy/grok`; Tauri `@tauri-apps/plugin-http`
 - [x] Optional macOS-only read of Cursor `state.vscdb` (Linux stub)
-- [x] Auto-refresh 5 minutes (1–60), Refresh now, last synced + source badge
+- [x] Auto-refresh 5 minutes (1–60) via shared `sync_enabled` / `sync_interval_min` / `sync_source` (`cursor` | `grok` | `both`)
+- [x] Absolute live apply (write lower used on reset; sync record only when used changed)
 - [x] Backup export redacts session tokens
 - [ ] Keep researching Grok Bot / Agents product breakdown if the proto grows a named segment
 - [ ] Full macOS Accessory tray rewrite (another track)
