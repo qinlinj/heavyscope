@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import type { Pool } from "@/db/schema";
 import { formatAmount, usageTone } from "@/lib/format";
+import { formatAdvisorLine } from "@/lib/advisorLine";
 import { displayPoolName } from "@/lib/poolName";
 import {
   type CrossPoolAdvice,
@@ -25,6 +26,7 @@ type Props = {
   switchAdvice: CrossPoolAdvice | null;
   warnPercent?: number;
   critPercent?: number;
+  compact?: boolean;
 };
 
 export function AdvisorPanel({
@@ -34,12 +36,38 @@ export function AdvisorPanel({
   switchAdvice,
   warnPercent,
   critPercent,
+  compact = false,
 }: Props) {
   const { t } = useTranslation();
-  if (!tightest || pools.length === 0) return null;
+  const pool = tightest ? pools.find((item) => item.id === tightest.poolId) : undefined;
+  const line = formatAdvisorLine(t, tightest, switchAdvice, pools);
 
-  const pool = pools.find((item) => item.id === tightest.poolId);
-  if (!pool) return null;
+  if (compact) {
+    return (
+      <Card size="sm" className="h-full bg-card/90 backdrop-blur">
+        <CardContent className="py-1">
+          <p className="text-[11px] leading-snug text-muted-foreground">{line ?? t("dashboard.empty")}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!tightest || !pool || pools.length === 0) {
+    return (
+      <Card className="h-full bg-card/90 ring-1 ring-foreground/10 backdrop-blur">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Gauge className="size-4" />
+            {t("advisor.title")}
+          </CardTitle>
+          <CardDescription>{t("advisor.subtitle")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">{t("dashboard.empty")}</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const fromPool = switchAdvice
     ? pools.find((item) => item.id === switchAdvice.fromPoolId)
@@ -49,12 +77,7 @@ export function AdvisorPanel({
     : undefined;
 
   return (
-    <section className="space-y-2.5">
-      <div className="pr-9">
-        <h3 className="font-heading text-base font-semibold">{t("advisor.title")}</h3>
-        <p className="mt-0.5 text-sm text-muted-foreground">{t("advisor.subtitle")}</p>
-      </div>
-
+    <div className="flex h-full flex-col gap-2.5">
       <Card className="bg-card/90 ring-1 ring-foreground/10 backdrop-blur">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -63,10 +86,7 @@ export function AdvisorPanel({
           </CardTitle>
           <CardDescription className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5">
-              <span
-                className="size-2 rounded-full"
-                style={{ backgroundColor: pool.color }}
-              />
+              <span className="size-2 rounded-full" style={{ backgroundColor: pool.color }} />
               {displayPoolName(pool, t)}
             </span>
             <RiskBadge level={tightest.risk} />
@@ -122,7 +142,7 @@ export function AdvisorPanel({
       {fromPool && toPool && (
         <Card className="border-amber-400/30 bg-amber-400/5">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-300">
+            <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
               <ArrowRightLeft className="size-4" />
               {t("advisor.switchTitle")}
             </CardTitle>
@@ -162,7 +182,7 @@ export function AdvisorPanel({
           })}
         </ul>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -181,9 +201,9 @@ function Metric({
       <p
         className={cn(
           "mt-1 font-medium tabular-nums",
-          tone === "ok" && "text-emerald-400",
-          tone === "warn" && "text-amber-400",
-          tone === "crit" && "text-red-400",
+          tone === "ok" && "text-emerald-600 dark:text-emerald-400",
+          tone === "warn" && "text-amber-600 dark:text-amber-400",
+          tone === "crit" && "text-red-600 dark:text-red-400",
         )}
       >
         {value}
@@ -206,9 +226,9 @@ function RiskBadge({ level, compact = false }: { level: RiskLevel; compact?: boo
       className={cn(
         "inline-flex items-center rounded-full font-medium",
         compact ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-xs",
-        tone === "ok" && "bg-emerald-400/15 text-emerald-300",
-        tone === "warn" && "bg-amber-400/15 text-amber-300",
-        tone === "crit" && "bg-red-400/15 text-red-300",
+        tone === "ok" && "bg-emerald-400/15 text-emerald-700 dark:text-emerald-300",
+        tone === "warn" && "bg-amber-400/15 text-amber-700 dark:text-amber-300",
+        tone === "crit" && "bg-red-400/15 text-red-700 dark:text-red-300",
       )}
     >
       {label}

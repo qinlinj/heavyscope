@@ -52,9 +52,13 @@ export type ChartModuleId = (typeof CHART_MODULE_IDS)[number];
 
 export const DEFAULT_CHART_MODULE_ORDER: ChartModuleId[] = [...CHART_MODULE_IDS];
 
+/** @deprecated Migrated into `dashboard_layout` by `migrateFromChartPrefs`. Kept for existing installs. */
 export const SETTING_CHART_SHOW_HEATMAP = "chart_show_heatmap";
+/** @deprecated Migrated into `dashboard_layout`. */
 export const SETTING_CHART_SHOW_TREND = "chart_show_trend";
+/** @deprecated Migrated into `dashboard_layout`. */
 export const SETTING_CHART_SHOW_ADVISOR = "chart_show_advisor";
+/** @deprecated Migrated into `dashboard_layout`. */
 export const SETTING_CHART_MODULE_ORDER = "chart_module_order";
 
 export type ChartShowMap = Record<ChartModuleId, boolean>;

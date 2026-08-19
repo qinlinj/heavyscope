@@ -1,29 +1,23 @@
-import { Plus, RefreshCw, ScrollText } from "lucide-react";
+import { Check, Pencil, Plus, RefreshCw, ScrollText } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AddCardsStrip } from "@/components/AddCardsStrip";
 import { AdvisorPanel } from "@/components/AdvisorPanel";
-import { ChartLayoutControls } from "@/components/ChartLayoutControls";
-import { ChartModuleFrame } from "@/components/ChartModuleFrame";
 import { ChartsPanel } from "@/components/ChartsPanel";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PoolCard, type PoolSyncMeta } from "@/components/PoolCard";
 import { PoolFormDialog } from "@/components/PoolFormDialog";
 import { UsageDialog } from "@/components/UsageDialog";
+import { WidgetGrid } from "@/components/WidgetGrid";
+import { WidgetTile } from "@/components/WidgetTile";
 import { Button } from "@/components/ui/button";
 import type { Pool, PoolDraft, UsageRecord } from "@/db/schema";
 import { advisePool, crossPoolAdvice, tightestAdvice } from "@/lib/burnRate";
+import { hiddenTiles, visibleTiles, type LayoutTile } from "@/lib/dashboardLayout";
 import { useDatabase } from "@/hooks/useDatabase";
+import { useWidgetLayout } from "@/hooks/useWidgetLayout";
 import { formatDateTime } from "@/lib/format";
-import {
-  parseChartPrefs,
-  reorderChartModules,
-  SETTING_CHART_MODULE_ORDER,
-  SETTING_CHART_SHOW_ADVISOR,
-  SETTING_CHART_SHOW_HEATMAP,
-  SETTING_CHART_SHOW_TREND,
-  visibleChartModules,
-  type ChartModuleId,
-} from "@/lib/charts";
+import { displayPoolName } from "@/lib/poolName";
 import {
   SETTING_CURSOR_CONNECTED,
   SETTING_CURSOR_LAST_SYNCED_AT,
@@ -68,11 +62,16 @@ export function Dashboard() {
     thresholds,
     refreshLiveProviders,
   } = useDatabase();
-  const prefs = useMemo(() => parseChartPrefs(settings), [settings]);
-  const visibleModules = useMemo(
-    () => visibleChartModules(prefs.order, prefs.show),
-    [prefs.order, prefs.show],
+  const poolIds = useMemo(() => pools.map((pool) => pool.id), [pools]);
+  const { layout, reorder, setSize, hide, show } = useWidgetLayout(
+    settings,
+    poolIds,
+    setSetting,
+    "dashboard",
   );
+  const shown = useMemo(() => visibleTiles(layout), [layout]);
+  const hidden = useMemo(() => hiddenTiles(layout), [layout]);
+  const [editingLayout, setEditingLayout] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
   const [editing, setEditing] = useState<Pool | null>(null);
@@ -100,19 +99,6 @@ export function Dashboard() {
     if (editing) updatePool(editing.id, draft);
     else createPool(draft);
     setEditing(null);
-  }
-
-  function toggleModule(id: ChartModuleId, show: boolean) {
-    const key = {
-      advisor: SETTING_CHART_SHOW_ADVISOR,
-      heatmap: SETTING_CHART_SHOW_HEATMAP,
-      trend: SETTING_CHART_SHOW_TREND,
-    }[id];
-    setSetting(key, show ? "true" : "false");
-  }
-
-  function reorderModules(fromId: ChartModuleId, toId: ChartModuleId) {
-    setSetting(SETTING_CHART_MODULE_ORDER, JSON.stringify(reorderChartModules(prefs.order, fromId, toId)));
   }
 
   function syncMetaFor(pool: Pool, poolRecords: UsageRecord[]): PoolSyncMeta {
@@ -149,6 +135,14 @@ export function Dashboard() {
     }
   }
 
+  function tileLabel(tile: LayoutTile): string {
+    if (tile.type === "pool") {
+      const pool = pools.find((item) => item.id === tile.poolId);
+      return pool ? displayPoolName(pool, t) : tile.poolId ?? tile.id;
+    }
+    return t(`charts.module.${tile.type}`);
+  }
+
   if (!ready) {
     return <p className="text-sm text-muted-foreground">{error ?? t("common.loading")}</p>;
   }
@@ -165,7 +159,14 @@ export function Dashboard() {
             {syncFlash ? ` — ${syncFlash}` : ""}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={editingLayout ? "default" : "outline"}
+            onClick={() => setEditingLayout((current) => !current)}
+          >
+            {editingLayout ? <Check data-icon="inline-start" /> : <Pencil data-icon="inline-start" />}
+            {editingLayout ? t("layout.done") : t("layout.edit")}
+          </Button>
           <Button
             variant="outline"
             disabled={!ready || syncBusy || (!cursorConfigured && !grokConfigured)}
@@ -190,50 +191,35 @@ export function Dashboard() {
         </div>
       </div>
 
-      <ChartLayoutControls prefs={prefs} onToggle={toggleModule} onReorder={reorderModules} />
+      {editingLayout ? (
+        <p className="rounded-lg border border-dashed border-foreground/20 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          {t("layout.editHint")}
+        </p>
+      ) : null}
 
-      {visibleModules.map((id) => (
-        <ChartModuleFrame key={id} id={id} onReorder={reorderModules}>
-          {id === "advisor" ? (
-            <AdvisorPanel
-              pools={pools}
-              advices={advices}
-              tightest={tightest}
-              switchAdvice={switchAdvice}
-              warnPercent={thresholds.warn}
-              critPercent={thresholds.crit}
-            />
-          ) : (
-            <ChartsPanel pools={pools} records={records} modules={[id]} showHeading={false} />
-          )}
-        </ChartModuleFrame>
-      ))}
-
-      {pools.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("dashboard.empty")}</p>
+      {shown.length === 0 && !editingLayout ? (
+        <p className="text-sm text-muted-foreground">{t("layout.allHidden")}</p>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2">
-          {pools.map((pool) => (
-            <PoolCard
-              key={pool.id}
-              pool={pool}
-              records={records.filter((record) => record.pool_id === pool.id)}
-              advice={advices.find((item) => item.poolId === pool.id)}
-              warnPercent={thresholds.warn}
-              critPercent={thresholds.crit}
-              syncMeta={syncMetaFor(
-                pool,
-                records.filter((record) => record.pool_id === pool.id),
-              )}
-              onEdit={(next) => {
-                setEditing(next);
-                setFormOpen(true);
-              }}
-              onDelete={setPendingDelete}
-            />
+        <WidgetGrid columns={4} editing={editingLayout}>
+          {shown.map((tile) => (
+            <WidgetTile
+              key={tile.id}
+              tile={tile}
+              columns={4}
+              editing={editingLayout}
+              onReorder={reorder}
+              onSize={setSize}
+              onHide={hide}
+            >
+              {renderTile(tile)}
+            </WidgetTile>
           ))}
-        </div>
+        </WidgetGrid>
       )}
+
+      {editingLayout ? (
+        <AddCardsStrip tiles={hidden} labelFor={tileLabel} onRestore={show} />
+      ) : null}
 
       <PoolFormDialog
         open={formOpen}
@@ -266,4 +252,54 @@ export function Dashboard() {
       />
     </div>
   );
+
+  function renderTile(tile: LayoutTile) {
+    if (tile.type === "advisor") {
+      return (
+        <AdvisorPanel
+          pools={pools}
+          advices={advices}
+          tightest={tightest}
+          switchAdvice={switchAdvice}
+          warnPercent={thresholds.warn}
+          critPercent={thresholds.crit}
+          compact={tile.size === "sm"}
+        />
+      );
+    }
+    if (tile.type === "heatmap" || tile.type === "trend") {
+      return (
+        <ChartsPanel
+          pools={pools}
+          records={records}
+          modules={[tile.type]}
+          showHeading={false}
+          compact={tile.size === "sm"}
+          size={tile.size}
+        />
+      );
+    }
+    const pool = pools.find((item) => item.id === tile.poolId);
+    if (!pool) return null;
+    const poolRecords = records.filter((record) => record.pool_id === pool.id);
+    return (
+      <PoolCard
+        pool={pool}
+        records={poolRecords}
+        advice={advices.find((item) => item.poolId === pool.id)}
+        warnPercent={thresholds.warn}
+        critPercent={thresholds.crit}
+        syncMeta={syncMetaFor(pool, poolRecords)}
+        compact={tile.size === "sm"}
+        showActions={editingLayout}
+        showRecent={tile.size !== "sm"}
+        showAdvice={tile.size !== "sm"}
+        onEdit={(next) => {
+          setEditing(next);
+          setFormOpen(true);
+        }}
+        onDelete={setPendingDelete}
+      />
+    );
+  }
 }

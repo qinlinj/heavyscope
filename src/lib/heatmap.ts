@@ -8,6 +8,12 @@ import { toLocalDateKey } from "@/lib/charts";
  */
 export const HEATMAP_INTENSITY_METRIC = "record_count" as const;
 
+/** GitHub contribution greens. Mirrored as `--heat-0`…`--heat-4` in `src/index.css`. */
+export const HEATMAP_GITHUB_COLORS = {
+  light: ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"],
+  dark: ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"],
+} as const;
+
 export type HeatmapCell = {
   date: string;
   /** Daily usage-record count; also the tooltip total. */
