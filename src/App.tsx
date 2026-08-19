@@ -1,13 +1,27 @@
+import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ErrorState } from "@/components/ErrorState";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DatabaseProvider, useDatabase } from "@/hooks/useDatabase";
+import { desktopShellMode, isDesktopShell } from "@/lib/desktop";
 import { Dashboard } from "@/pages/Dashboard";
 import { History } from "@/pages/History";
 import { Settings } from "@/pages/Settings";
+import { TrayPage } from "@/pages/Tray";
 
 function AppRoutes() {
   const { error } = useDatabase();
+  const [accessory, setAccessory] = useState<boolean | null>(() =>
+    isDesktopShell() ? null : false,
+  );
+
+  useEffect(() => {
+    if (!isDesktopShell()) return;
+    void desktopShellMode().then((mode) => {
+      setAccessory(mode === "accessory");
+    });
+  }, []);
+
   if (error) {
     return (
       <div className="dark min-h-svh bg-background text-foreground">
@@ -18,15 +32,24 @@ function AppRoutes() {
     );
   }
 
+  if (accessory === null) {
+    return <div className="dark min-h-svh bg-background" />;
+  }
+
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<AppLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="history" element={<History />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
+        <Route path="/tray" element={<TrayPage />} />
+        {accessory ? (
+          <Route path="*" element={<TrayPage />} />
+        ) : (
+          <Route element={<AppLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="history" element={<History />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        )}
       </Routes>
     </BrowserRouter>
   );

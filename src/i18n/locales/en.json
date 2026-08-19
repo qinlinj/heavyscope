@@ -69,7 +69,7 @@
     "zh": "简体中文",
     "en": "English",
     "about": "About",
-    "aboutBody": "HeavyScope is a local multi-quota panel for SuperGrok Heavy and Cursor Ultra. The web app and the Tauri 2 desktop tray share this UI.",
+    "aboutBody": "HeavyScope is a local multi-quota panel for SuperGrok Heavy and Cursor Ultra. The web app and the Tauri 2 macOS menu-bar accessory share this UI.",
     "data": "Local data",
     "dataHint": "SQLite runs in the browser via sql.js and is persisted to localStorage.",
     "resetData": "Reset local database",
@@ -236,5 +236,13 @@
     "cursor": "Cursor",
     "grok": "Grok (coming soon)",
     "reserved": "Coming soon"
+  },
+  "tray": {
+    "subtitle": "Tightest pools this cycle",
+    "empty": "No pools yet. Add one in the web app.",
+    "lineOnPace": "{{pool}} is on pace at {{percent}}%.",
+    "lineOverspend": "{{pool}} is overspending at {{percent}}%.",
+    "lineWaste": "{{pool}} has unused quota at {{percent}}%.",
+    "hideHint": "Click outside or the menu-bar icon to hide."
   }
 }

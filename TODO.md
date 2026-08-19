@@ -96,6 +96,10 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] History date-input i18n hint (browser locale picker unchanged)
 - [ ] Live Cursor / Grok APIs (out of scope; snapshot import + reserved adapter only)
 - [ ] Signed macOS menu-bar binary / codesign (needs a Mac and certificates)
+- [ ] Verify Accessory on a real Mac: no Dock icon, `LSUIElement`, template status item
+- [ ] Verify the 380×520 panel anchors under the status item (not screen center) and hides on click-outside / deactivate
+- [ ] Confirm `/tray` shows the tightest 1–2 pools + advisor one-liner (en / zh-CN)
+- [ ] Measure release `.app` / `.dmg` size on a Mac (`du -sh`; target < 50MB, ideally 20–30MB) — steps in docs/MACOS.md
 - [ ] Windows installer
 - [ ] GitHub Release asset upload (MCP has no create-release tool)
 - [x] React render-error boundary beyond DB open failures (0.7.2)
