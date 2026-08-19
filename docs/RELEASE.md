@@ -2,7 +2,15 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
-## Unreleased (0.7.6)
+## v0.8.0
+
+- Live Cursor and Grok usage sync. Users paste their own `WorkosCursorSessionToken` and/or grok.com session/bearer once. Tokens stay in the local settings table, never in usage notes or backup JSON.
+- Cursor maps unofficial `GET /api/usage-summary` Auto/Other percent pools. Grok maps SuperGrok Heavy `credit_usage_percent` from GetGrokCreditsConfig. Grok Bot is not invented when the proto has no Bot/Agents segment.
+- CORS: Vite `/proxy/cursor` + `/proxy/grok` for `pnpm dev`; Tauri `@tauri-apps/plugin-http` for the desktop shell. Production web pages show a clear error.
+- Optional macOS-only read of Cursor `state.vscdb`. Linux CI compiles a stub. See docs/MACOS.md.
+- Version 0.8.0. Snapshot import, manual CRUD, sql.js Vite include, and fallbackLng stay.
+
+## Unreleased (0.7.6 leftover)
 
 - Settings → Local data: Paste JSON fills the import textarea from the clipboard (`navigator.clipboard.readText`). Success and failure flash in zh-CN / en. A pending flash shows immediately; `readText` is raced against a 3s timeout (timeout is treated as failure). Does not auto-apply.
 - Settings → Local data: Copy JSON writes the same backup payload to the clipboard (`navigator.clipboard.writeText`). Success and failure flash in zh-CN / en. Version stays 0.7.6.
@@ -44,8 +52,9 @@ GitHub Releases notes. Published as a file because the GitHub MCP server has no 
 ## Known gaps
 
 - No signed macOS binary in this release (needs a Mac and codesign).
-- Cursor adapter is snapshot import only. There is no live Cursor API.
-- Grok adapter remains reserved.
+- Live connectors use unofficial dashboard endpoints that may change.
+- Grok Bot still needs a confirmed product-breakdown field; calibrate manually when unmarked.
+- Cursor adapter snapshot import remains as fallback.
 - No Windows installer.
 
 ## Verify

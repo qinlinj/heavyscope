@@ -1,3 +1,5 @@
+mod cursor_token;
+
 use std::sync::Mutex;
 use std::time::Instant;
 
@@ -235,12 +237,17 @@ fn load_tray_icon(app: &tauri::App) -> tauri::image::Image<'_> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_http::init())
         .manage(TrayState {
             #[cfg(target_os = "macos")]
             last_rect: Mutex::new(None),
             hidden_at: Mutex::new(None),
         })
-        .invoke_handler(tauri::generate_handler![set_tray_summary, shell_mode])
+        .invoke_handler(tauri::generate_handler![
+            set_tray_summary,
+            shell_mode,
+            cursor_token::read_cursor_session_token
+        ])
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { applyAdapterResult, resolvePoolId, type ApplyDeps } from "@/adapters/apply";
+import {
+  applyAbsoluteUsage,
+  applyAdapterResult,
+  resolvePoolId,
+  type ApplyAbsoluteDeps,
+  type ApplyDeps,
+} from "@/adapters/apply";
 import { cursorAdapter, parseCursorInput } from "@/adapters/cursor";
 import { adapterSignature, hashSignature } from "@/adapters/hash";
 import type { AdapterResult } from "@/adapters/types";
@@ -125,6 +131,84 @@ describe("applyAdapterResult", () => {
     const unmatched = applyAdapterResult(snapshot(30, "unknown_pool"), deps);
     expect(unmatched.unmatched).toEqual(["unknown_pool"]);
     expect(unmatched.added).toBe(0);
+    expect(usages).toEqual([]);
+  });
+});
+
+describe("applyAbsoluteUsage", () => {
+  function absoluteDeps(initial: Pool[]) {
+    const pools = initial.map((item) => ({ ...item }));
+    const usages: Array<{ poolId: string; amount: number; note: string | null; recordedAt?: string }> =
+      [];
+    const deps: ApplyAbsoluteDeps = {
+      listPools: () => pools,
+      getPool: (id) => pools.find((item) => item.id === id) ?? null,
+      updatePoolFields: (id, patch) => {
+        const target = pools.find((item) => item.id === id);
+        if (!target) return;
+        if (patch.quota_used != null) target.quota_used = patch.quota_used;
+        if (patch.quota_total != null) target.quota_total = patch.quota_total;
+        if (patch.reset_at !== undefined) target.reset_at = patch.reset_at;
+        if (patch.reset_cycle) target.reset_cycle = patch.reset_cycle;
+        if (patch.unit) target.unit = patch.unit;
+      },
+      insertUsageRecord: (poolId, amount, note, recordedAt) => {
+        usages.push({ poolId, amount, note, recordedAt });
+      },
+    };
+    return { pools, usages, deps };
+  }
+
+  it("sets absolute used/total/reset_at and records only when used increases", () => {
+    const { deps, pools, usages } = absoluteDeps([
+      pool({
+        id: "preset-cursor-models",
+        name: "Cursor Models",
+        quota_used: 12,
+        quota_total: 500,
+        reset_at: null,
+      }),
+    ]);
+    const first = applyAbsoluteUsage(
+      [
+        {
+          poolHint: "cursor_models",
+          quotaUsed: 42.5,
+          quotaTotal: 100,
+          resetAt: "2026-08-19T00:00:00.000Z",
+          resetCycle: "monthly",
+          unit: "%",
+          note: "Cursor live sync",
+          recordedAt: "2026-08-19T10:00:00.000Z",
+        },
+      ],
+      deps,
+    );
+    expect(first.added).toBe(1);
+    expect(pools[0]?.quota_used).toBe(42.5);
+    expect(pools[0]?.quota_total).toBe(100);
+    expect(pools[0]?.reset_at).toBe("2026-08-19T00:00:00.000Z");
+    expect(usages[0]?.amount).toBe(30.5);
+
+    const again = applyAbsoluteUsage(
+      [{ poolHint: "cursor_models", quotaUsed: 42.5, quotaTotal: 100 }],
+      deps,
+    );
+    expect(again.added).toBe(0);
+    expect(usages).toHaveLength(1);
+  });
+
+  it("writes the lower used number after a cycle reset without a usage record", () => {
+    const { deps, pools, usages } = absoluteDeps([
+      pool({ id: "preset-cursor-models", name: "Cursor Models", quota_used: 88, quota_total: 100 }),
+    ]);
+    const report = applyAbsoluteUsage(
+      [{ poolHint: "cursor_models", quotaUsed: 4, quotaTotal: 100 }],
+      deps,
+    );
+    expect(pools[0]?.quota_used).toBe(4);
+    expect(pools[0]?.quota_total).toBe(100);
+    expect(report.added).toBe(0);
     expect(usages).toEqual([]);
   });
 });

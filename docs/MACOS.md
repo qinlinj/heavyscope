@@ -4,6 +4,8 @@ HeavyScope's Tauri 2 desktop shell is a **menu-bar extra** on macOS (`NSApplicat
 
 The web app is unchanged. `src-tauri/Info.plist` already sets `LSUIElement`. Rust adds `ActivationPolicy::Accessory` and positions a compact panel under the status item on top of that plist — it does not replace it. Linux/Windows keep the 980×720 centered tray window (`tauri.conf.json`) and still compile (`cfg(target_os = "macos")` in `src-tauri/src/lib.rs`, plus `src-tauri/tauri.macos.conf.json`).
 
+Linux CI compiles a stub for the optional Cursor `state.vscdb` helper and does not read anyone's Cursor database.
+
 ## Build on a Mac
 
 Requires Node.js 22, the package manager pinned in `package.json`, and a recent stable Rust toolchain that can target Darwin (current Tauri 2 crates need roughly Rust 1.85+).
@@ -49,6 +51,22 @@ The menu-bar glyph is the monochrome template `src-tauri/icons/tray-template.png
 
 Preview the compact route in a browser (no native chrome): `pnpm dev` then open `/tray`.
 
+## Optional Cursor `state.vscdb` token read
+
+The desktop command `read_cursor_session_token` is **macOS-only** and **read-only**. It never writes Cursor's database.
+
+Path:
+
+`~/Library/Application Support/Cursor/User/globalStorage/state.vscdb`
+
+Key: `cursorAuth/accessToken` in `ItemTable`.
+
+The JWT `sub` claim plus the token become `WorkosCursorSessionToken` as `sub::jwt`. Already-formed `user_…::eyJ…` and `user_…%3A%3AeyJ…` values are accepted as-is.
+
+On a Mac desktop build, Settings → Data sources → Cursor live connect can use **Read from Cursor app (Mac)**. macOS may require Full Disk Access if another app's Application Support is blocked.
+
+If the helper is missing or fails, paste `WorkosCursorSessionToken` from cursor.com cookies instead. Linux and Windows builds return a clear error and still compile.
+
 ## Codesign
 
 This repository does not include signing certificates or secrets.
@@ -73,10 +91,10 @@ Target: **under 50 MB**, ideally **20–30 MB**, for the shipped `.app` (and a s
 
 This environment cannot emit a real Mac binary, so the numbers below are the **changes that shrink the release**, plus how to measure on a Mac.
 
-### What this PR changed for size
+### What this release changed for size
 
 - Release profile in `src-tauri/Cargo.toml`: `lto = true`, `opt-level = "s"`, `strip = true`, `codegen-units = 1`.
-- Tauri crate features stay at the minimum set the shell needs: `tray-icon`, `image-png` (embedded template glyph), `macos-private-api` (overlay / accessory window). No extra plugins for positioning.
+- Tauri crate features stay at the minimum set the shell needs: `tray-icon`, `image-png` (embedded template glyph), `macos-private-api` (overlay / accessory window). `tauri-plugin-http` is for live Cursor / Grok sync, not panel positioning.
 - Compact `/tray` route instead of shipping a second frontend. No vendored wasm/blobs beyond the existing sql.js web build. `src-tauri/target` is not committed.
 
 ### Measure on a Mac
