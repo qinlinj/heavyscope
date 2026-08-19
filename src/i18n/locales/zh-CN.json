@@ -15,6 +15,30 @@
     "recordUsage": "记录用量",
     "empty": "还没有额度池。先添加一个。"
   },
+  "layout": {
+    "edit": "编辑",
+    "done": "完成",
+    "editHint": "拖动手柄可调整顺序。可改卡片尺寸或隐藏；隐藏额度池卡片不会删除额度池。",
+    "dragHandle": "拖动以调整顺序",
+    "sizeGroup": "卡片尺寸",
+    "size": {
+      "sm": "1/4",
+      "md": "1/2",
+      "lg": "整行",
+      "xl": "加高"
+    },
+    "sizeAria": {
+      "sm": "小，四分之一宽",
+      "md": "中，二分之一宽",
+      "lg": "大，整行",
+      "xl": "加高整行"
+    },
+    "hideCard": "隐藏卡片",
+    "addCard": "添加",
+    "addCards": "添加卡片",
+    "addCardsHint": "隐藏的卡片会保留尺寸和位置。点这里即可放回画布。",
+    "allHidden": "所有卡片都已隐藏。打开编辑即可恢复模块。"
+  },
   "live": {
     "cursorTitle": "Cursor 实时连接",
     "cursorHint": "登录 cursor.com 后，从 Cookie 复制 WorkosCursorSessionToken。只保存在本地设置表，不会写入日志。",
@@ -146,7 +170,7 @@
     "critPercent": "危急百分比",
     "thresholdsInvalid": "警告值须 ≥ 1，且严格小于危急值；危急值不能超过 100。",
     "pools": "额度池管理",
-    "poolsHint": "在此添加、编辑或删除额度池。仪表盘也保留同样的操作。",
+    "poolsHint": "在此添加、编辑或删除额度池。仪表盘编辑模式可以隐藏额度池卡片，但不会删除额度池。",
     "noPools": "还没有额度池。可在此添加，或回到仪表盘添加。",
     "dataSources": "数据源",
     "dataSourcesHint": "连接 Cursor 与 Grok 以刷新真实剩余额度，或导入快照。连接失败时仍以手动记录为准。",

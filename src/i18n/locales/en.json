@@ -15,6 +15,30 @@
     "recordUsage": "Record usage",
     "empty": "No pools yet. Add one to get started."
   },
+  "layout": {
+    "edit": "Edit",
+    "done": "Done",
+    "editHint": "Drag the handle to reorder. Resize or hide a card — hiding a pool widget does not delete the pool.",
+    "dragHandle": "Drag to reorder",
+    "sizeGroup": "Card size",
+    "size": {
+      "sm": "1/4",
+      "md": "1/2",
+      "lg": "Full",
+      "xl": "Tall"
+    },
+    "sizeAria": {
+      "sm": "Small, one quarter width",
+      "md": "Medium, half width",
+      "lg": "Large, full width",
+      "xl": "Extra tall, full width"
+    },
+    "hideCard": "Hide card",
+    "addCard": "Add",
+    "addCards": "Add cards",
+    "addCardsHint": "Hidden cards keep their size and position. Add one back to the canvas.",
+    "allHidden": "Every card is hidden. Turn on Edit to restore modules."
+  },
   "live": {
     "cursorTitle": "Cursor live connect",
     "cursorHint": "Paste WorkosCursorSessionToken from cursor.com cookies after you log in. Stored only in the local settings table. Never logged.",
@@ -146,7 +170,7 @@
     "critPercent": "Critical percent",
     "thresholdsInvalid": "Warning must be at least 1 and strictly less than critical, which cannot exceed 100.",
     "pools": "Pool management",
-    "poolsHint": "Add, edit, or delete quota pools. The dashboard has the same actions.",
+    "poolsHint": "Add, edit, or delete quota pools. Dashboard edit mode can hide a pool widget without deleting the pool.",
     "noPools": "No pools yet. Add one here or from the dashboard.",
     "dataSources": "Data sources",
     "dataSourcesHint": "Connect Cursor and Grok for live remaining quota, or import a snapshot. Manual entry stays the fallback when a connector fails.",

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { UsageRecord } from "@/db/schema";
-import { HEATMAP_INTENSITY_METRIC, heatmapGrid, heatmapLevel } from "@/lib/heatmap";
+import { HEATMAP_GITHUB_COLORS, HEATMAP_INTENSITY_METRIC, heatmapGrid, heatmapLevel } from "@/lib/heatmap";
 
 function record(poolId: string, amount: number, recordedAt: Date): UsageRecord {
   const iso = recordedAt.toISOString();
@@ -53,6 +53,13 @@ describe("heatmapGrid", () => {
     expect(aug17).toMatchObject({ count: 1, total: 1, weekday: 1 });
     expect(grid.maxCount).toBe(2);
     expect(grid.cells.some((cell) => cell.date === "2026-04-01")).toBe(false);
+  });
+});
+
+describe("HEATMAP_GITHUB_COLORS", () => {
+  it("matches GitHub contribution greens for light and dark", () => {
+    expect(HEATMAP_GITHUB_COLORS.light).toEqual(["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"]);
+    expect(HEATMAP_GITHUB_COLORS.dark).toEqual(["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"]);
   });
 });
 

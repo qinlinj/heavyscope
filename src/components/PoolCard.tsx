@@ -39,8 +39,12 @@ type Props = {
   warnPercent?: number;
   critPercent?: number;
   syncMeta?: PoolSyncMeta;
-  onEdit: (pool: Pool) => void;
-  onDelete: (pool: Pool) => void;
+  compact?: boolean;
+  showActions?: boolean;
+  showRecent?: boolean;
+  showAdvice?: boolean;
+  onEdit?: (pool: Pool) => void;
+  onDelete?: (pool: Pool) => void;
 };
 
 export function PoolCard({
@@ -50,6 +54,10 @@ export function PoolCard({
   warnPercent,
   critPercent,
   syncMeta,
+  compact = false,
+  showActions = false,
+  showRecent = true,
+  showAdvice = true,
   onEdit,
   onDelete,
 }: Props) {
@@ -58,14 +66,45 @@ export function PoolCard({
   const tone = usageTone(percent, warnPercent, critPercent);
   const left = remaining(pool);
 
-  return (
-    <Card size="sm" className="bg-card/90 backdrop-blur">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 pr-16">
-          <span
-            className="size-2.5 shrink-0 rounded-full"
-            style={{ backgroundColor: pool.color }}
+  if (compact) {
+    return (
+      <Card size="sm" className="h-full bg-card/90 backdrop-blur">
+        <CardContent className="space-y-1.5 py-1">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: pool.color }} />
+              <span className="truncate text-sm font-medium">{displayPoolName(pool, t)}</span>
+            </div>
+            <span
+              className={cn(
+                "shrink-0 text-sm font-semibold tabular-nums",
+                tone === "ok" && "text-emerald-600 dark:text-emerald-400",
+                tone === "warn" && "text-amber-600 dark:text-amber-400",
+                tone === "crit" && "text-red-600 dark:text-red-400",
+              )}
+            >
+              {percent.toFixed(0)}%
+            </span>
+          </div>
+          <Progress
+            value={percent}
+            className={cn(
+              "h-1.5",
+              tone === "ok" && "[&_[data-slot=progress-indicator]]:bg-emerald-500",
+              tone === "warn" && "[&_[data-slot=progress-indicator]]:bg-amber-500",
+              tone === "crit" && "[&_[data-slot=progress-indicator]]:bg-red-500",
+            )}
           />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card size="sm" className="h-full bg-card/90 backdrop-blur">
+      <CardHeader>
+        <CardTitle className={cn("flex items-center gap-2", showActions && "pr-16")}>
+          <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: pool.color }} />
           {displayPoolName(pool, t)}
         </CardTitle>
         <CardDescription>
@@ -79,16 +118,18 @@ export function PoolCard({
             </>
           )}
         </CardDescription>
-        <CardAction className="flex gap-1">
-          <Button variant="ghost" size="icon-sm" onClick={() => onEdit(pool)}>
-            <Pencil />
-            <span className="sr-only">{t("pool.edit")}</span>
-          </Button>
-          <Button variant="ghost" size="icon-sm" onClick={() => onDelete(pool)}>
-            <Trash2 />
-            <span className="sr-only">{t("pool.delete")}</span>
-          </Button>
-        </CardAction>
+        {showActions && onEdit && onDelete ? (
+          <CardAction className="flex gap-1">
+            <Button variant="ghost" size="icon-sm" onClick={() => onEdit(pool)}>
+              <Pencil />
+              <span className="sr-only">{t("pool.edit")}</span>
+            </Button>
+            <Button variant="ghost" size="icon-sm" onClick={() => onDelete(pool)}>
+              <Trash2 />
+              <span className="sr-only">{t("pool.delete")}</span>
+            </Button>
+          </CardAction>
+        ) : null}
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-end justify-between gap-3">
@@ -101,9 +142,9 @@ export function PoolCard({
           <p
             className={cn(
               "text-xl font-semibold tabular-nums",
-              tone === "ok" && "text-emerald-400",
-              tone === "warn" && "text-amber-400",
-              tone === "crit" && "text-red-400",
+              tone === "ok" && "text-emerald-600 dark:text-emerald-400",
+              tone === "warn" && "text-amber-600 dark:text-amber-400",
+              tone === "crit" && "text-red-600 dark:text-red-400",
             )}
           >
             {percent.toFixed(0)}%
@@ -121,10 +162,7 @@ export function PoolCard({
         <div className="grid grid-cols-3 gap-2 text-xs">
           <Stat label={t("pool.remaining")} value={formatAmount(left, pool.unit)} />
           <Stat label={t("pool.total")} value={formatAmount(pool.quota_total, pool.unit)} />
-          <Stat
-            label={t("pool.reset")}
-            value={formatCountdown(pool.reset_at, i18n.language)}
-          />
+          <Stat label={t("pool.reset")} value={formatCountdown(pool.reset_at, i18n.language)} />
         </div>
         {syncMeta && (
           <p className="text-xs text-muted-foreground">
@@ -136,7 +174,7 @@ export function PoolCard({
             {syncMeta.botUnavailable ? ` — ${t("live.grokBotUnavailable")}` : ""}
           </p>
         )}
-        {advice && (
+        {showAdvice && advice && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/40 px-2.5 py-2 text-xs">
             <span className="text-muted-foreground">
               {t("advisor.recommendedDaily")}:{" "}
@@ -153,8 +191,8 @@ export function PoolCard({
             <span
               className={cn(
                 "rounded-full px-1.5 py-0.5 font-medium",
-                riskTone(advice.risk) === "ok" && "bg-emerald-400/15 text-emerald-300",
-                riskTone(advice.risk) === "warn" && "bg-amber-400/15 text-amber-300",
+                riskTone(advice.risk) === "ok" && "bg-emerald-400/15 text-emerald-700 dark:text-emerald-300",
+                riskTone(advice.risk) === "warn" && "bg-amber-400/15 text-amber-700 dark:text-amber-300",
                 riskTone(advice.risk) === "crit" && "bg-red-400/15 text-red-300",
               )}
             >
@@ -167,7 +205,7 @@ export function PoolCard({
           </div>
         )}
       </CardContent>
-      {records.length > 0 && (
+      {showRecent && records.length > 0 && (
         <CardFooter className="flex-col items-stretch gap-2">
           <p className="text-xs text-muted-foreground">{t("pool.recent")}</p>
           <ul className="space-y-1">

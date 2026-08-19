@@ -4,18 +4,19 @@ Local-first multi-quota monitoring panel for SuperGrok Heavy and Cursor Ultra.
 
 HeavyScope helps you see how fast you are burning weekly or monthly quotas, when a pool will reset, and whether you should switch work to a pool with more headroom. The same React UI runs as a web app and inside a Tauri 2 desktop shell. Quota data stays on your machine. There is no HeavyScope cloud account.
 
-Current product version is **0.8.0**.
+Current product version is **0.9.0**.
 
 ## Features
 
 - **Dashboard + burn rate advisor** — four preset pools plus custom services, progress bars, remaining quota, reset countdown, and usage-tone colors. The advisor shows recommended daily pace, today used, waste / overspend risk, and cross-pool switch suggestions.
-- **Charts / history** — Daily Activity heatmap fills the card width (record count, not mixed-unit amounts), Day / Week / Month stacked trend, and per-pool used% bars. Advisor / heatmap / trend are independent full-width modules; show, hide, or drag to reorder. History filters usage records by pool, date range, and source. Date pickers follow the browser locale.
+- **Widget grid** — advisor, heatmap, trend, and every pool are independent cards on a 4-column CSS grid (`sm` = 1/4, `md` = 1/2, `lg` = full, optional `xl` = full + tall). An Edit / Done control reveals drag-to-reorder, size chips, and hide/restore. Normal mode stays clean (no grips or checkboxes). Layout is saved as `dashboard_layout` in the local settings table; old `chart_show_*` / `chart_module_order` prefs migrate automatically.
+- **Charts / history** — Daily Activity heatmap uses GitHub contribution greens (light and dark), fills the card width (record count, not mixed-unit amounts), plus a Day / Week / Month stacked trend and per-pool used% bars. History filters usage records by pool, date range, and source. Date pickers follow the browser locale.
 - **Settings** — pool management (add / edit / delete), alert thresholds (warn / crit), language (EN / 中文), theme (dark / light / system; default dark), JSON backup export / copy / import, and optional demo usage seed.
 - **Live Cursor + Grok sync** — connect your own accounts once in Settings → Data sources. HeavyScope refreshes remaining quota on a timer (default 5 minutes). Snapshot import and manual entry stay as fallbacks.
 - **Cursor snapshot import** — paste a Cursor usage snapshot (JSON or CSV) in Settings → Data sources. Optional auto-sync re-applies the last import when live Cursor is not connected.
 - **JSON backup export / copy / import** — Settings → Local data downloads `heavyscope-backup.json`, copies the same payload to the clipboard, or accepts a file / paste (table dump, not a wasm / binary file). Merge is the default; replace-all is optional.
 - **Demo seed** — load sample usage for the four preset pools (last 10 days, English notes) so charts and the advisor look alive. First load applies immediately; a later load asks for confirm because `demo_seeded=1`.
-- **Tauri 2 tray** — system tray / macOS menu-bar shell around the same web UI and sql.js database. On macOS the shell is an **Accessory** (no Dock icon); the popup anchors under the status item and loads a compact `/tray` view. Linux/Windows keep a normal tray window. Close hides to tray. Use Quit to exit. **Verify the menu-bar accessory on a real Mac** — see [docs/MACOS.md](docs/MACOS.md).
+- **Tauri 2 tray** — system tray / macOS menu-bar shell around the same web UI and sql.js database. On macOS the shell is an **Accessory** (no Dock icon); the popup anchors under the status item and loads a compact `/tray` view (2-column widget grid, own `tray_layout`, Edit / Done). Linux/Windows keep a normal tray window. Close hides to tray. Use Quit to exit. **Verify the menu-bar accessory on a real Mac** — see [docs/MACOS.md](docs/MACOS.md).
 - **In-app confirm dialogs** — delete pool, reset local database, demo re-apply, import, and import replace-all use in-app AlertDialogs with zh-CN / en titles and actions. Native `window.confirm` is not used.
 - **Cycle rollover** — when a pool `reset_at` is past, quota used resets to 0, the next weekly/monthly date is set, and a Cycle reset usage note is stored. History is not deleted.
 

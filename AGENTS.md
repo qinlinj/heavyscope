@@ -48,6 +48,7 @@ https://github.com/qinlinj/heavyscope
 - 0.7.5 polish — demo usage seed for charts (done)
 - 0.7.6 polish — in-app AlertDialogs instead of window.confirm (done)
 - 0.8.0 — live Cursor + Grok usage sync (done)
+- 0.9.0 — widget dashboard + tray edit mode (done)
 
 ## Commits
 

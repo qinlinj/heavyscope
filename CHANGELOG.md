@@ -8,14 +8,14 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Added
 
-- Theme preference `theme` = `dark` | `light` | `system` (default **dark**). Applied as `class="dark"` on `document.documentElement`. Header and Settings expose a three-way control. Persisted in the settings table and `localStorage` (`heavyscope.theme`). Light uses a white/light surface, not an invert of the dark palette.
-- HTML5 drag-and-drop reorder for advisor / heatmap / trend. Dropping a module onto another inserts it before the target. `reorderChartModules` plus unit tests. Hidden modules stay in `chart_module_order` so they restore position.
+- Widget-style dashboard: advisor, heatmap, trend, and every pool are independent cards on a 4-column CSS grid. Tile sizes: `sm` = 1 column (~1/4), `md` = 2 (~1/2, default for pools), `lg` = 4 (full width, default for advisor / heatmap / trend), optional `xl` = full width + extra height. Session-only Edit / Done mode shows drag handles, size chips, and hide. Normal mode has no grip, checkboxes, or delete chrome (hover lift only). Hidden tiles restore from an Add cards strip. Layout JSON is `dashboard_layout` in the settings table. `src/lib/dashboardLayout.ts` parses, serializes, migrates old `chart_show_*` / `chart_module_order` prefs, reorders (insert before target), resizes, hides, and ensures / prunes pool tiles.
+- Compact `/tray` uses the same system on a 2-column grid (`sm` = 1 col, `md`/`lg`/`xl` = full tray width) with a separate `tray_layout`. Default: one-line advisor, small heatmap, first two pools; trend hidden so the 380×520 panel stays dense.
 
 ### Changed
 
-- Daily Activity heatmap is `w-full` and uses `grid-template-columns: repeat(weeks, minmax(0, 1fr))` so cells share the card width. Cells are `aspect-square` with `gap-px`. Month labels use the same column template. Weekday labels stay a narrow column. Still 17 weeks on large screens / 12 when narrow. Intensity remains daily record count.
-- Dashboard layout no longer merges consecutive heatmap + trend into one side-by-side ChartsPanel. Advisor, heatmap, and trend are three independent full-width modules in `prefs.order`.
-- Compact `/tray` panel is denser: Day / Week / Month totals on the tightest 1–2 pools, used% bars, one-line advisor, and a small heatmap. Still a menu-bar popup, not a 980px window.
+- Daily Activity heatmap uses GitHub contribution greens via `--heat-0`…`--heat-4` on `:root` and `.dark`. Cells keep `w-full` + `repeat(weeks, minmax(0, 1fr))` + `aspect-square`, with a 3px gap, 2px radius, and a faint inset outline. Intensity remains daily record count.
+- The always-visible ChartLayoutControls checkbox row is gone. Module visibility and order live in the widget layout.
+- Version 0.9.0.
 
 ### Fixed
 

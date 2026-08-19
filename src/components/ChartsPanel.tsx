@@ -29,6 +29,7 @@ import {
   scaleSeries,
   seriesHasUsage,
 } from "@/lib/charts";
+import type { TileSize } from "@/lib/dashboardLayout";
 import { displayPoolName } from "@/lib/poolName";
 
 type Props = {
@@ -36,6 +37,8 @@ type Props = {
   records: UsageRecord[];
   modules: ChartModuleId[];
   showHeading?: boolean;
+  compact?: boolean;
+  size?: TileSize;
 };
 
 const AXIS = { fill: "var(--muted-foreground)", fontSize: 11 };
@@ -55,11 +58,19 @@ function shortKey(value: string): string {
   return value.length > 7 ? value.slice(5) : value;
 }
 
-export function ChartsPanel({ pools, records, modules, showHeading = true }: Props) {
+export function ChartsPanel({
+  pools,
+  records,
+  modules,
+  showHeading = true,
+  compact = false,
+  size = "lg",
+}: Props) {
   const { t } = useTranslation();
   const [scale, setScale] = useState<ChartScale>("day");
   const showHeatmap = modules.includes("heatmap");
   const showTrend = modules.includes("trend");
+  const chartHeight = size === "xl" ? 320 : compact || size === "sm" ? 160 : 240;
 
   const series = useMemo(() => scaleSeries(records, scale, pools), [records, scale, pools]);
   const bars = useMemo(
@@ -67,11 +78,12 @@ export function ChartsPanel({ pools, records, modules, showHeading = true }: Pro
     [pools, t],
   );
   const showSeries = seriesHasUsage(series);
+  const showStackedChart = showTrend && size !== "sm";
 
   if (!showHeatmap && !showTrend) return null;
 
   return (
-    <section className="space-y-2.5">
+    <section className="flex h-full flex-col gap-2.5">
       {showHeading ? (
         <div>
           <h3 className="font-heading text-base font-semibold">{t("charts.title")}</h3>
@@ -82,7 +94,7 @@ export function ChartsPanel({ pools, records, modules, showHeading = true }: Pro
       <div className="grid gap-3">
         {showHeatmap && (
           <ChartCard title={t("charts.heatmap")} hint={t("charts.heatmapHint")}>
-            <ActivityHeatmap records={records} />
+            <ActivityHeatmap records={records} compact={compact || size === "sm"} />
           </ChartCard>
         )}
 
@@ -91,102 +103,103 @@ export function ChartsPanel({ pools, records, modules, showHeading = true }: Pro
             title={t("charts.trend")}
             hint={t(`charts.trendHint.${scale}`)}
             action={
-              <div className="flex flex-wrap gap-1">
-                {SCALES.map((item) => (
-                  <Button
-                    key={item}
-                    type="button"
-                    size="xs"
-                    variant={scale === item ? "default" : "outline"}
-                    onClick={() => setScale(item)}
-                  >
-                    {t(`charts.scale.${item}`)}
-                  </Button>
-                ))}
-              </div>
+              showStackedChart ? (
+                <div className="flex flex-wrap gap-1">
+                  {SCALES.map((item) => (
+                    <Button
+                      key={item}
+                      type="button"
+                      size="xs"
+                      variant={scale === item ? "default" : "outline"}
+                      onClick={() => setScale(item)}
+                    >
+                      {t(`charts.scale.${item}`)}
+                    </Button>
+                  ))}
+                </div>
+              ) : undefined
             }
           >
-            {showSeries ? (
-              <ResponsiveContainer width="100%" height={240}>
-                {scale === "day" ? (
-                  <AreaChart data={series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid stroke={GRID} strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="key" tick={AXIS} tickFormatter={shortKey} axisLine={false} tickLine={false} />
-                    <YAxis tick={AXIS} axisLine={false} tickLine={false} width={36} />
-                    <Tooltip
-                      contentStyle={TOOLTIP_STYLE}
-                      labelStyle={TOOLTIP_LABEL}
-                      cursor={{ stroke: GRID }}
-                    />
-                    <Legend />
-                    {pools.map((pool) => (
-                      <Area
-                        key={pool.id}
-                        type="monotone"
-                        dataKey={pool.id}
-                        name={displayPoolName(pool, t)}
-                        stackId="usage"
-                        stroke={pool.color}
-                        fill={pool.color}
-                        fillOpacity={0.35}
+            {showStackedChart ? (
+              showSeries ? (
+                <ResponsiveContainer width="100%" height={chartHeight}>
+                  {scale === "day" ? (
+                    <AreaChart data={series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid stroke={GRID} strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="key" tick={AXIS} tickFormatter={shortKey} axisLine={false} tickLine={false} />
+                      <YAxis tick={AXIS} axisLine={false} tickLine={false} width={36} />
+                      <Tooltip
+                        contentStyle={TOOLTIP_STYLE}
+                        labelStyle={TOOLTIP_LABEL}
+                        cursor={{ stroke: GRID }}
                       />
-                    ))}
-                  </AreaChart>
-                ) : (
-                  <BarChart data={series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid stroke={GRID} strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="key" tick={AXIS} tickFormatter={shortKey} axisLine={false} tickLine={false} />
-                    <YAxis tick={AXIS} axisLine={false} tickLine={false} width={36} />
-                    <Tooltip
-                      contentStyle={TOOLTIP_STYLE}
-                      labelStyle={TOOLTIP_LABEL}
-                      cursor={{ fill: "color-mix(in oklch, var(--foreground) 8%, transparent)" }}
-                    />
-                    <Legend />
-                    {pools.map((pool) => (
-                      <Bar
-                        key={pool.id}
-                        dataKey={pool.id}
-                        name={displayPoolName(pool, t)}
-                        stackId="usage"
-                        fill={pool.color}
-                        radius={[3, 3, 0, 0]}
+                      <Legend />
+                      {pools.map((pool) => (
+                        <Area
+                          key={pool.id}
+                          type="monotone"
+                          dataKey={pool.id}
+                          name={displayPoolName(pool, t)}
+                          stackId="usage"
+                          stroke={pool.color}
+                          fill={pool.color}
+                          fillOpacity={0.35}
+                        />
+                      ))}
+                    </AreaChart>
+                  ) : (
+                    <BarChart data={series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid stroke={GRID} strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="key" tick={AXIS} tickFormatter={shortKey} axisLine={false} tickLine={false} />
+                      <YAxis tick={AXIS} axisLine={false} tickLine={false} width={36} />
+                      <Tooltip
+                        contentStyle={TOOLTIP_STYLE}
+                        labelStyle={TOOLTIP_LABEL}
+                        cursor={{ fill: "color-mix(in oklch, var(--foreground) 8%, transparent)" }}
                       />
-                    ))}
-                  </BarChart>
-                )}
-              </ResponsiveContainer>
-            ) : (
-              <EmptyChart label={t("charts.empty")} />
+                      <Legend />
+                      {pools.map((pool) => (
+                        <Bar
+                          key={pool.id}
+                          dataKey={pool.id}
+                          name={displayPoolName(pool, t)}
+                          stackId="usage"
+                          fill={pool.color}
+                          radius={[3, 3, 0, 0]}
+                        />
+                      ))}
+                    </BarChart>
+                  )}
+                </ResponsiveContainer>
+              ) : (
+                <EmptyChart label={t("charts.empty")} height={chartHeight} />
+              )
+            ) : null}
+            {showTrend && bars.length > 0 && (
+              <ul className={showStackedChart ? "mt-3 space-y-2.5" : "space-y-2.5"}>
+                {bars.map((bar) => (
+                  <li key={bar.id} className="space-y-1">
+                    <div className="flex items-center justify-between gap-3 text-xs">
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: bar.color }} />
+                        <span className="truncate">{bar.name}</span>
+                        <span className="text-muted-foreground">{bar.unit}</span>
+                      </span>
+                      <span className="tabular-nums text-muted-foreground">{bar.percent.toFixed(0)}%</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${bar.percent}%`, backgroundColor: bar.color }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </ChartCard>
         )}
       </div>
-
-      {showTrend && bars.length > 0 && (
-        <ChartCard title={t("charts.usage")} hint={t("charts.usageHint")}>
-          <ul className="space-y-2.5">
-            {bars.map((bar) => (
-              <li key={bar.id} className="space-y-1">
-                <div className="flex items-center justify-between gap-3 text-xs">
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: bar.color }} />
-                    <span className="truncate">{bar.name}</span>
-                    <span className="text-muted-foreground">{bar.unit}</span>
-                  </span>
-                  <span className="tabular-nums text-muted-foreground">{bar.percent.toFixed(0)}%</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full"
-                    style={{ width: `${bar.percent}%`, backgroundColor: bar.color }}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </ChartCard>
-      )}
     </section>
   );
 }
@@ -205,8 +218,8 @@ function ChartCard({
   children: ReactNode;
 }) {
   return (
-    <Card className={`bg-card/90 ring-1 ring-foreground/10 backdrop-blur ${className ?? ""}`}>
-      <CardHeader className={action ? "gap-2 pr-9" : "pr-9"}>
+    <Card className={`h-full bg-card/90 ring-1 ring-foreground/10 backdrop-blur ${className ?? ""}`}>
+      <CardHeader className={action ? "gap-2" : undefined}>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{hint}</CardDescription>
         {action ? <div className="col-span-full">{action}</div> : null}
@@ -216,9 +229,9 @@ function ChartCard({
   );
 }
 
-function EmptyChart({ label }: { label: string }) {
+function EmptyChart({ label, height }: { label: string; height: number }) {
   return (
-    <div className="flex h-[240px] items-center justify-center text-sm text-muted-foreground">
+    <div className="flex items-center justify-center text-sm text-muted-foreground" style={{ height }}>
       {label}
     </div>
   );

@@ -2,6 +2,13 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.9.0
+
+- Widget dashboard: advisor, heatmap, trend, and every pool are independent cards. Edit / Done mode reorders, resizes (`sm` / `md` / `lg` / `xl`), and hides cards. Layout persists as `dashboard_layout`; old chart prefs migrate.
+- Compact `/tray` has a 2-column widget grid and its own `tray_layout`.
+- Daily Activity heatmap uses GitHub contribution greens for light and dark.
+- Version 0.9.0.
+
 ## v0.8.0
 
 - Live Cursor and Grok usage sync. Users paste their own `WorkosCursorSessionToken` and/or grok.com session/bearer once. Tokens stay in the local settings table, never in usage notes or backup JSON.

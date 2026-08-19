@@ -70,12 +70,22 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Dashboard heatmap + modular chart layout from main
 - [ ] Keep researching Grok Bot / Agents product breakdown if the proto grows a named segment
 
+## 0.9.0 — widget dashboard reshape
+
+- [x] 4-column widget grid with `sm` / `md` / `lg` / `xl` tiles for advisor, heatmap, trend, and every pool
+- [x] Session Edit / Done mode: drag reorder, resize, hide / restore (normal mode has no chrome)
+- [x] Persist `dashboard_layout` + `tray_layout`; migrate `chart_show_*` / `chart_module_order`
+- [x] GitHub contribution heatmap colors (light + dark CSS variables)
+- [x] Compact `/tray` 2-column widget grid with its own layout
+- [x] Version 0.9.0 (package.json + src-tauri)
+
 ## Chart polish leftover
 
 - [x] Heatmap fills available card width (CSS 1fr week columns, square cells, aligned month labels)
 - [x] Independent full-width advisor / heatmap / trend modules + HTML5 drag-and-drop reorder
 - [x] Theme: dark / light / system (`theme` setting + localStorage)
 - [x] Denser compact `/tray` (1–2 pools, Day/Week/Month, used% bars, one-line advisor, small heatmap)
+- [x] iPhone-widget card system with edit mode, resize, reorder, hide/restore (0.9.0)
 - [ ] Persist Day / Week / Month scale (currently component state only)
 - [ ] Optional heatmap filter by pool, and an amount-normalized intensity mode for single-unit views
 - [ ] Stacked trend Y-axis still sums raw amounts across mixed units; consider per-unit facets

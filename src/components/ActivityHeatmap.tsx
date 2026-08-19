@@ -11,14 +11,7 @@ type Props = {
   compact?: boolean;
 };
 
-const LEVEL_CLASS = [
-  "bg-muted",
-  "bg-emerald-200 dark:bg-emerald-900",
-  "bg-emerald-400 dark:bg-emerald-700",
-  "bg-emerald-600 dark:bg-emerald-500",
-  "bg-emerald-800 dark:bg-emerald-300",
-] as const;
-
+const HEAT_LEVELS = [0, 1, 2, 3, 4] as const;
 const WEEK_COLUMNS = (weeks: number) => `repeat(${weeks}, minmax(0, 1fr))`;
 
 export function ActivityHeatmap({ records, weeks, compact = false }: Props) {
@@ -39,7 +32,7 @@ export function ActivityHeatmap({ records, weeks, compact = false }: Props) {
         <div aria-hidden="true" />
         <div
           className={cn(
-            "mb-1 grid w-full gap-px text-[9px] leading-none text-muted-foreground",
+            "mb-1 grid w-full gap-[3px] text-[9px] leading-none text-muted-foreground",
             compact && "mb-0.5",
           )}
           style={{ gridTemplateColumns: weekTemplate }}
@@ -50,21 +43,18 @@ export function ActivityHeatmap({ records, weeks, compact = false }: Props) {
             </span>
           ))}
         </div>
-        <div className="grid h-full grid-rows-7 gap-px text-[9px] leading-none text-muted-foreground">
+        <div className="grid h-full grid-rows-7 gap-[3px] text-[9px] leading-none text-muted-foreground">
           {weekdays.map((label, weekday) => (
             <span
               key={label + weekday}
-              className={cn(
-                "flex w-3 items-center justify-end",
-                weekday % 2 === 0 && "invisible",
-              )}
+              className={cn("flex w-3 items-center justify-end", weekday % 2 === 0 && "invisible")}
             >
               {label}
             </span>
           ))}
         </div>
         <div
-          className="grid w-full grid-flow-col grid-rows-7 gap-px"
+          className="grid w-full grid-flow-col grid-rows-7 gap-[3px]"
           style={{ gridTemplateColumns: weekTemplate }}
         >
           {grid.cells.map((cell) => {
@@ -76,9 +66,12 @@ export function ActivityHeatmap({ records, weeks, compact = false }: Props) {
                 type="button"
                 className={cn(
                   "aspect-square w-full min-w-0 rounded-[2px]",
-                  LEVEL_CLASS[level],
                   cell.date === today && "ring-1 ring-foreground/50",
                 )}
+                style={{
+                  backgroundColor: `var(--heat-${level})`,
+                  boxShadow: "inset 0 0 0 1px var(--heat-outline)",
+                }}
                 title={label}
                 onMouseEnter={() => setTip({ date: cell.date, total: cell.total })}
                 onMouseLeave={() => setTip(null)}
@@ -102,8 +95,15 @@ export function ActivityHeatmap({ records, weeks, compact = false }: Props) {
         </span>
         <span className="flex shrink-0 items-center gap-1">
           <span>{t("charts.less")}</span>
-          {LEVEL_CLASS.map((className) => (
-            <span key={className} className={cn("size-2.5 rounded-[2px]", className)} />
+          {HEAT_LEVELS.map((level) => (
+            <span
+              key={level}
+              className="size-2.5 rounded-[2px]"
+              style={{
+                backgroundColor: `var(--heat-${level})`,
+                boxShadow: "inset 0 0 0 1px var(--heat-outline)",
+              }}
+            />
           ))}
           <span>{t("charts.more")}</span>
         </span>
