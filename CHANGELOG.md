@@ -8,12 +8,16 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Added
 
+- macOS Tauri 2 shell is a real menu-bar accessory: `ActivationPolicy::Accessory`, `LSUIElement`, template status-item icon, and a 380×520 undecorated panel anchored under the tray rectangle. Click-outside / deactivate hides it. Linux/Windows still compile as a normal tray window.
+- Compact `/tray` route (en + zh-CN) for the accessory panel: tightest 1–2 pools plus an advisor one-liner. Browser preview at `/tray`.
+- `docs/MACOS.md` — Mac build (`pnpm tauri build`), Accessory checklist, codesign note, and how to measure `.app` / `.dmg` size.
 - Settings → Local data: Paste JSON fills the import textarea from the clipboard via `navigator.clipboard.readText`. Success and failure flash in zh-CN / en. A pending flash shows immediately; `readText` is raced against a 3s timeout (timeout is treated as failure). Does not auto-apply; the user still clicks Apply backup.
 - Settings → Local data: Copy JSON writes the same backup payload to the clipboard via `navigator.clipboard.writeText`. Success and failure flash in zh-CN / en. Product version stays 0.7.6.
 - Product screenshots for the README: `docs/images/dashboard.png`, `docs/images/dashboard-zh.png`, `docs/images/settings-backup.png`, and `docs/images/confirm-delete.png`.
 
 ### Changed
 
+- `src-tauri` release profile now uses LTO, `opt-level = "s"`, and strip to keep the Mac bundle toward the < 50MB target. Product version stays 0.7.6.
 - Confirm dialogs: Radix AlertDialog already traps focus and cancels on Escape; Title/Description supply `aria-labelledby` / `aria-describedby` for Dashboard/Settings delete and reset. Destructive confirm action is `type="button"`.
 
 ### Removed

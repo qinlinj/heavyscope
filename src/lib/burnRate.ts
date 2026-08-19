@@ -161,16 +161,25 @@ export function crossPoolAdvice(advices: PoolAdvice[]): CrossPoolAdvice | null {
   return { fromPoolId: stressed.poolId, toPoolId: target.poolId };
 }
 
+function tightnessRank(item: PoolAdvice): number {
+  return item.risk === "overspend" ? 0 : item.risk === "waste" ? 2 : 1;
+}
+
+export function compareAdviceTightness(a: PoolAdvice, b: PoolAdvice): number {
+  const byRisk = tightnessRank(a) - tightnessRank(b);
+  if (byRisk !== 0) return byRisk;
+  if (b.usagePercent !== a.usagePercent) return b.usagePercent - a.usagePercent;
+  return a.todaySafeRemaining - b.todaySafeRemaining;
+}
+
 export function tightestAdvice(advices: PoolAdvice[]): PoolAdvice | null {
   if (advices.length === 0) return null;
-  return [...advices].sort((a, b) => {
-    const rank = (item: PoolAdvice) =>
-      item.risk === "overspend" ? 0 : item.risk === "waste" ? 2 : 1;
-    const byRisk = rank(a) - rank(b);
-    if (byRisk !== 0) return byRisk;
-    if (b.usagePercent !== a.usagePercent) return b.usagePercent - a.usagePercent;
-    return a.todaySafeRemaining - b.todaySafeRemaining;
-  })[0];
+  return [...advices].sort(compareAdviceTightness)[0];
+}
+
+/** Tightest pools first, capped at `limit` (menu-bar /tray uses 1–2). */
+export function tightestAdvices(advices: PoolAdvice[], limit = 2): PoolAdvice[] {
+  return [...advices].sort(compareAdviceTightness).slice(0, Math.max(0, limit));
 }
 
 export function riskTone(level: RiskLevel): "ok" | "warn" | "crit" {
