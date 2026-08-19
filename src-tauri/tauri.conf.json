@@ -22,7 +22,8 @@
         "minHeight": 520,
         "visible": true,
         "center": true,
-        "theme": "Dark"
+        "theme": "Dark",
+        "decorations": true
       }
     ],
     "security": {

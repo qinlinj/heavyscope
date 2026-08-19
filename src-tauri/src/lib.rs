@@ -159,6 +159,25 @@ fn clamp_to_monitor(
     (clamped_x, clamped_y)
 }
 
+/// Keep the existing LSUIElement plist, then force Accessory + compact panel
+/// so the Linux 980×720 `center: true` window config cannot leak onto macOS.
+#[cfg(target_os = "macos")]
+fn apply_macos_accessory_window(app: &tauri::App) -> tauri::Result<()> {
+    app.set_activation_policy(tauri::ActivationPolicy::Accessory)?;
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.hide();
+        let _ = window.set_decorations(false);
+        let _ = window.set_resizable(false);
+        let _ = window.set_skip_taskbar(true);
+        let _ = window.set_always_on_top(true);
+        let _ = window.set_shadow(true);
+        let _ = window.set_size(tauri::LogicalSize::new(380.0, 520.0));
+        let _ = window.set_min_size(Some(tauri::LogicalSize::new(380.0, 520.0)));
+        let _ = window.set_max_size(Some(tauri::LogicalSize::new(420.0, 640.0)));
+    }
+    Ok(())
+}
+
 /// Anchor the compact panel under the status item, not screen center.
 #[cfg(target_os = "macos")]
 fn position_panel_under_tray(window: &tauri::WebviewWindow, rect: Rect) {
@@ -233,7 +252,8 @@ pub fn run() {
 
             #[cfg(target_os = "macos")]
             {
-                app.set_activation_policy(tauri::ActivationPolicy::Accessory)?;
+                // Info.plist already ships LSUIElement; Accessory + geometry sit on top of that.
+                apply_macos_accessory_window(app)?;
             }
 
             let open = MenuItem::with_id(app, "open", "Open", true, None::<&str>)?;

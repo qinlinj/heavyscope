@@ -8,7 +8,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Added
 
-- macOS Tauri 2 shell is a real menu-bar accessory: `ActivationPolicy::Accessory`, `LSUIElement`, template status-item icon, and a 380×520 undecorated panel anchored under the tray rectangle. Click-outside / deactivate hides it. Linux/Windows still compile as a normal tray window.
+- macOS Tauri 2 shell is a real menu-bar accessory on top of the existing `LSUIElement` Info.plist: Rust `ActivationPolicy::Accessory`, template status-item icon, hide-on-deactivate, and a 380×520 undecorated panel anchored under the tray rectangle (overrides the Linux 980×720 `center` window). Linux/Windows still compile as a normal tray window.
 - Compact `/tray` route (en + zh-CN) for the accessory panel: tightest 1–2 pools plus an advisor one-liner. Browser preview at `/tray`.
 - `docs/MACOS.md` — Mac build (`pnpm tauri build`), Accessory checklist, codesign note, and how to measure `.app` / `.dmg` size.
 - Settings → Local data: Paste JSON fills the import textarea from the clipboard via `navigator.clipboard.readText`. Success and failure flash in zh-CN / en. A pending flash shows immediately; `readText` is raced against a 3s timeout (timeout is treated as failure). Does not auto-apply; the user still clicks Apply backup.
