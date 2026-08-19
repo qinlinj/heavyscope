@@ -1,6 +1,7 @@
 /** JSON backup of local HeavyScope tables. Not a sql.js wasm / binary dump. */
 
 import type { Pool, UsageRecord, UsageSource } from "@/db/schema";
+import { redactSettings } from "@/lib/settings";
 
 export const BACKUP_FORMAT_VERSION = 1;
 export const BACKUP_FILENAME = "heavyscope-backup.json";
@@ -157,7 +158,7 @@ export function serializeBackup(input: {
     exportedAt: input.exportedAt ?? new Date().toISOString(),
     pools: input.pools,
     usage_records: input.usage_records,
-    settings: input.settings,
+    settings: redactSettings(input.settings),
   };
   return `${JSON.stringify(payload, null, 2)}\n`;
 }

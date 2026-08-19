@@ -55,6 +55,32 @@ describe("serializeBackup", () => {
     expect(raw.includes("wasm")).toBe(false);
   });
 
+  it("redacts cursor and grok session tokens from backup export", () => {
+    const raw = serializeBackup({
+      ...sample,
+      settings: {
+        language: "en",
+        cursor_session_token: "user_01SECRET::eyJhbGciOiJIUzI1NiJ9.payload.sig",
+        grok_session_token: "sso=super-secret-cookie",
+        grok_bearer_token: "xai-oauth-secret-token",
+        cursor_sync_source: "api",
+      },
+    });
+    expect(raw.includes("user_01SECRET")).toBe(false);
+    expect(raw.includes("super-secret-cookie")).toBe(false);
+    expect(raw.includes("xai-oauth-secret-token")).toBe(false);
+    expect(raw.includes("cursor_session_token")).toBe(false);
+    expect(raw.includes("grok_session_token")).toBe(false);
+    expect(raw.includes("grok_bearer_token")).toBe(false);
+    const parsed = parseBackup(raw);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.backup.settings.language).toBe("en");
+      expect(parsed.backup.settings.cursor_sync_source).toBe("api");
+      expect(parsed.backup.settings.cursor_session_token).toBeUndefined();
+    }
+  });
+
   it("round-trips through parseBackup", () => {
     const result = parseBackup(serializeBackup(sample));
     expect(result.ok).toBe(true);

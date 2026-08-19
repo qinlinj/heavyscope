@@ -15,6 +15,38 @@
     "recordUsage": "Record usage",
     "empty": "No pools yet. Add one to get started."
   },
+  "live": {
+    "cursorTitle": "Cursor live connect",
+    "cursorHint": "Paste WorkosCursorSessionToken from cursor.com cookies after you log in. Stored only in the local settings table. Never logged.",
+    "cursorToken": "WorkosCursorSessionToken",
+    "cursorTokenPlaceholder": "Paste the cookie value…",
+    "cursorReadApp": "Read from Cursor app (Mac)",
+    "cursorVscdbFailed": "Could not read Cursor state.vscdb. This helper only works on a real Mac desktop build.",
+    "grokTitle": "Grok live connect",
+    "grokHint": "Paste a grok.com session cookie and/or a Bearer token (xAI OAuth / grok.com session). Stored only on this device.",
+    "grokCookie": "grok.com session cookie",
+    "grokCookiePlaceholder": "Paste the Cookie header or session pair…",
+    "grokBearer": "Bearer token",
+    "grokBearerPlaceholder": "Optional xAI OAuth / session bearer…",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "refreshNow": "Refresh now",
+    "interval": "Auto-refresh (minutes)",
+    "connected": "Connected",
+    "notConnected": "Not connected",
+    "expired": "Disconnected / expired",
+    "tokenStored": "Token stored on this device. Paste a new value to replace it.",
+    "lastSynced": "Last synced",
+    "lastSyncedNever": "Never",
+    "grokBotUnavailable": "Live sync unavailable — calibrate manually",
+    "badge": {
+      "api": "api",
+      "session": "session",
+      "manual": "manual",
+      "import": "import",
+      "error": "error"
+    }
+  },
   "pool": {
     "used": "Used",
     "remaining": "Remaining",
@@ -112,7 +144,7 @@
     "poolsHint": "Add, edit, or delete quota pools. The dashboard has the same actions.",
     "noPools": "No pools yet. Add one here or from the dashboard.",
     "dataSources": "Data sources",
-    "dataSourcesHint": "Import a Cursor usage snapshot. Auto-sync re-applies the last import and never invents live quota numbers.",
+    "dataSourcesHint": "Connect Cursor and Grok for live remaining quota, or import a snapshot. Manual entry stays the fallback when a connector fails.",
     "snapshotLabel": "Cursor snapshot (JSON or CSV)",
     "snapshotPlaceholder": "Paste a Cursor snapshot JSON or pool,amount,note CSV…",
     "snapshotApply": "Apply snapshot",
@@ -130,7 +162,6 @@
     "syncStatusError": "Failed",
     "noSnapshot": "Import a snapshot before auto-sync can run.",
     "manualTruth": "Manual entry remains the source of truth when adapters fail or a snapshot is stale.",
-    "grokReserved": "Grok / xAI adapter is reserved and coming soon. It does not read credentials or live usage.",
     "demoLoad": "Load demo data",
     "demoTitle": "Load demo data",
     "demoHint": "Insert sample usage across the last 10 days for the four preset pools so charts and the advisor look alive. Notes are English. Existing records stay.",
@@ -206,7 +237,7 @@
   "adapters": {
     "manual": "Manual entry",
     "cursor": "Cursor",
-    "grok": "Grok (coming soon)",
+    "grok": "Grok",
     "reserved": "Coming soon"
   }
 }

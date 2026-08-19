@@ -12,6 +12,15 @@
     "core:window:allow-hide",
     "core:window:allow-set-focus",
     "core:window:allow-unminimize",
-    "core:window:allow-start-dragging"
+    "core:window:allow-start-dragging",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://cursor.com/*" },
+        { "url": "https://www.cursor.com/*" },
+        { "url": "https://grok.com/*" },
+        { "url": "https://www.grok.com/*" }
+      ]
+    }
   ]
 }

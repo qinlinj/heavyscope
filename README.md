@@ -4,21 +4,22 @@ Local-first multi-quota monitoring panel for SuperGrok Heavy and Cursor Ultra.
 
 HeavyScope helps you see how fast you are burning weekly or monthly quotas, when a pool will reset, and whether you should switch work to a pool with more headroom. The same React UI runs as a web app and inside a Tauri 2 desktop shell. Quota data stays on your machine. There is no HeavyScope cloud account.
 
-Current product version is **0.7.6**.
+Current product version is **0.8.0**.
 
 ## Features
 
 - **Dashboard + burn rate advisor** — four preset pools plus custom services, progress bars, remaining quota, reset countdown, and usage-tone colors. The advisor shows recommended daily pace, today used, waste / overspend risk, and cross-pool switch suggestions.
 - **Charts / history** — daily stacked area (14 days), weekly stacked bars (8 weeks), and a pool-share donut. History filters usage records by pool, date range, and source. Date pickers follow the browser locale.
 - **Settings** — pool management (add / edit / delete), alert thresholds (warn / crit), language (EN / 中文), JSON backup export / copy / import, and optional demo usage seed.
-- **Cursor snapshot import** — paste a Cursor usage snapshot (JSON or CSV) in Settings → Data sources. Optional auto-sync re-applies the last import. The Grok adapter is reserved (Coming soon).
+- **Live Cursor + Grok sync** — connect your own accounts once in Settings → Data sources. HeavyScope refreshes remaining quota on a timer (default 5 minutes). Snapshot import and manual entry stay as fallbacks.
+- **Cursor snapshot import** — paste a Cursor usage snapshot (JSON or CSV) in Settings → Data sources. Optional auto-sync re-applies the last import when live Cursor is not connected.
 - **JSON backup export / copy / import** — Settings → Local data downloads `heavyscope-backup.json`, copies the same payload to the clipboard, or accepts a file / paste (table dump, not a wasm / binary file). Merge is the default; replace-all is optional.
 - **Demo seed** — load sample usage for the four preset pools (last 10 days, English notes) so charts and the advisor look alive. First load applies immediately; a later load asks for confirm because `demo_seeded=1`.
 - **Tauri 2 tray** — system tray / macOS menu-bar shell around the same web UI and sql.js database. Click the tray icon to open the window. Close hides to tray. Use Quit to exit.
 - **In-app confirm dialogs** — delete pool, reset local database, demo re-apply, import, and import replace-all use in-app AlertDialogs with zh-CN / en titles and actions. Native `window.confirm` is not used.
 - **Cycle rollover** — when a pool `reset_at` is past, quota used resets to 0, the next weekly/monthly date is set, and a Cycle reset usage note is stored. History is not deleted.
 
-Manual entry remains the source of truth. Adapters never scrape Cursor or Grok credentials, cookies, or private APIs.
+Manual entry remains the source of truth when a connector fails. Tokens you paste stay in the local settings table on this device. JSON backup export redacts them. Unofficial dashboard endpoints may change.
 
 ## Screenshots
 
@@ -57,6 +58,8 @@ pnpm install
 pnpm dev
 ```
 
+`pnpm dev` proxies `/proxy/cursor` → `https://cursor.com` and `/proxy/grok` → `https://grok.com` so live sync works in the browser. A production static host cannot call those sites (CORS). Use the Tauri desktop app, or keep using snapshot / manual entry.
+
 The Vite app is enough for local web development. Other scripts:
 
 ```bash
@@ -82,6 +85,42 @@ pnpm tauri build
 
 Generate icons from `src-tauri/app-icon.svg` with the Tauri icon command before bundling if you change the mark.
 
+## Live Cursor connect
+
+1. Log in at [cursor.com](https://cursor.com).
+2. Open DevTools → Application → Cookies → `https://cursor.com`.
+3. Copy the **value** of `WorkosCursorSessionToken`.
+4. Paste it into Settings → Data sources → Cursor live connect (password field) and click Connect.
+
+The cookie is often `user_01…%3A%3AeyJ…` (URL-encoded `::`). Raw `user_01…::eyJ…` is also accepted. HeavyScope stores it only in the local sql.js settings table and never writes it to usage notes or logs.
+
+On a **real Mac** desktop build you can use **Read from Cursor app (Mac)**. That command only reads `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb` key `cursorAuth/accessToken` and derives `sub::jwt`. It never writes the database. Linux CI compiles a stub. See [docs/MACOS.md](docs/MACOS.md).
+
+Live mapping (unofficial `GET https://cursor.com/api/usage-summary`, same two-pool model used by AIUsageBar / cursor-stats):
+
+- `preset-cursor-models` = Cursor Models (Auto/Composer) from `individualUsage.plan.autoPercentUsed`. Stored as `quota_total=100`, `quota_used=autoPercentUsed`, unit `%`.
+- `preset-cursor-other` = Other Models from `apiPercentUsed`. If that field is missing and on-demand has a numeric limit, on-demand % may be used. When on-demand is enabled with a numeric limit, the pool note can also show $ used/limit.
+- `reset_at` = `billingCycleEnd` for both pools. `reset_cycle` = monthly.
+
+Auto-refresh defaults to 5 minutes (1–60). Refresh now is on the dashboard and in Settings. A 401 marks the connector expired and does not wipe pools.
+
+These endpoints are unofficial and may change.
+
+## Live Grok connect
+
+1. Log in at [grok.com](https://grok.com).
+2. Copy a grok.com session cookie (DevTools → Application → Cookies) and/or a Bearer token from the grok.com session / xAI OAuth flow.
+3. Paste one or both into Settings → Data sources → Grok live connect and click Connect.
+
+HeavyScope calls the same gRPC-web method as grok.com Settings → Usage:
+
+`POST https://grok.com/grok_api_v2.GrokBuildBilling/GetGrokCreditsConfig`
+
+- `preset-grok-heavy` = shared weekly SuperGrok Heavy pool from `credit_usage_percent` (0 if omitted). `quota_total=100`, unit `%`, `reset_cycle=weekly`, `reset_at` = billing period end.
+- `preset-grok-bot` is updated only when a Bot / Grok Bot / Agents / API-for-bot product segment is present. If it is not found, HeavyScope does **not** invent numbers. The Bot pool is marked “Live sync unavailable — calibrate manually”.
+
+Same CORS rule as Cursor: desktop Tauri HTTP or `pnpm dev` proxy.
+
 ## Cursor snapshot format
 
 Paste JSON or a simple CSV in Settings → Data sources. This Linux/web build cannot read the Cursor app database. Provide an export you created yourself. HeavyScope does not invent live quota numbers.
@@ -99,9 +138,7 @@ Apply rules:
 - If snapshot `used` is less than or equal to current used, nothing is subtracted. Manual history is kept.
 - Re-applying the same snapshot is idempotent. HeavyScope stores a hash of the last applied used/total values and skips duplicates.
 
-Auto-sync re-reads the last imported snapshot on the configured interval. It does not pull live Cursor usage.
-
-The Grok adapter is reserved and returns Coming soon.
+Auto-sync re-reads the last imported snapshot on the configured interval when live Cursor is not connected.
 
 Example JSON:
 
@@ -146,7 +183,7 @@ Shape:
 - `exportedAt` is an ISO timestamp.
 - `pools` rows include `id`, `name`, `type` (`credits` | `requests` | `usd` | `custom`), `quota_total`, `quota_used`, `reset_at`, `reset_cycle` (`weekly` | `monthly` | `none`), `unit`, `color`, `is_preset`, `created_at`, `updated_at`.
 - `usage_records` rows include `id`, `pool_id`, `amount`, `recorded_at`, `note`, `source` (`manual` | `import` | `sync`).
-- `settings` is a string-to-string map.
+- `settings` is a string-to-string map. Export omits `cursor_session_token`, `grok_session_token`, and `grok_bearer_token`.
 
 Import rules:
 
@@ -157,7 +194,9 @@ Import and replace-all use in-app confirm dialogs.
 
 ## Privacy
 
-All quota data stays local. The database is a sql.js file encoded in localStorage under `heavyscope.sqlite.v1`. Export or import a JSON backup (or reset) from Settings. There is no HeavyScope cloud, analytics, or remote sync. Cursor snapshots are files you paste yourself; HeavyScope never reads Cursor or Grok credentials, cookies, or private APIs.
+All quota data stays local. The database is a sql.js file encoded in localStorage under `heavyscope.sqlite.v1`. Export or import a JSON backup (or reset) from Settings. There is no HeavyScope cloud, analytics, or remote sync.
+
+Session tokens you paste (`cursor_session_token`, `grok_session_token`, `grok_bearer_token`) stay in the local settings table. They are never written to `usage_records` notes. JSON backup export omits those keys. Live calls go from your machine to cursor.com / grok.com (Tauri HTTP or the Vite dev proxy). Unofficial endpoints may change without notice. The optional macOS `state.vscdb` helper is read-only and is not used in Linux CI.
 
 ## License
 

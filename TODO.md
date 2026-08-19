@@ -56,6 +56,19 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Desktop packaging / installers (Linux .deb can be built locally; macOS menu bar must be built on a Mac)
 - [x] Release notes and 0.7.0 polish (README, CHANGELOG, docs/RELEASE.md)
 
+## 0.8.0 — live usage sync
+
+- [x] Settings → Data sources: Cursor `WorkosCursorSessionToken` + Grok session/bearer (local settings only)
+- [x] Cursor `GET /api/usage-summary` → preset-cursor-models / preset-cursor-other percent pools
+- [x] Grok `GetGrokCreditsConfig` proto walker → preset-grok-heavy; Bot only if a product segment exists
+- [x] Vite `/proxy/cursor` + `/proxy/grok`; Tauri `@tauri-apps/plugin-http`
+- [x] Optional macOS-only read of Cursor `state.vscdb` (Linux stub)
+- [x] Auto-refresh 5 minutes (1–60), Refresh now, last synced + source badge
+- [x] Backup export redacts session tokens
+- [ ] Keep researching Grok Bot / Agents product breakdown if the proto grows a named segment
+- [ ] Full macOS Accessory tray rewrite (another track)
+- [ ] Heatmap / chart layout (another track)
+
 ## Polish / leftover gaps (0.7.6)
 
 - [x] Replace native `window.confirm` with in-app AlertDialogs (delete pool, reset DB, demo re-apply, import, replace-all)
@@ -86,7 +99,7 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Visible DB open error (ErrorState) instead of a blank page
 - [x] Quota cycle rollover without deleting usage history
 - [x] History date-input i18n hint (browser locale picker unchanged)
-- [ ] Live Cursor / Grok APIs (out of scope; snapshot import + reserved adapter only)
+- [x] Live Cursor / Grok usage sync (0.8.0; unofficial dashboard endpoints + local tokens)
 - [ ] Signed macOS menu-bar binary / codesign (needs a Mac and certificates)
 - [ ] Windows installer
 - [ ] GitHub Release asset upload (MCP has no create-release tool)

@@ -21,3 +21,20 @@ export async function syncTraySummary(pools: Pool[]): Promise<void> {
     // Browser build or missing desktop command.
   }
 }
+
+/** macOS-only: read-only Cursor state.vscdb → WorkosCursorSessionToken. Never writes. */
+export async function readCursorSessionTokenFromApp(): Promise<string | null> {
+  if (!isDesktopShell()) return null;
+  try {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const token = await invoke<string>("read_cursor_session_token");
+    return token?.trim() ? token : null;
+  } catch {
+    return null;
+  }
+}
+
+export function isMacDesktop(): boolean {
+  if (!isDesktopShell()) return false;
+  return typeof navigator !== "undefined" && /Mac/i.test(navigator.userAgent);
+}

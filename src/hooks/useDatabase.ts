@@ -10,6 +10,9 @@ import {
 } from "react";
 import { applyAdapterResult } from "@/adapters/apply";
 import { adapterSignature, hashSignature } from "@/adapters/hash";
+import { fetchCursorUsage, fetchGrokCredits } from "@/adapters/liveClient";
+import { applyLiveSnapshot } from "@/adapters/liveSync";
+import type { LiveApplyReport, LiveProviderResult } from "@/adapters/liveTypes";
 import { getAdapter } from "@/adapters/registry";
 import type { ApplyReport } from "@/adapters/types";
 import { HeavyScopeDB } from "@/db/database";
@@ -19,10 +22,25 @@ import type { DemoSeedReport } from "@/lib/demoSeed";
 import i18n, { LANG_STORAGE_KEY } from "@/i18n";
 import { syncTraySummary } from "@/lib/desktop";
 import {
+  parseLiveSyncInterval,
   parseSyncInterval,
   parseThresholds,
+  SETTING_CURSOR_CONNECTED,
+  SETTING_CURSOR_LAST_SYNCED_AT,
+  SETTING_CURSOR_SESSION_TOKEN,
   SETTING_CURSOR_SNAPSHOT,
   SETTING_CURSOR_SNAPSHOT_HASH,
+  SETTING_CURSOR_SYNC_INTERVAL_MIN,
+  SETTING_CURSOR_SYNC_MESSAGE,
+  SETTING_CURSOR_SYNC_SOURCE,
+  SETTING_GROK_BEARER_TOKEN,
+  SETTING_GROK_BOT_LIVE,
+  SETTING_GROK_CONNECTED,
+  SETTING_GROK_LAST_SYNCED_AT,
+  SETTING_GROK_SESSION_TOKEN,
+  SETTING_GROK_SYNC_INTERVAL_MIN,
+  SETTING_GROK_SYNC_MESSAGE,
+  SETTING_GROK_SYNC_SOURCE,
   SETTING_LANGUAGE,
   SETTING_SYNC_ENABLED,
   SETTING_SYNC_INTERVAL_MIN,
@@ -52,6 +70,11 @@ type DatabaseApi = {
   applyDemoSeed: (force?: boolean) => DemoSeedReport;
   applyImportedSnapshot: (raw: string) => Promise<ApplyReport>;
   applyStoredSnapshot: () => Promise<ApplyReport>;
+  refreshLiveProviders: (providers?: Array<"cursor" | "grok">) => Promise<LiveApplyReport>;
+  connectCursor: (token: string, source?: "api" | "session") => Promise<LiveApplyReport>;
+  disconnectCursor: () => void;
+  connectGrok: (sessionCookie: string, bearerToken: string) => Promise<LiveApplyReport>;
+  disconnectGrok: () => void;
 };
 
 const DatabaseContext = createContext<DatabaseApi | null>(null);
@@ -64,6 +87,88 @@ function writeSyncMeta(store: HeavyScopeDB, status: string, message: string): vo
   store.setSetting(SETTING_SYNC_LAST_AT, new Date().toISOString());
   store.setSetting(SETTING_SYNC_LAST_STATUS, status);
   store.setSetting(SETTING_SYNC_LAST_MESSAGE, message);
+}
+
+function writeCursorLiveMeta(
+  store: HeavyScopeDB,
+  result: LiveProviderResult,
+  source: "api" | "session" | "error",
+): void {
+  const now = new Date().toISOString();
+  if (result.ok) {
+    store.setSetting(SETTING_CURSOR_LAST_SYNCED_AT, now);
+    store.setSetting(SETTING_CURSOR_SYNC_SOURCE, source === "session" ? "session" : "api");
+    store.setSetting(SETTING_CURSOR_CONNECTED, "true");
+    store.setSetting(SETTING_CURSOR_SYNC_MESSAGE, result.message);
+    return;
+  }
+  store.setSetting(SETTING_CURSOR_SYNC_SOURCE, "error");
+  store.setSetting(SETTING_CURSOR_SYNC_MESSAGE, result.message);
+  if (result.code === "expired") {
+    store.setSetting(SETTING_CURSOR_CONNECTED, "expired");
+  }
+}
+
+function writeGrokLiveMeta(store: HeavyScopeDB, result: LiveProviderResult): void {
+  const now = new Date().toISOString();
+  if (result.ok) {
+    store.setSetting(SETTING_GROK_LAST_SYNCED_AT, now);
+    store.setSetting(SETTING_GROK_SYNC_SOURCE, "api");
+    store.setSetting(SETTING_GROK_CONNECTED, "true");
+    store.setSetting(SETTING_GROK_SYNC_MESSAGE, result.message);
+    store.setSetting(SETTING_GROK_BOT_LIVE, result.botUnavailable ? "unavailable" : "ok");
+    return;
+  }
+  store.setSetting(SETTING_GROK_SYNC_SOURCE, "error");
+  store.setSetting(SETTING_GROK_SYNC_MESSAGE, result.message);
+  if (result.code === "expired") {
+    store.setSetting(SETTING_GROK_CONNECTED, "expired");
+  }
+}
+
+function liveApplyDeps(store: HeavyScopeDB) {
+  return {
+    listPools: () => store.listPools(),
+    getPool: (id: string) => store.getPool(id),
+    updatePoolFields: (id: string, patch: Parameters<HeavyScopeDB["updatePoolFields"]>[1]) => {
+      store.updatePoolFields(id, patch);
+    },
+    insertUsageRecord: (poolId: string, amount: number, note: string | null, recordedAt?: string) => {
+      store.insertUsageRecord(poolId, amount, note, "sync", recordedAt);
+    },
+  };
+}
+
+function idleLiveReport(message: string): LiveApplyReport {
+  return { updated: 0, recordsAdded: 0, unmatched: [], skipped: true, message };
+}
+
+async function runCursorLive(
+  store: HeavyScopeDB,
+  token: string,
+  source: "api" | "session",
+): Promise<LiveApplyReport> {
+  if (!token.trim()) {
+    return idleLiveReport("Cursor is not connected");
+  }
+  const result = await fetchCursorUsage(token);
+  writeCursorLiveMeta(store, result, result.ok ? source : "error");
+  if (!result.ok) {
+    return idleLiveReport(result.message);
+  }
+  return applyLiveSnapshot(result, liveApplyDeps(store));
+}
+
+async function runGrokLive(store: HeavyScopeDB, session: string, bearer: string): Promise<LiveApplyReport> {
+  if (!session.trim() && !bearer.trim()) {
+    return idleLiveReport("Grok is not connected");
+  }
+  const result = await fetchGrokCredits({ sessionCookie: session, bearerToken: bearer });
+  writeGrokLiveMeta(store, result);
+  if (!result.ok) {
+    return idleLiveReport(result.message);
+  }
+  return applyLiveSnapshot(result, liveApplyDeps(store));
 }
 
 async function runCursorApply(
@@ -263,15 +368,120 @@ function useDatabaseState(): DatabaseApi {
     return report;
   }, [db, refresh]);
 
+  const refreshLiveProviders = useCallback(
+    async (providers?: Array<"cursor" | "grok">) => {
+      if (!db) return idleLiveReport("Database not ready");
+      const want = new Set(providers ?? ["cursor", "grok"]);
+      const reports: LiveApplyReport[] = [];
+      if (want.has("cursor")) {
+        const token = db.getSetting(SETTING_CURSOR_SESSION_TOKEN) ?? "";
+        if (token.trim()) {
+          const source = db.getSetting(SETTING_CURSOR_SYNC_SOURCE) === "session" ? "session" : "api";
+          reports.push(await runCursorLive(db, token, source));
+        }
+      }
+      if (want.has("grok")) {
+        const session = db.getSetting(SETTING_GROK_SESSION_TOKEN) ?? "";
+        const bearer = db.getSetting(SETTING_GROK_BEARER_TOKEN) ?? "";
+        if (session.trim() || bearer.trim()) {
+          reports.push(await runGrokLive(db, session, bearer));
+        }
+      }
+      refresh(db);
+      if (reports.length === 0) return idleLiveReport("No live connectors are configured");
+      return {
+        updated: reports.reduce((sum, item) => sum + item.updated, 0),
+        recordsAdded: reports.reduce((sum, item) => sum + item.recordsAdded, 0),
+        unmatched: reports.flatMap((item) => item.unmatched),
+        skipped: reports.every((item) => item.skipped),
+        message: reports.map((item) => item.message).join(" "),
+      };
+    },
+    [db, refresh],
+  );
+
+  const refreshCursorLive = useCallback(
+    () => refreshLiveProviders(["cursor"]),
+    [refreshLiveProviders],
+  );
+  const refreshGrokLive = useCallback(() => refreshLiveProviders(["grok"]), [refreshLiveProviders]);
+
+  const connectCursor = useCallback(
+    async (token: string, source: "api" | "session" = "api") => {
+      if (!db) return idleLiveReport("Database not ready");
+      const trimmed = token.trim();
+      if (!trimmed) return idleLiveReport("Cursor session token is empty");
+      db.setSetting(SETTING_CURSOR_SESSION_TOKEN, trimmed);
+      db.setSetting(SETTING_CURSOR_SYNC_SOURCE, source);
+      const report = await runCursorLive(db, trimmed, source);
+      refresh(db);
+      return report;
+    },
+    [db, refresh],
+  );
+
+  const disconnectCursor = useCallback(() => {
+    if (!db) return;
+    db.setSetting(SETTING_CURSOR_SESSION_TOKEN, "");
+    db.setSetting(SETTING_CURSOR_CONNECTED, "false");
+    db.setSetting(SETTING_CURSOR_SYNC_SOURCE, "error");
+    db.setSetting(SETTING_CURSOR_SYNC_MESSAGE, "Disconnected");
+    refresh(db);
+  }, [db, refresh]);
+
+  const connectGrok = useCallback(
+    async (sessionCookie: string, bearerToken: string) => {
+      if (!db) return idleLiveReport("Database not ready");
+      if (!sessionCookie.trim() && !bearerToken.trim()) {
+        return idleLiveReport("Grok session cookie or bearer token is empty");
+      }
+      db.setSetting(SETTING_GROK_SESSION_TOKEN, sessionCookie.trim());
+      db.setSetting(SETTING_GROK_BEARER_TOKEN, bearerToken.trim());
+      const report = await runGrokLive(db, sessionCookie.trim(), bearerToken.trim());
+      refresh(db);
+      return report;
+    },
+    [db, refresh],
+  );
+
+  const disconnectGrok = useCallback(() => {
+    if (!db) return;
+    db.setSetting(SETTING_GROK_SESSION_TOKEN, "");
+    db.setSetting(SETTING_GROK_BEARER_TOKEN, "");
+    db.setSetting(SETTING_GROK_CONNECTED, "false");
+    db.setSetting(SETTING_GROK_SYNC_SOURCE, "error");
+    db.setSetting(SETTING_GROK_SYNC_MESSAGE, "Disconnected");
+    refresh(db);
+  }, [db, refresh]);
+
   const thresholds = useMemo(() => parseThresholds(settings), [settings]);
+  const cursorLiveConnected =
+    Boolean(settings[SETTING_CURSOR_SESSION_TOKEN]?.trim()) &&
+    settings[SETTING_CURSOR_CONNECTED] === "true";
+  const grokLiveConnected =
+    (Boolean(settings[SETTING_GROK_SESSION_TOKEN]?.trim()) ||
+      Boolean(settings[SETTING_GROK_BEARER_TOKEN]?.trim())) &&
+    settings[SETTING_GROK_CONNECTED] === "true";
 
   useSync({
     ready,
-    enabled: settings[SETTING_SYNC_ENABLED] === "true",
-    source: settings[SETTING_SYNC_SOURCE],
-    snapshot: settings[SETTING_CURSOR_SNAPSHOT] ?? "",
-    intervalMin: parseSyncInterval(settings[SETTING_SYNC_INTERVAL_MIN]),
-    applyStoredSnapshot,
+    snapshot: {
+      enabled: settings[SETTING_SYNC_ENABLED] === "true" && !cursorLiveConnected,
+      source: settings[SETTING_SYNC_SOURCE],
+      snapshot: settings[SETTING_CURSOR_SNAPSHOT] ?? "",
+      intervalMin: parseSyncInterval(settings[SETTING_SYNC_INTERVAL_MIN]),
+      apply: applyStoredSnapshot,
+    },
+    cursorLive: {
+      enabled: cursorLiveConnected,
+      intervalMin: parseLiveSyncInterval(settings[SETTING_CURSOR_SYNC_INTERVAL_MIN]),
+      refresh: refreshCursorLive,
+    },
+    grokLive: {
+      enabled: grokLiveConnected,
+      intervalMin: parseLiveSyncInterval(settings[SETTING_GROK_SYNC_INTERVAL_MIN]),
+      refresh: refreshGrokLive,
+    },
   });
 
   return {
@@ -293,6 +503,11 @@ function useDatabaseState(): DatabaseApi {
     applyDemoSeed,
     applyImportedSnapshot,
     applyStoredSnapshot,
+    refreshLiveProviders,
+    connectCursor,
+    disconnectCursor,
+    connectGrok,
+    disconnectGrok,
   };
 }
 

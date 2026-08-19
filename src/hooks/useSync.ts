@@ -1,25 +1,48 @@
 import { useEffect } from "react";
 
-type SyncSchedulerOpts = {
-  ready: boolean;
+type SnapshotTicker = {
   enabled: boolean;
   source: string | undefined;
   snapshot: string;
   intervalMin: number;
-  applyStoredSnapshot: () => Promise<unknown>;
+  apply: () => Promise<unknown>;
 };
 
-/** Re-apply the stored Cursor snapshot on an interval when auto-sync is enabled. */
-export function useSync(opts: SyncSchedulerOpts): void {
-  const { ready, enabled, source, snapshot, intervalMin, applyStoredSnapshot } = opts;
+type LiveTicker = {
+  enabled: boolean;
+  intervalMin: number;
+  refresh: () => Promise<unknown>;
+};
 
+type SyncSchedulerOpts = {
+  ready: boolean;
+  snapshot: SnapshotTicker;
+  cursorLive: LiveTicker;
+  grokLive: LiveTicker;
+};
+
+function useInterval(ready: boolean, enabled: boolean, intervalMin: number, fn: () => Promise<unknown>): void {
   useEffect(() => {
-    if (!ready || !enabled || source !== "cursor" || !snapshot.trim()) return;
-    const ms = intervalMin * 60_000;
-    void applyStoredSnapshot();
+    if (!ready || !enabled) return;
+    const ms = Math.max(1, intervalMin) * 60_000;
+    void fn();
     const id = window.setInterval(() => {
-      void applyStoredSnapshot();
+      void fn();
     }, ms);
     return () => window.clearInterval(id);
-  }, [ready, enabled, source, snapshot, intervalMin, applyStoredSnapshot]);
+  }, [ready, enabled, intervalMin, fn]);
+}
+
+/** Re-apply the stored Cursor snapshot and/or refresh live connectors. */
+export function useSync(opts: SyncSchedulerOpts): void {
+  const { ready, snapshot, cursorLive, grokLive } = opts;
+
+  useInterval(
+    ready,
+    snapshot.enabled && snapshot.source === "cursor" && Boolean(snapshot.snapshot.trim()),
+    snapshot.intervalMin,
+    snapshot.apply,
+  );
+  useInterval(ready, cursorLive.enabled, cursorLive.intervalMin, cursorLive.refresh);
+  useInterval(ready, grokLive.enabled, grokLive.intervalMin, grokLive.refresh);
 }

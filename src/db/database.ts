@@ -15,6 +15,10 @@ import {
   SETTING_DEMO_SEEDED,
   SETTING_SYNC_SOURCE,
   SETTING_WARN_PERCENT,
+  SETTING_CURSOR_SYNC_INTERVAL_MIN,
+  SETTING_GROK_SYNC_INTERVAL_MIN,
+  DEFAULT_LIVE_SYNC_INTERVAL_MIN,
+  liveConnectorOwnsPool,
 } from "@/lib/settings";
 import {
   planBackupApply,
@@ -37,6 +41,7 @@ import {
   SCHEMA_VERSION,
   type Pool,
   type PoolDraft,
+  type ResetCycle,
   type UsageRecord,
   type UsageSource,
 } from "./schema";
@@ -210,6 +215,12 @@ export class HeavyScopeDB {
     if (!this.getSetting(SETTING_SYNC_SOURCE)) {
       this.writeSetting(SETTING_SYNC_SOURCE, DEFAULT_SYNC_SOURCE);
     }
+    if (!this.getSetting(SETTING_CURSOR_SYNC_INTERVAL_MIN)) {
+      this.writeSetting(SETTING_CURSOR_SYNC_INTERVAL_MIN, String(DEFAULT_LIVE_SYNC_INTERVAL_MIN));
+    }
+    if (!this.getSetting(SETTING_GROK_SYNC_INTERVAL_MIN)) {
+      this.writeSetting(SETTING_GROK_SYNC_INTERVAL_MIN, String(DEFAULT_LIVE_SYNC_INTERVAL_MIN));
+    }
   }
 
   getSetting(key: string): string | null {
@@ -353,12 +364,64 @@ export class HeavyScopeDB {
     this.persist();
   }
 
+  updatePoolFields(
+    id: string,
+    patch: {
+      quota_used?: number;
+      quota_total?: number;
+      reset_at?: string | null;
+      reset_cycle?: ResetCycle;
+      unit?: string;
+    },
+  ): void {
+    const pool = this.getPool(id);
+    if (!pool) throw new Error(`Pool not found: ${id}`);
+    this.db.run(
+      `UPDATE pools SET
+        quota_used = ?, quota_total = ?, reset_at = ?, reset_cycle = ?, unit = ?, updated_at = ?
+      WHERE id = ?`,
+      [
+        patch.quota_used ?? pool.quota_used,
+        patch.quota_total ?? pool.quota_total,
+        patch.reset_at !== undefined ? patch.reset_at : pool.reset_at,
+        patch.reset_cycle ?? pool.reset_cycle,
+        patch.unit ?? pool.unit,
+        nowIso(),
+        id,
+      ],
+    );
+    this.persist();
+  }
+
+  insertUsageRecord(
+    poolId: string,
+    amount: number,
+    note: string | null,
+    source: UsageSource = "sync",
+    recordedAt?: string,
+  ): UsageRecord {
+    const pool = this.getPool(poolId);
+    if (!pool) throw new Error(`Pool not found: ${poolId}`);
+    const id = newId("usage");
+    const ts = recordedAt && !Number.isNaN(Date.parse(recordedAt)) ? recordedAt : nowIso();
+    this.db.run(
+      `INSERT INTO usage_records (id, pool_id, amount, recorded_at, note, source)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [id, poolId, amount, ts, note, source],
+    );
+    this.persist();
+    return { id, pool_id: poolId, amount, recorded_at: ts, note, source };
+  }
+
   resetLocalData(): void {
     localStorage.removeItem(STORAGE_KEY);
   }
 
   applyDueRollovers(now = new Date()): number {
-    const plans = planRollovers(this.listPools(), now);
+    const settings = this.listSettings();
+    const plans = planRollovers(this.listPools(), now).filter(
+      (plan) => !liveConnectorOwnsPool(plan.poolId, settings),
+    );
     if (plans.length === 0) return 0;
     const ts = now.toISOString();
     for (const plan of plans) {

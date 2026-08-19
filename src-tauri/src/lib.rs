@@ -1,3 +1,5 @@
+mod cursor_token;
+
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{Manager, WindowEvent};
@@ -29,7 +31,11 @@ fn set_tray_summary(app: tauri::AppHandle, summary: String) -> Result<(), String
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![set_tray_summary])
+        .plugin(tauri_plugin_http::init())
+        .invoke_handler(tauri::generate_handler![
+            set_tray_summary,
+            cursor_token::read_cursor_session_token
+        ])
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(

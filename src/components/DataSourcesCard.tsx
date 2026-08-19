@@ -12,10 +12,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useDatabase } from "@/hooks/useDatabase";
+import { isMacDesktop, readCursorSessionTokenFromApp } from "@/lib/desktop";
 import { formatDateTime } from "@/lib/format";
 import {
+  parseLiveSyncInterval,
   parseSyncInterval,
+  SETTING_CURSOR_CONNECTED,
+  SETTING_CURSOR_LAST_SYNCED_AT,
+  SETTING_CURSOR_SESSION_TOKEN,
   SETTING_CURSOR_SNAPSHOT,
+  SETTING_CURSOR_SYNC_INTERVAL_MIN,
+  SETTING_CURSOR_SYNC_MESSAGE,
+  SETTING_CURSOR_SYNC_SOURCE,
+  SETTING_GROK_BEARER_TOKEN,
+  SETTING_GROK_BOT_LIVE,
+  SETTING_GROK_CONNECTED,
+  SETTING_GROK_LAST_SYNCED_AT,
+  SETTING_GROK_SESSION_TOKEN,
+  SETTING_GROK_SYNC_INTERVAL_MIN,
+  SETTING_GROK_SYNC_MESSAGE,
+  SETTING_GROK_SYNC_SOURCE,
   SETTING_SYNC_ENABLED,
   SETTING_SYNC_INTERVAL_MIN,
   SETTING_SYNC_LAST_AT,
@@ -24,13 +40,38 @@ import {
   SETTING_SYNC_SOURCE,
 } from "@/lib/settings";
 
+function connectorLabel(
+  connected: string | undefined,
+  hasToken: boolean,
+  t: (key: string) => string,
+): string {
+  if (!hasToken) return t("live.notConnected");
+  if (connected === "expired") return t("live.expired");
+  if (connected === "true") return t("live.connected");
+  return t("live.notConnected");
+}
+
 export function DataSourcesCard() {
   const { t, i18n } = useTranslation();
-  const { ready, settings, setSetting, applyImportedSnapshot, applyStoredSnapshot } = useDatabase();
+  const {
+    ready,
+    settings,
+    setSetting,
+    applyImportedSnapshot,
+    applyStoredSnapshot,
+    refreshLiveProviders,
+    connectCursor,
+    disconnectCursor,
+    connectGrok,
+    disconnectGrok,
+  } = useDatabase();
   const storedSnapshot = settings[SETTING_CURSOR_SNAPSHOT] ?? "";
   const [draft, setDraft] = useState(storedSnapshot);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
+  const [cursorToken, setCursorToken] = useState("");
+  const [grokCookie, setGrokCookie] = useState("");
+  const [grokBearer, setGrokBearer] = useState("");
 
   useEffect(() => {
     setDraft(storedSnapshot);
@@ -42,6 +83,14 @@ export function DataSourcesCard() {
   const lastAt = settings[SETTING_SYNC_LAST_AT];
   const lastStatus = settings[SETTING_SYNC_LAST_STATUS];
   const lastMessage = settings[SETTING_SYNC_LAST_MESSAGE];
+
+  const cursorHasToken = Boolean(settings[SETTING_CURSOR_SESSION_TOKEN]?.trim());
+  const grokHasToken = Boolean(
+    settings[SETTING_GROK_SESSION_TOKEN]?.trim() || settings[SETTING_GROK_BEARER_TOKEN]?.trim(),
+  );
+  const cursorInterval = String(parseLiveSyncInterval(settings[SETTING_CURSOR_SYNC_INTERVAL_MIN]));
+  const grokInterval = String(parseLiveSyncInterval(settings[SETTING_GROK_SYNC_INTERVAL_MIN]));
+  const showMacHelper = isMacDesktop();
 
   async function applyDraft() {
     setBusy(true);
@@ -71,6 +120,58 @@ export function DataSourcesCard() {
     setDraft(text);
   }
 
+  async function handleConnectCursor(sourceHint: "api" | "session" = "api") {
+    setBusy(true);
+    try {
+      const report = await connectCursor(cursorToken, sourceHint);
+      setFlash(report.message);
+      if (!report.skipped) setCursorToken("");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleReadCursorApp() {
+    setBusy(true);
+    try {
+      const token = await readCursorSessionTokenFromApp();
+      if (!token) {
+        setFlash(t("live.cursorVscdbFailed"));
+        return;
+      }
+      setCursorToken(token);
+      const report = await connectCursor(token, "session");
+      setFlash(report.message);
+      if (!report.skipped) setCursorToken("");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleConnectGrok() {
+    setBusy(true);
+    try {
+      const report = await connectGrok(grokCookie, grokBearer);
+      setFlash(report.message);
+      if (!report.skipped) {
+        setGrokCookie("");
+        setGrokBearer("");
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleLiveRefresh(provider?: "cursor" | "grok") {
+    setBusy(true);
+    try {
+      const report = await refreshLiveProviders(provider ? [provider] : undefined);
+      setFlash(report.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const statusLabel =
     lastStatus === "ok"
       ? t("settings.syncStatusOk")
@@ -86,7 +187,191 @@ export function DataSourcesCard() {
         <CardTitle>{t("settings.dataSources")}</CardTitle>
         <CardDescription>{t("settings.dataSourcesHint")}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
+        <section className="space-y-3 rounded-lg border border-foreground/10 p-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-medium">{t("live.cursorTitle")}</h3>
+              <p className="text-xs text-muted-foreground">{t("live.cursorHint")}</p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {connectorLabel(settings[SETTING_CURSOR_CONNECTED], cursorHasToken, t)}
+            </p>
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="cursor-session-token">{t("live.cursorToken")}</Label>
+            <Input
+              id="cursor-session-token"
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              value={cursorToken}
+              placeholder={cursorHasToken ? t("live.tokenStored") : t("live.cursorTokenPlaceholder")}
+              disabled={!ready || busy}
+              onChange={(event) => setCursorToken(event.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              disabled={!ready || busy || !cursorToken.trim()}
+              onClick={() => void handleConnectCursor("api")}
+            >
+              {t("live.connect")}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!ready || busy || !cursorHasToken}
+              onClick={disconnectCursor}
+            >
+              {t("live.disconnect")}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!ready || busy || !cursorHasToken}
+              onClick={() => void handleLiveRefresh("cursor")}
+            >
+              {t("live.refreshNow")}
+            </Button>
+            {showMacHelper && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!ready || busy}
+                onClick={() => void handleReadCursorApp()}
+              >
+                {t("live.cursorReadApp")}
+              </Button>
+            )}
+          </div>
+          <div className="grid max-w-xs gap-1.5">
+            <Label htmlFor="cursor-live-interval">{t("live.interval")}</Label>
+            <Input
+              id="cursor-live-interval"
+              type="number"
+              min={1}
+              max={60}
+              step={1}
+              value={cursorInterval}
+              disabled={!ready}
+              onChange={(event) => {
+                setSetting(SETTING_CURSOR_SYNC_INTERVAL_MIN, String(parseLiveSyncInterval(event.target.value)));
+              }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {t("live.lastSynced")}:{" "}
+            {settings[SETTING_CURSOR_LAST_SYNCED_AT]
+              ? formatDateTime(settings[SETTING_CURSOR_LAST_SYNCED_AT], i18n.language)
+              : t("live.lastSyncedNever")}
+            {settings[SETTING_CURSOR_SYNC_SOURCE]
+              ? ` · ${t(`live.badge.${settings[SETTING_CURSOR_SYNC_SOURCE]}`)}`
+              : ""}
+            {settings[SETTING_CURSOR_SYNC_MESSAGE] ? ` — ${settings[SETTING_CURSOR_SYNC_MESSAGE]}` : ""}
+          </p>
+        </section>
+
+        <section className="space-y-3 rounded-lg border border-foreground/10 p-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-medium">{t("live.grokTitle")}</h3>
+              <p className="text-xs text-muted-foreground">{t("live.grokHint")}</p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {connectorLabel(settings[SETTING_GROK_CONNECTED], grokHasToken, t)}
+            </p>
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="grok-session-token">{t("live.grokCookie")}</Label>
+            <Input
+              id="grok-session-token"
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              value={grokCookie}
+              placeholder={
+                settings[SETTING_GROK_SESSION_TOKEN]?.trim()
+                  ? t("live.tokenStored")
+                  : t("live.grokCookiePlaceholder")
+              }
+              disabled={!ready || busy}
+              onChange={(event) => setGrokCookie(event.target.value)}
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="grok-bearer-token">{t("live.grokBearer")}</Label>
+            <Input
+              id="grok-bearer-token"
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              value={grokBearer}
+              placeholder={
+                settings[SETTING_GROK_BEARER_TOKEN]?.trim()
+                  ? t("live.tokenStored")
+                  : t("live.grokBearerPlaceholder")
+              }
+              disabled={!ready || busy}
+              onChange={(event) => setGrokBearer(event.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              disabled={!ready || busy || (!grokCookie.trim() && !grokBearer.trim())}
+              onClick={() => void handleConnectGrok()}
+            >
+              {t("live.connect")}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!ready || busy || !grokHasToken}
+              onClick={disconnectGrok}
+            >
+              {t("live.disconnect")}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!ready || busy || !grokHasToken}
+              onClick={() => void handleLiveRefresh("grok")}
+            >
+              {t("live.refreshNow")}
+            </Button>
+          </div>
+          <div className="grid max-w-xs gap-1.5">
+            <Label htmlFor="grok-live-interval">{t("live.interval")}</Label>
+            <Input
+              id="grok-live-interval"
+              type="number"
+              min={1}
+              max={60}
+              step={1}
+              value={grokInterval}
+              disabled={!ready}
+              onChange={(event) => {
+                setSetting(SETTING_GROK_SYNC_INTERVAL_MIN, String(parseLiveSyncInterval(event.target.value)));
+              }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {t("live.lastSynced")}:{" "}
+            {settings[SETTING_GROK_LAST_SYNCED_AT]
+              ? formatDateTime(settings[SETTING_GROK_LAST_SYNCED_AT], i18n.language)
+              : t("live.lastSyncedNever")}
+            {settings[SETTING_GROK_SYNC_SOURCE]
+              ? ` · ${t(`live.badge.${settings[SETTING_GROK_SYNC_SOURCE]}`)}`
+              : ""}
+            {settings[SETTING_GROK_SYNC_MESSAGE] ? ` — ${settings[SETTING_GROK_SYNC_MESSAGE]}` : ""}
+          </p>
+          {settings[SETTING_GROK_BOT_LIVE] === "unavailable" && (
+            <p className="text-xs text-amber-400">{t("live.grokBotUnavailable")}</p>
+          )}
+        </section>
+
         <div className="grid gap-1.5">
           <Label htmlFor="cursor-snapshot">{t("settings.snapshotLabel")}</Label>
           <textarea
@@ -182,7 +467,6 @@ export function DataSourcesCard() {
         )}
 
         <p className="text-xs text-muted-foreground">{t("settings.manualTruth")}</p>
-        <p className="text-xs text-muted-foreground">{t("settings.grokReserved")}</p>
       </CardContent>
     </Card>
   );

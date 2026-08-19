@@ -8,7 +8,7 @@ export const HINT_TO_POOL_ID: Record<string, string> = {
   cursor_other: "preset-cursor-other",
 };
 
-export function resolvePoolId(hint: string, pools: Pool[]): string | null {
+export function resolvePoolId(hint: string, pools: Array<Pick<Pool, "id" | "name">>): string | null {
   const mapped = HINT_TO_POOL_ID[hint];
   if (mapped && pools.some((pool) => pool.id === mapped)) return mapped;
   const exact = pools.find((pool) => pool.id === hint);

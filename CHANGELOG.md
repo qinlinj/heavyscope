@@ -6,7 +6,26 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-19
+
 ### Added
+
+- Live Cursor usage sync from unofficial `GET https://cursor.com/api/usage-summary` using a user-pasted `WorkosCursorSessionToken`. Maps Auto/Composer (`autoPercentUsed`) and Other/API (`apiPercentUsed`) onto the two Cursor preset pools as percent-of-100. Default auto-refresh is 5 minutes.
+- Live Grok usage sync from unofficial `POST https://grok.com/grok_api_v2.GrokBuildBilling/GetGrokCreditsConfig` (gRPC-web empty body). Maps SuperGrok Heavy `credit_usage_percent`. Grok Bot is updated only when a Bot / Agents product segment is present.
+- Settings → Data sources live connect panels (password fields, Connect / Disconnect / Refresh now) above the existing snapshot importer. Dashboard Refresh now syncs configured providers.
+- Vite dev proxies `/proxy/cursor` and `/proxy/grok`. Tauri desktop uses `@tauri-apps/plugin-http` to bypass CORS.
+- Optional macOS-only, read-only Cursor `state.vscdb` helper. Linux builds compile a stub.
+- JSON backup export omits `cursor_session_token`, `grok_session_token`, and `grok_bearer_token`.
+- docs/MACOS.md for tray checks and the vscdb helper.
+
+### Changed
+
+- Version 0.8.0. Snapshot import and manual CRUD stay. `optimizeDeps.include: ["sql.js"]` and `fallbackLng` are unchanged.
+
+## [0.7.6] docs / clipboard follow-up
+
+### Added
+
 
 - Settings → Local data: Paste JSON fills the import textarea from the clipboard via `navigator.clipboard.readText`. Success and failure flash in zh-CN / en. A pending flash shows immediately; `readText` is raced against a 3s timeout (timeout is treated as failure). Does not auto-apply; the user still clicks Apply backup.
 - Settings → Local data: Copy JSON writes the same backup payload to the clipboard via `navigator.clipboard.writeText`. Success and failure flash in zh-CN / en. Product version stays 0.7.6.

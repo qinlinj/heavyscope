@@ -16,12 +16,21 @@ import { riskTone, type PoolAdvice } from "@/lib/burnRate";
 import {
   formatAmount,
   formatCountdown,
+  formatDateTime,
   remaining,
   usagePercent,
   usageTone,
 } from "@/lib/format";
 import { displayPoolName } from "@/lib/poolName";
+import type { PoolSyncBadge } from "@/lib/settings";
 import { cn } from "@/lib/utils";
+
+export type PoolSyncMeta = {
+  connected: boolean;
+  source: PoolSyncBadge;
+  lastSyncedAt?: string | null;
+  botUnavailable?: boolean;
+};
 
 type Props = {
   pool: Pool;
@@ -29,6 +38,7 @@ type Props = {
   advice?: PoolAdvice;
   warnPercent?: number;
   critPercent?: number;
+  syncMeta?: PoolSyncMeta;
   onEdit: (pool: Pool) => void;
   onDelete: (pool: Pool) => void;
 };
@@ -39,6 +49,7 @@ export function PoolCard({
   advice,
   warnPercent,
   critPercent,
+  syncMeta,
   onEdit,
   onDelete,
 }: Props) {
@@ -59,6 +70,14 @@ export function PoolCard({
         </CardTitle>
         <CardDescription>
           {pool.is_preset ? t("pool.preset") : t("pool.custom")} · {pool.unit}
+          {syncMeta && (
+            <>
+              {" · "}
+              <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                {t(`live.badge.${syncMeta.source}`)}
+              </span>
+            </>
+          )}
         </CardDescription>
         <CardAction className="flex gap-1">
           <Button variant="ghost" size="icon-sm" onClick={() => onEdit(pool)}>
@@ -107,6 +126,16 @@ export function PoolCard({
             value={formatCountdown(pool.reset_at, i18n.language)}
           />
         </div>
+        {syncMeta && (
+          <p className="text-xs text-muted-foreground">
+            {syncMeta.connected
+              ? syncMeta.lastSyncedAt
+                ? `${t("live.lastSynced")}: ${formatDateTime(syncMeta.lastSyncedAt, i18n.language)}`
+                : t("live.lastSyncedNever")
+              : t("live.notConnected")}
+            {syncMeta.botUnavailable ? ` — ${t("live.grokBotUnavailable")}` : ""}
+          </p>
+        )}
         {advice && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/40 px-2.5 py-2 text-xs">
             <span className="text-muted-foreground">
