@@ -2,6 +2,7 @@ import { Gauge, History, Settings2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -14,8 +15,8 @@ export function AppLayout() {
   const { t } = useTranslation();
 
   return (
-    <div className="dark min-h-svh bg-background text-foreground">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,_oklch(0.28_0.04_250/_0.45),_transparent_55%)]" />
+    <div className="min-h-svh bg-background text-foreground">
+      <div className="pointer-events-none fixed inset-0 dark:bg-[radial-gradient(circle_at_top,_oklch(0.28_0.04_250/_0.45),_transparent_55%)]" />
       <div className="relative mx-auto flex min-h-svh max-w-6xl flex-col px-4 py-5 sm:px-6">
         <header data-tauri-drag-region className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
@@ -50,6 +51,7 @@ export function AppLayout() {
                 </NavLink>
               ))}
             </nav>
+            <ThemeToggle />
             <LanguageToggle />
           </div>
         </header>

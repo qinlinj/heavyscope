@@ -6,6 +6,17 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+### Added
+
+- Theme preference `theme` = `dark` | `light` | `system` (default **dark**). Applied as `class="dark"` on `document.documentElement`. Header and Settings expose a three-way control. Persisted in the settings table and `localStorage` (`heavyscope.theme`). Light uses a white/light surface, not an invert of the dark palette.
+- HTML5 drag-and-drop reorder for advisor / heatmap / trend. Dropping a module onto another inserts it before the target. `reorderChartModules` plus unit tests. Hidden modules stay in `chart_module_order` so they restore position.
+
+### Changed
+
+- Daily Activity heatmap is `w-full` and uses `grid-template-columns: repeat(weeks, minmax(0, 1fr))` so cells share the card width. Cells are `aspect-square` with `gap-px`. Month labels use the same column template. Weekday labels stay a narrow column. Still 17 weeks on large screens / 12 when narrow. Intensity remains daily record count.
+- Dashboard layout no longer merges consecutive heatmap + trend into one side-by-side ChartsPanel. Advisor, heatmap, and trend are three independent full-width modules in `prefs.order`.
+- Compact `/tray` panel is denser: Day / Week / Month totals on the tightest 1–2 pools, used% bars, one-line advisor, and a small heatmap. Still a menu-bar popup, not a 980px window.
+
 ### Fixed
 
 - macOS compile: `App::set_activation_policy` returns `()` in Tauri 2.11.3, so Accessory setup no longer uses `?`.

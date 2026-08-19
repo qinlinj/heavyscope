@@ -72,9 +72,12 @@ GitHub: https://github.com/qinlinj/heavyscope
 
 ## Chart polish leftover
 
+- [x] Heatmap fills available card width (CSS 1fr week columns, square cells, aligned month labels)
+- [x] Independent full-width advisor / heatmap / trend modules + HTML5 drag-and-drop reorder
+- [x] Theme: dark / light / system (`theme` setting + localStorage)
+- [x] Denser compact `/tray` (1–2 pools, Day/Week/Month, used% bars, one-line advisor, small heatmap)
 - [ ] Persist Day / Week / Month scale (currently component state only)
 - [ ] Optional heatmap filter by pool, and an amount-normalized intensity mode for single-unit views
-- [ ] Drag-and-drop module reorder (up/down buttons are enough for now)
 - [ ] Stacked trend Y-axis still sums raw amounts across mixed units; consider per-unit facets
 - [ ] Heatmap month-label collisions on very narrow cards
 
@@ -113,7 +116,7 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Signed macOS menu-bar binary / codesign (needs a Mac and certificates)
 - [ ] Verify Accessory on a real Mac: no Dock icon, `LSUIElement`, template status item
 - [ ] Verify the 380×520 panel anchors under the status item (not screen center) and hides on click-outside / deactivate
-- [ ] Confirm `/tray` shows the tightest 1–2 pools + advisor one-liner (en / zh-CN)
+- [x] `/tray` shows the tightest 1–2 pools + advisor one-liner, Day/Week/Month, used% bars, optional small heatmap (en / zh-CN)
 - [ ] Measure release `.app` / `.dmg` size on a Mac (`du -sh`; target < 50MB, ideally 20–30MB) — steps in docs/MACOS.md
 - [ ] Windows installer
 - [ ] GitHub Release asset upload (MCP has no create-release tool)

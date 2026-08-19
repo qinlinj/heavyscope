@@ -8,19 +8,22 @@ import { cn } from "@/lib/utils";
 type Props = {
   records: UsageRecord[];
   weeks?: number;
+  compact?: boolean;
 };
 
 const LEVEL_CLASS = [
-  "bg-foreground/10",
-  "bg-emerald-900",
-  "bg-emerald-700",
-  "bg-emerald-500",
-  "bg-emerald-300",
+  "bg-muted",
+  "bg-emerald-200 dark:bg-emerald-900",
+  "bg-emerald-400 dark:bg-emerald-700",
+  "bg-emerald-600 dark:bg-emerald-500",
+  "bg-emerald-800 dark:bg-emerald-300",
 ] as const;
 
-export function ActivityHeatmap({ records, weeks }: Props) {
+const WEEK_COLUMNS = (weeks: number) => `repeat(${weeks}, minmax(0, 1fr))`;
+
+export function ActivityHeatmap({ records, weeks, compact = false }: Props) {
   const { t, i18n } = useTranslation();
-  const autoWeeks = useHeatmapWeeks();
+  const autoWeeks = useHeatmapWeeks(compact);
   const resolvedWeeks = weeks ?? autoWeeks;
   const grid = useMemo(() => heatmapGrid(records, resolvedWeeks), [records, resolvedWeeks]);
   const locale = i18n.resolvedLanguage ?? i18n.language;
@@ -28,30 +31,41 @@ export function ActivityHeatmap({ records, weeks }: Props) {
   const weekdays = useMemo(() => weekdayLabels(locale), [locale]);
   const months = useMemo(() => monthLabels(grid.cells, grid.weeks, locale), [grid, locale]);
   const today = useMemo(() => localTodayKey(), []);
+  const weekTemplate = WEEK_COLUMNS(grid.weeks);
 
   return (
-    <div className="w-fit max-w-full overflow-x-auto">
-      <div
-        className="mb-1 grid gap-[3px] pl-[14px] text-[9px] leading-none text-muted-foreground"
-        style={{ gridTemplateColumns: `repeat(${grid.weeks}, 10px)` }}
-      >
-        {Array.from({ length: grid.weeks }, (_, weekIndex) => (
-          <span key={weekIndex} className="truncate">
-            {months.get(weekIndex) ?? ""}
-          </span>
-        ))}
-      </div>
-      <div className="flex gap-[3px]">
-        <div className="grid grid-rows-7 gap-[3px] text-[9px] leading-[10px] text-muted-foreground">
+    <div className="w-full">
+      <div className="grid w-full grid-cols-[auto_minmax(0,1fr)] gap-x-1">
+        <div aria-hidden="true" />
+        <div
+          className={cn(
+            "mb-1 grid w-full gap-px text-[9px] leading-none text-muted-foreground",
+            compact && "mb-0.5",
+          )}
+          style={{ gridTemplateColumns: weekTemplate }}
+        >
+          {Array.from({ length: grid.weeks }, (_, weekIndex) => (
+            <span key={weekIndex} className="min-w-0 truncate">
+              {months.get(weekIndex) ?? ""}
+            </span>
+          ))}
+        </div>
+        <div className="grid h-full grid-rows-7 gap-px text-[9px] leading-none text-muted-foreground">
           {weekdays.map((label, weekday) => (
-            <span key={label + weekday} className={cn("w-3 text-right", weekday % 2 === 0 && "invisible")}>
+            <span
+              key={label + weekday}
+              className={cn(
+                "flex w-3 items-center justify-end",
+                weekday % 2 === 0 && "invisible",
+              )}
+            >
               {label}
             </span>
           ))}
         </div>
         <div
-          className="grid grid-rows-7 grid-flow-col gap-[3px]"
-          style={{ gridTemplateColumns: `repeat(${grid.weeks}, 10px)` }}
+          className="grid w-full grid-flow-col grid-rows-7 gap-px"
+          style={{ gridTemplateColumns: weekTemplate }}
         >
           {grid.cells.map((cell) => {
             const level = heatmapLevel(cell.count, grid.maxCount);
@@ -61,7 +75,7 @@ export function ActivityHeatmap({ records, weeks }: Props) {
                 key={cell.date}
                 type="button"
                 className={cn(
-                  "size-[10px] rounded-[2px]",
+                  "aspect-square w-full min-w-0 rounded-[2px]",
                   LEVEL_CLASS[level],
                   cell.date === today && "ring-1 ring-foreground/50",
                 )}
@@ -77,14 +91,19 @@ export function ActivityHeatmap({ records, weeks }: Props) {
           })}
         </div>
       </div>
-      <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
-        <span className="min-h-4 tabular-nums">
+      <div
+        className={cn(
+          "mt-2 flex items-center justify-between gap-2 text-[10px] text-muted-foreground",
+          compact && "mt-1.5",
+        )}
+      >
+        <span className="min-h-4 min-w-0 truncate tabular-nums">
           {tip ? t("charts.heatmapTooltip", { date: tip.date, total: tip.total }) : t("charts.heatmapLegend")}
         </span>
-        <span className="flex items-center gap-1">
+        <span className="flex shrink-0 items-center gap-1">
           <span>{t("charts.less")}</span>
           {LEVEL_CLASS.map((className) => (
-            <span key={className} className={cn("size-[10px] rounded-[2px]", className)} />
+            <span key={className} className={cn("size-2.5 rounded-[2px]", className)} />
           ))}
           <span>{t("charts.more")}</span>
         </span>
@@ -93,15 +112,19 @@ export function ActivityHeatmap({ records, weeks }: Props) {
   );
 }
 
-function useHeatmapWeeks(): number {
-  const [weeks, setWeeks] = useState(17);
+function useHeatmapWeeks(compact: boolean): number {
+  const [weeks, setWeeks] = useState(compact ? 10 : 17);
   useEffect(() => {
+    if (compact) {
+      setWeeks(10);
+      return;
+    }
     const media = window.matchMedia("(min-width: 1024px)");
     const apply = () => setWeeks(media.matches ? 17 : 12);
     apply();
     media.addEventListener("change", apply);
     return () => media.removeEventListener("change", apply);
-  }, []);
+  }, [compact]);
   return weeks;
 }
 

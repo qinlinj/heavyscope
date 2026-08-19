@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import type { Pool, PoolDraft } from "@/db/schema";
 import { persistLanguage } from "@/i18n";
+import { persistTheme, THEMES, parseTheme, readStoredTheme } from "@/lib/theme";
 import { useDatabase } from "@/hooks/useDatabase";
 import {
   BACKUP_FILENAME,
@@ -229,6 +230,33 @@ export function Settings() {
               <SelectContent>
                 <SelectItem value="zh-CN">{t("settings.zh")}</SelectItem>
                 <SelectItem value="en">{t("settings.en")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>{t("settings.theme")}</CardTitle>
+          <CardDescription>{t("settings.themeHint")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid max-w-xs gap-1.5">
+            <Label>{t("settings.theme")}</Label>
+            <Select
+              value={parseTheme(settings.theme ?? readStoredTheme())}
+              onValueChange={(next) => persistTheme(next, setSetting)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {THEMES.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {t(`settings.theme${value === "dark" ? "Dark" : value === "light" ? "Light" : "System"}`)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

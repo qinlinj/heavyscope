@@ -43,7 +43,7 @@ The menu-bar glyph is the monochrome template `src-tauri/icons/tray-template.png
 - [ ] A template (black/white) icon sits in the menu bar. Optional percent title (tightest pool) may appear next to it.
 - [ ] Left-click opens a compact 380×520 panel **anchored under the status item**, not at screen center.
 - [ ] The panel has no overlapping traffic-light title-bar buttons (undecorated / overlay title hidden).
-- [ ] The panel loads `/tray` (tightest 1–2 pools + advisor one-liner). Language toggle is en / 中文.
+- [ ] The panel loads `/tray` (tightest 1–2 pools, Day/Week/Month, used% bars, advisor one-liner, small heatmap). Language and theme toggles are in the header.
 - [ ] Clicking outside the panel, or deactivating the app, hides it.
 - [ ] Clicking the icon again while the panel is open hides it (no flicker-reopen).
 - [ ] Right-click (or the tray menu) still offers Open and Quit.

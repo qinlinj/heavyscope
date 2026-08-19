@@ -17,6 +17,7 @@ import {
   SETTING_WARN_PERCENT,
   liveConnectorOwnsPool,
 } from "@/lib/settings";
+import { DEFAULT_THEME, parseTheme, SETTING_THEME, THEME_STORAGE_KEY } from "@/lib/theme";
 import {
   planBackupApply,
   reportFromPlan,
@@ -211,6 +212,9 @@ export class HeavyScopeDB {
     }
     if (!this.getSetting(SETTING_SYNC_SOURCE)) {
       this.writeSetting(SETTING_SYNC_SOURCE, DEFAULT_SYNC_SOURCE);
+    }
+    if (!this.getSetting(SETTING_THEME)) {
+      this.writeSetting(SETTING_THEME, parseTheme(localStorage.getItem(THEME_STORAGE_KEY) ?? DEFAULT_THEME));
     }
   }
 
