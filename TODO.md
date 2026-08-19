@@ -56,6 +56,14 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Desktop packaging / installers (Linux .deb can be built locally; macOS menu bar must be built on a Mac)
 - [x] Release notes and 0.7.0 polish (README, CHANGELOG, docs/RELEASE.md)
 
+## Chart polish leftover
+
+- [ ] Persist Day / Week / Month scale (currently component state only)
+- [ ] Optional heatmap filter by pool, and an amount-normalized intensity mode for single-unit views
+- [ ] Drag-and-drop module reorder (up/down buttons are enough for now)
+- [ ] Stacked trend Y-axis still sums raw amounts across mixed units; consider per-unit facets
+- [ ] Heatmap month-label collisions on very narrow cards
+
 ## Polish / leftover gaps (0.7.6)
 
 - [x] Replace native `window.confirm` with in-app AlertDialogs (delete pool, reset DB, demo re-apply, import, replace-all)

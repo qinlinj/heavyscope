@@ -2,6 +2,7 @@ import { Plus, ScrollText } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AdvisorPanel } from "@/components/AdvisorPanel";
+import { ChartLayoutControls } from "@/components/ChartLayoutControls";
 import { ChartsPanel } from "@/components/ChartsPanel";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PoolCard } from "@/components/PoolCard";
@@ -11,6 +12,16 @@ import { Button } from "@/components/ui/button";
 import type { Pool, PoolDraft } from "@/db/schema";
 import { advisePool, crossPoolAdvice, tightestAdvice } from "@/lib/burnRate";
 import { useDatabase } from "@/hooks/useDatabase";
+import {
+  groupChartModules,
+  moveChartModule,
+  parseChartPrefs,
+  SETTING_CHART_MODULE_ORDER,
+  SETTING_CHART_SHOW_ADVISOR,
+  SETTING_CHART_SHOW_HEATMAP,
+  SETTING_CHART_SHOW_TREND,
+  type ChartModuleId,
+} from "@/lib/charts";
 
 export function Dashboard() {
   const { t } = useTranslation();
@@ -19,12 +30,20 @@ export function Dashboard() {
     error,
     pools,
     records,
+    settings,
+    setSetting,
     createPool,
     updatePool,
     deletePool,
     addUsage,
     thresholds,
   } = useDatabase();
+  const prefs = useMemo(() => parseChartPrefs(settings), [settings]);
+  const moduleGroups = useMemo(
+    () => groupChartModules(prefs.order, prefs.show),
+    [prefs.order, prefs.show],
+  );
+  const firstChartsIndex = moduleGroups.findIndex((item) => item.type === "charts");
   const [formOpen, setFormOpen] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
   const [editing, setEditing] = useState<Pool | null>(null);
@@ -41,6 +60,19 @@ export function Dashboard() {
     if (editing) updatePool(editing.id, draft);
     else createPool(draft);
     setEditing(null);
+  }
+
+  function toggleModule(id: ChartModuleId, show: boolean) {
+    const key = {
+      advisor: SETTING_CHART_SHOW_ADVISOR,
+      heatmap: SETTING_CHART_SHOW_HEATMAP,
+      trend: SETTING_CHART_SHOW_TREND,
+    }[id];
+    setSetting(key, show ? "true" : "false");
+  }
+
+  function moveModule(id: ChartModuleId, direction: "up" | "down") {
+    setSetting(SETTING_CHART_MODULE_ORDER, JSON.stringify(moveChartModule(prefs.order, id, direction)));
   }
 
   if (!ready) {
@@ -71,14 +103,32 @@ export function Dashboard() {
         </div>
       </div>
 
-      <AdvisorPanel
-        pools={pools}
-        advices={advices}
-        tightest={tightest}
-        switchAdvice={switchAdvice}
-        warnPercent={thresholds.warn}
-        critPercent={thresholds.crit}
-      />
+      <ChartLayoutControls prefs={prefs} onToggle={toggleModule} onMove={moveModule} />
+
+      {moduleGroups.map((group, index) => {
+        if (group.type === "advisor") {
+          return (
+            <AdvisorPanel
+              key="advisor"
+              pools={pools}
+              advices={advices}
+              tightest={tightest}
+              switchAdvice={switchAdvice}
+              warnPercent={thresholds.warn}
+              critPercent={thresholds.crit}
+            />
+          );
+        }
+        return (
+          <ChartsPanel
+            key={group.ids.join("-")}
+            pools={pools}
+            records={records}
+            modules={group.ids}
+            showHeading={index === firstChartsIndex}
+          />
+        );
+      })}
 
       {pools.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("dashboard.empty")}</p>
@@ -101,8 +151,6 @@ export function Dashboard() {
           ))}
         </div>
       )}
-
-      <ChartsPanel pools={pools} records={records} />
 
       <PoolFormDialog
         open={formOpen}

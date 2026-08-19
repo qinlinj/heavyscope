@@ -8,6 +8,10 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Added
 
+- Dashboard Daily Activity heatmap (GitHub-style, last 17 weeks on large screens / 12 weeks when narrow). Intensity is daily usage-record **count**, not summed amounts, so Cursor $ and Grok % stay comparable. Tooltip shows date + total count.
+- Day / Week / Month scale toggle on the main stacked usage chart (Recharts area for day, bars for week/month).
+- Per-pool used% bars replace the single mixed-unit pool-share pie.
+- Dashboard module visibility and order for advisor / heatmap / trend. Keys: `chart_show_heatmap`, `chart_show_trend`, `chart_show_advisor` (default on), and `chart_module_order`. Persisted via `setSetting` on the settings table. Up/down buttons on the dashboard header.
 - macOS Tauri 2 shell is a real menu-bar accessory on top of the existing `LSUIElement` Info.plist: Rust `ActivationPolicy::Accessory`, template status-item icon, hide-on-deactivate, and a 380×520 undecorated panel anchored under the tray rectangle (overrides the Linux 980×720 `center` window). Linux/Windows still compile as a normal tray window.
 - Compact `/tray` route (en + zh-CN) for the accessory panel: tightest 1–2 pools plus an advisor one-liner. Browser preview at `/tray`.
 - `docs/MACOS.md` — Mac build (`pnpm tauri build`), Accessory checklist, codesign note, and how to measure `.app` / `.dmg` size.
@@ -17,6 +21,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Changed
 
+- Charts section layout: heatmap stays about one quarter of the charts card when shown beside the trend; used% bars sit below the trend.
 - `src-tauri` release profile now uses LTO, `opt-level = "s"`, and strip to keep the Mac bundle toward the < 50MB target. Product version stays 0.7.6.
 - Confirm dialogs: Radix AlertDialog already traps focus and cancels on Escape; Title/Description supply `aria-labelledby` / `aria-describedby` for Dashboard/Settings delete and reset. Destructive confirm action is `type="button"`.
 

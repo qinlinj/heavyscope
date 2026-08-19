@@ -9,7 +9,7 @@ Current product version is **0.7.6**.
 ## Features
 
 - **Dashboard + burn rate advisor** — four preset pools plus custom services, progress bars, remaining quota, reset countdown, and usage-tone colors. The advisor shows recommended daily pace, today used, waste / overspend risk, and cross-pool switch suggestions.
-- **Charts / history** — daily stacked area (14 days), weekly stacked bars (8 weeks), and a pool-share donut. History filters usage records by pool, date range, and source. Date pickers follow the browser locale.
+- **Charts / history** — Daily Activity heatmap (record count, not mixed-unit amounts), Day / Week / Month stacked trend, and per-pool used% bars. Advisor / heatmap / trend can be shown, hidden, or reordered. History filters usage records by pool, date range, and source. Date pickers follow the browser locale.
 - **Settings** — pool management (add / edit / delete), alert thresholds (warn / crit), language (EN / 中文), JSON backup export / copy / import, and optional demo usage seed.
 - **Cursor snapshot import** — paste a Cursor usage snapshot (JSON or CSV) in Settings → Data sources. Optional auto-sync re-applies the last import. The Grok adapter is reserved (Coming soon).
 - **JSON backup export / copy / import** — Settings → Local data downloads `heavyscope-backup.json`, copies the same payload to the clipboard, or accepts a file / paste (table dump, not a wasm / binary file). Merge is the default; replace-all is optional.
