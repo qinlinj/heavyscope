@@ -1,4 +1,5 @@
 import type { Pool, UsageRecord, UsageSource } from "@/db/schema";
+import { usagePercent } from "@/lib/format";
 
 export type DailyPoint = {
   date: string;
@@ -17,6 +18,55 @@ export type SharePoint = {
   value: number;
   color: string;
 };
+
+export type MonthlyPoint = {
+  month: string;
+  total: number;
+  [poolId: string]: string | number;
+};
+
+export type ScalePoint = {
+  key: string;
+  total: number;
+  [poolId: string]: string | number;
+};
+
+export type ChartScale = "day" | "week" | "month";
+
+export type ScaleLengths = {
+  days?: number;
+  weeks?: number;
+  months?: number;
+};
+
+export type UsageBarPoint = {
+  id: string;
+  name: string;
+  percent: number;
+  color: string;
+  unit: string;
+};
+
+export const CHART_MODULE_IDS = ["advisor", "heatmap", "trend"] as const;
+export type ChartModuleId = (typeof CHART_MODULE_IDS)[number];
+
+export const DEFAULT_CHART_MODULE_ORDER: ChartModuleId[] = [...CHART_MODULE_IDS];
+
+export const SETTING_CHART_SHOW_HEATMAP = "chart_show_heatmap";
+export const SETTING_CHART_SHOW_TREND = "chart_show_trend";
+export const SETTING_CHART_SHOW_ADVISOR = "chart_show_advisor";
+export const SETTING_CHART_MODULE_ORDER = "chart_module_order";
+
+export type ChartShowMap = Record<ChartModuleId, boolean>;
+
+export type ChartPrefs = {
+  show: ChartShowMap;
+  order: ChartModuleId[];
+};
+
+export type ChartModuleGroup =
+  | { type: "advisor"; ids: ["advisor"] }
+  | { type: "charts"; ids: ChartModuleId[] };
 
 export type RecordFilters = {
   poolId?: string;
@@ -178,4 +228,154 @@ export function poolShare(
 
 export function seriesHasUsage(points: Array<{ total: number }>): boolean {
   return points.some((point) => point.total > 0);
+}
+
+function startOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+export function monthlySeries(
+  records: UsageRecord[],
+  months = 6,
+  pools?: Pool[],
+  now: Date = new Date(),
+): MonthlyPoint[] {
+  const poolIds = poolIdsFrom(records, pools);
+  const count = Math.max(1, months);
+  const thisMonth = startOfMonth(now);
+  const points: MonthlyPoint[] = [];
+
+  for (let i = count - 1; i >= 0; i -= 1) {
+    const date = new Date(thisMonth.getFullYear(), thisMonth.getMonth() - i, 1);
+    const month = `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
+    const point: MonthlyPoint = { month, total: 0 };
+    for (const id of poolIds) point[id] = 0;
+    points.push(point);
+  }
+
+  const index = new Map(points.map((point) => [point.month, point]));
+  for (const record of records) {
+    const recorded = new Date(record.recorded_at);
+    if (Number.isNaN(recorded.getTime())) continue;
+    const month = `${recorded.getFullYear()}-${pad(recorded.getMonth() + 1)}`;
+    const point = index.get(month);
+    if (!point) continue;
+    point.total += record.amount;
+    point[record.pool_id] = Number(point[record.pool_id] ?? 0) + record.amount;
+  }
+  return points;
+}
+
+export function scaleSeries(
+  records: UsageRecord[],
+  scale: ChartScale,
+  pools?: Pool[],
+  now: Date = new Date(),
+  lengths: ScaleLengths = {},
+): ScalePoint[] {
+  if (scale === "week") {
+    return weeklySeries(records, lengths.weeks ?? 8, pools, now).map(({ week, ...rest }) => ({
+      key: week,
+      ...rest,
+    }));
+  }
+  if (scale === "month") {
+    return monthlySeries(records, lengths.months ?? 6, pools, now).map(({ month, ...rest }) => ({
+      key: month,
+      ...rest,
+    }));
+  }
+  return dailySeries(records, pools, lengths.days ?? 14, now).map(({ date, ...rest }) => ({
+    key: date,
+    ...rest,
+  }));
+}
+
+/** Per-pool used% so Cursor $ and Grok % never share one pie. */
+export function poolUsageBars(
+  pools: Pool[],
+  labelFor?: (pool: Pool) => string,
+): UsageBarPoint[] {
+  return pools.map((pool) => ({
+    id: pool.id,
+    name: labelFor ? labelFor(pool) : pool.name,
+    percent: usagePercent(pool),
+    color: pool.color || FALLBACK_COLOR,
+    unit: pool.unit,
+  }));
+}
+
+function parseBoolSetting(value: string | undefined, fallback = true): boolean {
+  if (value == null || value === "") return fallback;
+  const normalized = value.trim().toLowerCase();
+  return normalized !== "false" && normalized !== "0";
+}
+
+export function parseChartModuleOrder(value: string | undefined): ChartModuleId[] {
+  if (!value) return [...DEFAULT_CHART_MODULE_ORDER];
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!Array.isArray(parsed)) return [...DEFAULT_CHART_MODULE_ORDER];
+    const seen = new Set<ChartModuleId>();
+    const order: ChartModuleId[] = [];
+    for (const item of parsed) {
+      if ((CHART_MODULE_IDS as readonly string[]).includes(item) && !seen.has(item)) {
+        seen.add(item);
+        order.push(item);
+      }
+    }
+    for (const id of CHART_MODULE_IDS) {
+      if (!seen.has(id)) order.push(id);
+    }
+    return order.length > 0 ? order : [...DEFAULT_CHART_MODULE_ORDER];
+  } catch {
+    return [...DEFAULT_CHART_MODULE_ORDER];
+  }
+}
+
+export function parseChartPrefs(settings: Record<string, string>): ChartPrefs {
+  return {
+    show: {
+      advisor: parseBoolSetting(settings[SETTING_CHART_SHOW_ADVISOR]),
+      heatmap: parseBoolSetting(settings[SETTING_CHART_SHOW_HEATMAP]),
+      trend: parseBoolSetting(settings[SETTING_CHART_SHOW_TREND]),
+    },
+    order: parseChartModuleOrder(settings[SETTING_CHART_MODULE_ORDER]),
+  };
+}
+
+export function moveChartModule(
+  order: ChartModuleId[],
+  id: ChartModuleId,
+  direction: "up" | "down",
+): ChartModuleId[] {
+  const next = [...order];
+  const index = next.indexOf(id);
+  if (index < 0) return next;
+  const swapWith = direction === "up" ? index - 1 : index + 1;
+  if (swapWith < 0 || swapWith >= next.length) return next;
+  const current = next[index];
+  const other = next[swapWith];
+  if (current === undefined || other === undefined) return next;
+  next[index] = other;
+  next[swapWith] = current;
+  return next;
+}
+
+export function groupChartModules(order: ChartModuleId[], show: ChartShowMap): ChartModuleGroup[] {
+  const groups: ChartModuleGroup[] = [];
+  for (const id of order) {
+    if (!show[id]) continue;
+    if (id === "advisor") {
+      groups.push({ type: "advisor", ids: ["advisor"] });
+      continue;
+    }
+    const last = groups.at(-1);
+    if (last?.type === "charts") {
+      last.ids.push(id);
+    } else {
+      groups.push({ type: "charts", ids: [id] });
+    }
+  }
+  return groups;
 }

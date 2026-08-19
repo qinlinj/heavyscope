@@ -171,7 +171,7 @@
   },
   "charts": {
     "title": "用量趋势",
-    "subtitle": "基于本地记录的日、周用量与额度池占比。",
+    "subtitle": "每日活动热力图，以及按日 / 周 / 月堆叠的用量趋势。各池已用百分比分开显示，不会把 $ 和 % 画进同一张饼图。",
     "daily": "日用量",
     "dailyHint": "近 14 天，按额度池堆叠",
     "weekly": "周用量",
@@ -179,7 +179,35 @@
     "share": "额度池占比",
     "shareHint": "已用量份额",
     "empty": "还没有用量记录。先记录一次用量即可看到图表。",
-    "total": "合计"
+    "total": "合计",
+    "modules": "仪表盘模块",
+    "modulesHint": "显示、隐藏或调整顾问、热力图与趋势的顺序。写入本地设置表。",
+    "module": {
+      "advisor": "顾问",
+      "heatmap": "热力图",
+      "trend": "趋势"
+    },
+    "moveUp": "上移",
+    "moveDown": "下移",
+    "heatmap": "每日活动",
+    "heatmapHint": "颜色深浅按当天记录条数，而不是金额，因此不同单位的额度池可以放在同一张图上比较。",
+    "heatmapTooltip": "{{date}} · {{total}} 条记录",
+    "heatmapLegend": "悬停查看日期与合计。",
+    "less": "少",
+    "more": "多",
+    "trend": "用量",
+    "trendHint": {
+      "day": "近 14 天，按额度池堆叠",
+      "week": "近 8 周，按额度池堆叠",
+      "month": "近 6 个月，按额度池堆叠"
+    },
+    "scale": {
+      "day": "日",
+      "week": "周",
+      "month": "月"
+    },
+    "usage": "额度池已用 %",
+    "usageHint": "每条是该池自己的已用百分比。美元池和百分比池不会混在同一张饼图里。"
   },
   "history": {
     "title": "用量历史",
