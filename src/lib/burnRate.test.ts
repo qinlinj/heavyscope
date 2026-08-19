@@ -7,6 +7,8 @@ import {
   projectionAtReset,
   recommendedDaily,
   risk,
+  tightestAdvice,
+  tightestAdvices,
   todayUsed,
   type PoolAdvice,
 } from "@/lib/burnRate";
@@ -176,5 +178,24 @@ describe("crossPoolAdvice", () => {
 describe("projectionAtReset", () => {
   it("adds remaining-cycle burn onto current used", () => {
     expect(projectionAtReset(40, 5, 3)).toBe(55);
+  });
+});
+
+describe("tightestAdvices", () => {
+  it("returns the tightest pool first, then the next, capped at the limit", () => {
+    const ranked = tightestAdvices(
+      [
+        advice({ poolId: "cool", usagePercent: 20, risk: "ok", todaySafeRemaining: 40 }),
+        advice({ poolId: "hot", usagePercent: 91, risk: "overspend", todaySafeRemaining: 2 }),
+        advice({ poolId: "mid", usagePercent: 70, risk: "ok", todaySafeRemaining: 12 }),
+      ],
+      2,
+    );
+    expect(ranked.map((item) => item.poolId)).toEqual(["hot", "mid"]);
+    expect(tightestAdvice(ranked)?.poolId).toBe("hot");
+  });
+
+  it("returns an empty list when there are no pools", () => {
+    expect(tightestAdvices([], 2)).toEqual([]);
   });
 });

@@ -22,7 +22,8 @@
         "minHeight": 520,
         "visible": true,
         "center": true,
-        "theme": "Dark"
+        "theme": "Dark",
+        "decorations": true
       }
     ],
     "security": {
@@ -49,7 +50,8 @@
     "longDescription": "Local-first multi-quota monitoring panel. Web and desktop share the same UI and sql.js data logic.",
     "macOS": {
       "minimumSystemVersion": "10.15",
-      "hardenedRuntime": true
+      "hardenedRuntime": true,
+      "infoPlist": "Info.plist"
     }
   }
 }

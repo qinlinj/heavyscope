@@ -9,13 +9,13 @@ Current product version is **0.8.0**.
 ## Features
 
 - **Dashboard + burn rate advisor** — four preset pools plus custom services, progress bars, remaining quota, reset countdown, and usage-tone colors. The advisor shows recommended daily pace, today used, waste / overspend risk, and cross-pool switch suggestions.
-- **Charts / history** — daily stacked area (14 days), weekly stacked bars (8 weeks), and a pool-share donut. History filters usage records by pool, date range, and source. Date pickers follow the browser locale.
+- **Charts / history** — Daily Activity heatmap (record count, not mixed-unit amounts), Day / Week / Month stacked trend, and per-pool used% bars. Advisor / heatmap / trend can be shown, hidden, or reordered. History filters usage records by pool, date range, and source. Date pickers follow the browser locale.
 - **Settings** — pool management (add / edit / delete), alert thresholds (warn / crit), language (EN / 中文), JSON backup export / copy / import, and optional demo usage seed.
 - **Live Cursor + Grok sync** — connect your own accounts once in Settings → Data sources. HeavyScope refreshes remaining quota on a timer (default 5 minutes). Snapshot import and manual entry stay as fallbacks.
 - **Cursor snapshot import** — paste a Cursor usage snapshot (JSON or CSV) in Settings → Data sources. Optional auto-sync re-applies the last import when live Cursor is not connected.
 - **JSON backup export / copy / import** — Settings → Local data downloads `heavyscope-backup.json`, copies the same payload to the clipboard, or accepts a file / paste (table dump, not a wasm / binary file). Merge is the default; replace-all is optional.
 - **Demo seed** — load sample usage for the four preset pools (last 10 days, English notes) so charts and the advisor look alive. First load applies immediately; a later load asks for confirm because `demo_seeded=1`.
-- **Tauri 2 tray** — system tray / macOS menu-bar shell around the same web UI and sql.js database. Click the tray icon to open the window. Close hides to tray. Use Quit to exit.
+- **Tauri 2 tray** — system tray / macOS menu-bar shell around the same web UI and sql.js database. On macOS the shell is an **Accessory** (no Dock icon); the popup anchors under the status item and loads a compact `/tray` view. Linux/Windows keep a normal tray window. Close hides to tray. Use Quit to exit. **Verify the menu-bar accessory on a real Mac** — see [docs/MACOS.md](docs/MACOS.md).
 - **In-app confirm dialogs** — delete pool, reset local database, demo re-apply, import, and import replace-all use in-app AlertDialogs with zh-CN / en titles and actions. Native `window.confirm` is not used.
 - **Cycle rollover** — when a pool `reset_at` is past, quota used resets to 0, the next weekly/monthly date is set, and a Cycle reset usage note is stored. History is not deleted.
 
@@ -45,7 +45,7 @@ In-app confirm dialog when deleting a pool:
 - Tailwind CSS v4 + shadcn/ui + Recharts
 - react-i18next (zh-CN, en)
 - sql.js SQLite (web and Tauri webview)
-- Tauri 2 tray shell in `src-tauri`
+- Tauri 2 tray / macOS Accessory shell in `src-tauri` (see [docs/MACOS.md](docs/MACOS.md))
 - Vitest for unit tests
 - GitHub Actions CI (Node 22, package manager from packageManager)
 
@@ -81,9 +81,9 @@ pnpm tauri build
 
 `src-tauri` wraps the existing Vite React app. Identifier is `com.heavyscope.app`. Product name is HeavyScope.
 
-**macOS menu-bar `.app` / `.dmg` must be built on a Mac.** This Linux/web environment cannot produce those binaries. Linux `.deb` installers can be built locally. There is no Windows installer yet.
+**macOS menu-bar is Accessory; verify on a real Mac.** `Info.plist` already has `LSUIElement`. Rust adds `ActivationPolicy::Accessory` and anchors a 380×520 panel under the status item on top of that — the Linux window stays 980×720 `center: true`. This Linux/web environment cannot produce those binaries. Build with `pnpm tauri build` on a Mac, then walk through the checklist and size measurements in [docs/MACOS.md](docs/MACOS.md). Linux `.deb` installers can be built locally. There is no Windows installer yet.
 
-Generate icons from `src-tauri/app-icon.svg` with the Tauri icon command before bundling if you change the mark.
+Generate bundle icons from `src-tauri/app-icon.svg` with the Tauri icon command before shipping if you change the mark. The menu-bar glyph is the monochrome template `src-tauri/icons/tray-template.png`.
 
 ## Live Cursor connect
 

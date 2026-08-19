@@ -2,6 +2,7 @@ import { Plus, RefreshCw, ScrollText } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AdvisorPanel } from "@/components/AdvisorPanel";
+import { ChartLayoutControls } from "@/components/ChartLayoutControls";
 import { ChartsPanel } from "@/components/ChartsPanel";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PoolCard, type PoolSyncMeta } from "@/components/PoolCard";
@@ -12,6 +13,16 @@ import type { Pool, PoolDraft, UsageRecord } from "@/db/schema";
 import { advisePool, crossPoolAdvice, tightestAdvice } from "@/lib/burnRate";
 import { useDatabase } from "@/hooks/useDatabase";
 import { formatDateTime } from "@/lib/format";
+import {
+  groupChartModules,
+  moveChartModule,
+  parseChartPrefs,
+  SETTING_CHART_MODULE_ORDER,
+  SETTING_CHART_SHOW_ADVISOR,
+  SETTING_CHART_SHOW_HEATMAP,
+  SETTING_CHART_SHOW_TREND,
+  type ChartModuleId,
+} from "@/lib/charts";
 import {
   SETTING_CURSOR_CONNECTED,
   SETTING_CURSOR_LAST_SYNCED_AT,
@@ -47,14 +58,21 @@ export function Dashboard() {
     error,
     pools,
     records,
+    settings,
+    setSetting,
     createPool,
     updatePool,
     deletePool,
     addUsage,
     thresholds,
-    settings,
     refreshLiveProviders,
   } = useDatabase();
+  const prefs = useMemo(() => parseChartPrefs(settings), [settings]);
+  const moduleGroups = useMemo(
+    () => groupChartModules(prefs.order, prefs.show),
+    [prefs.order, prefs.show],
+  );
+  const firstChartsIndex = moduleGroups.findIndex((item) => item.type === "charts");
   const [formOpen, setFormOpen] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
   const [editing, setEditing] = useState<Pool | null>(null);
@@ -69,12 +87,6 @@ export function Dashboard() {
   const tightest = useMemo(() => tightestAdvice(advices), [advices]);
   const switchAdvice = useMemo(() => crossPoolAdvice(advices), [advices]);
 
-  function handleSubmit(draft: PoolDraft) {
-    if (editing) updatePool(editing.id, draft);
-    else createPool(draft);
-    setEditing(null);
-  }
-
   const cursorConfigured = Boolean(settings[SETTING_CURSOR_SESSION_TOKEN]?.trim());
   const grokConfigured = Boolean(
     settings[SETTING_GROK_SESSION_TOKEN]?.trim() || settings[SETTING_GROK_BEARER_TOKEN]?.trim(),
@@ -83,6 +95,25 @@ export function Dashboard() {
     .filter(Boolean)
     .sort()
     .at(-1);
+
+  function handleSubmit(draft: PoolDraft) {
+    if (editing) updatePool(editing.id, draft);
+    else createPool(draft);
+    setEditing(null);
+  }
+
+  function toggleModule(id: ChartModuleId, show: boolean) {
+    const key = {
+      advisor: SETTING_CHART_SHOW_ADVISOR,
+      heatmap: SETTING_CHART_SHOW_HEATMAP,
+      trend: SETTING_CHART_SHOW_TREND,
+    }[id];
+    setSetting(key, show ? "true" : "false");
+  }
+
+  function moveModule(id: ChartModuleId, direction: "up" | "down") {
+    setSetting(SETTING_CHART_MODULE_ORDER, JSON.stringify(moveChartModule(prefs.order, id, direction)));
+  }
 
   function syncMetaFor(pool: Pool, poolRecords: UsageRecord[]): PoolSyncMeta {
     if (pool.id === "preset-cursor-models" || pool.id === "preset-cursor-other") {
@@ -159,14 +190,32 @@ export function Dashboard() {
         </div>
       </div>
 
-      <AdvisorPanel
-        pools={pools}
-        advices={advices}
-        tightest={tightest}
-        switchAdvice={switchAdvice}
-        warnPercent={thresholds.warn}
-        critPercent={thresholds.crit}
-      />
+      <ChartLayoutControls prefs={prefs} onToggle={toggleModule} onMove={moveModule} />
+
+      {moduleGroups.map((group, index) => {
+        if (group.type === "advisor") {
+          return (
+            <AdvisorPanel
+              key="advisor"
+              pools={pools}
+              advices={advices}
+              tightest={tightest}
+              switchAdvice={switchAdvice}
+              warnPercent={thresholds.warn}
+              critPercent={thresholds.crit}
+            />
+          );
+        }
+        return (
+          <ChartsPanel
+            key={group.ids.join("-")}
+            pools={pools}
+            records={records}
+            modules={group.ids}
+            showHeading={index === firstChartsIndex}
+          />
+        );
+      })}
 
       {pools.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("dashboard.empty")}</p>
@@ -193,8 +242,6 @@ export function Dashboard() {
           ))}
         </div>
       )}
-
-      <ChartsPanel pools={pools} records={records} />
 
       <PoolFormDialog
         open={formOpen}

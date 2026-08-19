@@ -27,3 +27,9 @@ tauri-plugin-http = { version = "2", features = ["unsafe-headers"] }
 [target.'cfg(target_os = "macos")'.dependencies]
 rusqlite = { version = "0.32", features = ["bundled"] }
 base64 = "0.22"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

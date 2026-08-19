@@ -1,8 +1,7 @@
 import { Gauge, History, Settings2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
-import { persistLanguage } from "@/i18n";
-import { useDatabase } from "@/hooks/useDatabase";
+import { LanguageToggle } from "@/components/LanguageToggle";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -58,42 +57,6 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
-    </div>
-  );
-}
-
-function LanguageToggle() {
-  const { t, i18n } = useTranslation();
-  const { setSetting } = useDatabase();
-  const current = i18n.resolvedLanguage ?? "zh-CN";
-
-  return (
-    <div
-      className="inline-flex items-center rounded-xl bg-card/80 p-1 text-xs ring-1 ring-foreground/10 backdrop-blur"
-      role="group"
-      aria-label={t("settings.language")}
-    >
-      {[
-        { value: "en", label: t("settings.langShortEn") },
-        { value: "zh-CN", label: t("settings.langShortZh") },
-      ].map((item) => {
-        const active = current === item.value || (item.value === "zh-CN" && current.startsWith("zh"));
-        return (
-          <button
-            key={item.value}
-            type="button"
-            onClick={() => persistLanguage(item.value, setSetting)}
-            className={cn(
-              "rounded-lg px-2.5 py-1.5 font-medium transition-colors",
-              active
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            {item.label}
-          </button>
-        );
-      })}
     </div>
   );
 }

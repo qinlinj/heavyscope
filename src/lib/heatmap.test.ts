@@ -1,0 +1,72 @@
+import { describe, expect, it } from "vitest";
+import type { UsageRecord } from "@/db/schema";
+import { HEATMAP_INTENSITY_METRIC, heatmapGrid, heatmapLevel } from "@/lib/heatmap";
+
+function record(poolId: string, amount: number, recordedAt: Date): UsageRecord {
+  const iso = recordedAt.toISOString();
+  return {
+    id: `${poolId}-${iso}-${amount}`,
+    pool_id: poolId,
+    amount,
+    recorded_at: iso,
+    note: null,
+    source: "manual",
+  };
+}
+
+describe("heatmapGrid", () => {
+  const now = new Date(2026, 7, 19, 15, 0, 0); // Wednesday
+
+  it("documents record-count intensity so mixed-unit pools stay comparable", () => {
+    expect(HEATMAP_INTENSITY_METRIC).toBe("record_count");
+  });
+
+  it("builds a Sunday-aligned GitHub-style grid for the requested weeks", () => {
+    const grid = heatmapGrid([], 17, now);
+    expect(grid.weeks).toBe(17);
+    expect(grid.cells).toHaveLength(17 * 7);
+    expect(grid.cells[0]?.date).toBe("2026-04-26");
+    expect(grid.cells[0]?.weekday).toBe(0);
+    expect(grid.cells.at(-1)?.date).toBe("2026-08-22");
+    expect(grid.maxCount).toBe(0);
+    expect(grid.intensityMetric).toBe("record_count");
+  });
+
+  it("can shrink to 12 weeks when space is tight", () => {
+    const grid = heatmapGrid([], 12, now);
+    expect(grid.weeks).toBe(12);
+    expect(grid.cells).toHaveLength(84);
+    expect(grid.cells[0]?.date).toBe("2026-05-31");
+  });
+
+  it("uses daily record count for intensity, not summed amounts", () => {
+    const records = [
+      record("usd", 40, new Date(2026, 7, 18, 9, 0, 0)),
+      record("usd", 10, new Date(2026, 7, 18, 18, 0, 0)),
+      record("pct", 1, new Date(2026, 7, 17, 9, 0, 0)),
+      record("usd", 99, new Date(2026, 3, 1, 9, 0, 0)),
+    ];
+    const grid = heatmapGrid(records, 17, now);
+    const aug18 = grid.cells.find((cell) => cell.date === "2026-08-18");
+    const aug17 = grid.cells.find((cell) => cell.date === "2026-08-17");
+    expect(aug18).toMatchObject({ count: 2, total: 2, weekday: 2, weekIndex: 16 });
+    expect(aug17).toMatchObject({ count: 1, total: 1, weekday: 1 });
+    expect(grid.maxCount).toBe(2);
+    expect(grid.cells.some((cell) => cell.date === "2026-04-01")).toBe(false);
+  });
+});
+
+describe("heatmapLevel", () => {
+  it("maps empty / quartile buckets to GitHub-style 0-4 levels", () => {
+    expect(heatmapLevel(0, 8)).toBe(0);
+    expect(heatmapLevel(1, 0)).toBe(0);
+    expect(heatmapLevel(1, 8)).toBe(1);
+    expect(heatmapLevel(2, 8)).toBe(1);
+    expect(heatmapLevel(3, 8)).toBe(2);
+    expect(heatmapLevel(4, 8)).toBe(2);
+    expect(heatmapLevel(5, 8)).toBe(3);
+    expect(heatmapLevel(6, 8)).toBe(3);
+    expect(heatmapLevel(7, 8)).toBe(4);
+    expect(heatmapLevel(8, 8)).toBe(4);
+  });
+});

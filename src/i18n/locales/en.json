@@ -101,7 +101,7 @@
     "zh": "简体中文",
     "en": "English",
     "about": "About",
-    "aboutBody": "HeavyScope is a local multi-quota panel for SuperGrok Heavy and Cursor Ultra. The web app and the Tauri 2 desktop tray share this UI.",
+    "aboutBody": "HeavyScope is a local multi-quota panel for SuperGrok Heavy and Cursor Ultra. The web app and the Tauri 2 macOS menu-bar accessory share this UI.",
     "data": "Local data",
     "dataHint": "SQLite runs in the browser via sql.js and is persisted to localStorage.",
     "resetData": "Reset local database",
@@ -204,7 +204,7 @@
   },
   "charts": {
     "title": "Usage trends",
-    "subtitle": "Daily, weekly, and pool-share charts from local records.",
+    "subtitle": "Daily activity heatmap plus a day / week / month stacked trend. Pool used% stays per pool so $ and % are never mixed.",
     "daily": "Daily usage",
     "dailyHint": "Last 14 days, stacked by pool",
     "weekly": "Weekly usage",
@@ -212,7 +212,35 @@
     "share": "Pool share",
     "shareHint": "Share of quota already used",
     "empty": "No usage records yet. Record usage to see charts.",
-    "total": "Total"
+    "total": "Total",
+    "modules": "Dashboard modules",
+    "modulesHint": "Show, hide, or reorder advisor, heatmap, and trend. Saved in the local settings table.",
+    "module": {
+      "advisor": "Advisor",
+      "heatmap": "Heatmap",
+      "trend": "Trend"
+    },
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "heatmap": "Daily activity",
+    "heatmapHint": "Intensity is daily record count, not amounts, so mixed-unit pools stay comparable.",
+    "heatmapTooltip": "{{date}} · {{total}} records",
+    "heatmapLegend": "Hover a day for date and total.",
+    "less": "Less",
+    "more": "More",
+    "trend": "Usage",
+    "trendHint": {
+      "day": "Last 14 days, stacked by pool",
+      "week": "Last 8 weeks, stacked by pool",
+      "month": "Last 6 months, stacked by pool"
+    },
+    "scale": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month"
+    },
+    "usage": "Pool used %",
+    "usageHint": "Each bar is that pool's used percent. No shared pie across USD and percent pools."
   },
   "history": {
     "title": "Usage history",
@@ -241,5 +269,13 @@
     "cursor": "Cursor",
     "grok": "Grok",
     "reserved": "Coming soon"
+  },
+  "tray": {
+    "subtitle": "Tightest pools this cycle",
+    "empty": "No pools yet. Add one in the web app.",
+    "lineOnPace": "{{pool}} is on pace at {{percent}}%.",
+    "lineOverspend": "{{pool}} is overspending at {{percent}}%.",
+    "lineWaste": "{{pool}} has unused quota at {{percent}}%.",
+    "hideHint": "Click outside or the menu-bar icon to hide."
   }
 }

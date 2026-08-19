@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Area,
@@ -6,15 +6,14 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   Legend,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+import { ActivityHeatmap } from "@/components/ActivityHeatmap";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -23,12 +22,21 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { Pool, UsageRecord } from "@/db/schema";
-import { dailySeries, poolShare, seriesHasUsage, weeklySeries } from "@/lib/charts";
+import {
+  type ChartModuleId,
+  type ChartScale,
+  poolUsageBars,
+  scaleSeries,
+  seriesHasUsage,
+} from "@/lib/charts";
 import { displayPoolName } from "@/lib/poolName";
+import { cn } from "@/lib/utils";
 
 type Props = {
   pools: Pool[];
   records: UsageRecord[];
+  modules: ChartModuleId[];
+  showHeading?: boolean;
 };
 
 const AXIS = { fill: "oklch(0.708 0 0)", fontSize: 11 };
@@ -42,124 +50,154 @@ const TOOLTIP_STYLE = {
 };
 const TOOLTIP_LABEL = { color: "oklch(0.708 0 0)" };
 
-function shortDate(value: string): string {
-  return value.slice(5);
+const SCALES: ChartScale[] = ["day", "week", "month"];
+
+function shortKey(value: string): string {
+  return value.length > 7 ? value.slice(5) : value;
 }
 
-export function ChartsPanel({ pools, records }: Props) {
+export function ChartsPanel({ pools, records, modules, showHeading = true }: Props) {
   const { t } = useTranslation();
+  const [scale, setScale] = useState<ChartScale>("day");
+  const showHeatmap = modules.includes("heatmap");
+  const showTrend = modules.includes("trend");
+  const together = showHeatmap && showTrend;
 
-  const daily = useMemo(() => dailySeries(records, pools, 14), [records, pools]);
-  const weekly = useMemo(() => weeklySeries(records, 8, pools), [records, pools]);
-  const share = useMemo(
-    () => poolShare(pools, undefined, (pool) => displayPoolName(pool, t)),
+  const series = useMemo(() => scaleSeries(records, scale, pools), [records, scale, pools]);
+  const bars = useMemo(
+    () => poolUsageBars(pools, (pool) => displayPoolName(pool, t)),
     [pools, t],
   );
-  const showDaily = seriesHasUsage(daily);
-  const showWeekly = seriesHasUsage(weekly);
-  const showShare = share.length > 0;
+  const showSeries = seriesHasUsage(series);
+
+  if (!showHeatmap && !showTrend) return null;
 
   return (
     <section className="space-y-2.5">
-      <div>
-        <h3 className="font-heading text-base font-semibold">{t("charts.title")}</h3>
-        <p className="mt-0.5 text-sm text-muted-foreground">{t("charts.subtitle")}</p>
+      {showHeading ? (
+        <div>
+          <h3 className="font-heading text-base font-semibold">{t("charts.title")}</h3>
+          <p className="mt-0.5 text-sm text-muted-foreground">{t("charts.subtitle")}</p>
+        </div>
+      ) : null}
+
+      <div
+        className={cn(
+          "grid gap-3",
+          together && "lg:grid-cols-4 lg:items-start",
+        )}
+      >
+        {showHeatmap && (
+          <ChartCard
+            title={t("charts.heatmap")}
+            hint={t("charts.heatmapHint")}
+            className={together ? "lg:col-span-1" : undefined}
+          >
+            <ActivityHeatmap records={records} weeks={together ? 17 : undefined} />
+          </ChartCard>
+        )}
+
+        {showTrend && (
+          <ChartCard
+            title={t("charts.trend")}
+            hint={t(`charts.trendHint.${scale}`)}
+            className={together ? "lg:col-span-3" : undefined}
+            action={
+              <div className="flex flex-wrap gap-1">
+                {SCALES.map((item) => (
+                  <Button
+                    key={item}
+                    type="button"
+                    size="xs"
+                    variant={scale === item ? "default" : "outline"}
+                    onClick={() => setScale(item)}
+                  >
+                    {t(`charts.scale.${item}`)}
+                  </Button>
+                ))}
+              </div>
+            }
+          >
+            {showSeries ? (
+              <ResponsiveContainer width="100%" height={240}>
+                {scale === "day" ? (
+                  <AreaChart data={series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid stroke={GRID} strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="key" tick={AXIS} tickFormatter={shortKey} axisLine={false} tickLine={false} />
+                    <YAxis tick={AXIS} axisLine={false} tickLine={false} width={36} />
+                    <Tooltip
+                      contentStyle={TOOLTIP_STYLE}
+                      labelStyle={TOOLTIP_LABEL}
+                      cursor={{ stroke: GRID }}
+                    />
+                    <Legend />
+                    {pools.map((pool) => (
+                      <Area
+                        key={pool.id}
+                        type="monotone"
+                        dataKey={pool.id}
+                        name={displayPoolName(pool, t)}
+                        stackId="usage"
+                        stroke={pool.color}
+                        fill={pool.color}
+                        fillOpacity={0.35}
+                      />
+                    ))}
+                  </AreaChart>
+                ) : (
+                  <BarChart data={series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid stroke={GRID} strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="key" tick={AXIS} tickFormatter={shortKey} axisLine={false} tickLine={false} />
+                    <YAxis tick={AXIS} axisLine={false} tickLine={false} width={36} />
+                    <Tooltip
+                      contentStyle={TOOLTIP_STYLE}
+                      labelStyle={TOOLTIP_LABEL}
+                      cursor={{ fill: "oklch(1 0 0 / 6%)" }}
+                    />
+                    <Legend />
+                    {pools.map((pool) => (
+                      <Bar
+                        key={pool.id}
+                        dataKey={pool.id}
+                        name={displayPoolName(pool, t)}
+                        stackId="usage"
+                        fill={pool.color}
+                        radius={[3, 3, 0, 0]}
+                      />
+                    ))}
+                  </BarChart>
+                )}
+              </ResponsiveContainer>
+            ) : (
+              <EmptyChart label={t("charts.empty")} />
+            )}
+          </ChartCard>
+        )}
       </div>
 
-      {!showDaily && !showWeekly && !showShare ? (
-        <p className="rounded-xl bg-card/80 px-4 py-6 text-sm text-muted-foreground ring-1 ring-foreground/10">
-          {t("charts.empty")}
-        </p>
-      ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
-          <ChartCard title={t("charts.daily")} hint={t("charts.dailyHint")}>
-            {showDaily ? (
-              <ResponsiveContainer width="100%" height={240}>
-                <AreaChart data={daily} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid stroke={GRID} strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="date" tick={AXIS} tickFormatter={shortDate} axisLine={false} tickLine={false} />
-                  <YAxis tick={AXIS} axisLine={false} tickLine={false} width={36} />
-                  <Tooltip
-                    contentStyle={TOOLTIP_STYLE}
-                    labelStyle={TOOLTIP_LABEL}
-                    cursor={{ stroke: GRID }}
+      {showTrend && bars.length > 0 && (
+        <ChartCard title={t("charts.usage")} hint={t("charts.usageHint")}>
+          <ul className="space-y-2.5">
+            {bars.map((bar) => (
+              <li key={bar.id} className="space-y-1">
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: bar.color }} />
+                    <span className="truncate">{bar.name}</span>
+                    <span className="text-muted-foreground">{bar.unit}</span>
+                  </span>
+                  <span className="tabular-nums text-muted-foreground">{bar.percent.toFixed(0)}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${bar.percent}%`, backgroundColor: bar.color }}
                   />
-                  <Legend />
-                  {pools.map((pool) => (
-                    <Area
-                      key={pool.id}
-                      type="monotone"
-                      dataKey={pool.id}
-                      name={displayPoolName(pool, t)}
-                      stackId="usage"
-                      stroke={pool.color}
-                      fill={pool.color}
-                      fillOpacity={0.35}
-                    />
-                  ))}
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <EmptyChart label={t("charts.empty")} />
-            )}
-          </ChartCard>
-
-          <ChartCard title={t("charts.weekly")} hint={t("charts.weeklyHint")}>
-            {showWeekly ? (
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={weekly} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid stroke={GRID} strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="week" tick={AXIS} tickFormatter={shortDate} axisLine={false} tickLine={false} />
-                  <YAxis tick={AXIS} axisLine={false} tickLine={false} width={36} />
-                  <Tooltip
-                    contentStyle={TOOLTIP_STYLE}
-                    labelStyle={TOOLTIP_LABEL}
-                    cursor={{ fill: "oklch(1 0 0 / 6%)" }}
-                  />
-                  <Legend />
-                  {pools.map((pool) => (
-                    <Bar
-                      key={pool.id}
-                      dataKey={pool.id}
-                      name={displayPoolName(pool, t)}
-                      stackId="usage"
-                      fill={pool.color}
-                      radius={[3, 3, 0, 0]}
-                    />
-                  ))}
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <EmptyChart label={t("charts.empty")} />
-            )}
-          </ChartCard>
-
-          <ChartCard title={t("charts.share")} hint={t("charts.shareHint")} className="lg:col-span-2">
-            {showShare ? (
-              <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                  <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL} />
-                  <Legend />
-                  <Pie
-                    data={share}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={62}
-                    outerRadius={96}
-                    paddingAngle={2}
-                    stroke="oklch(0.205 0 0)"
-                  >
-                    {share.map((item) => (
-                      <Cell key={item.name} fill={item.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <EmptyChart label={t("charts.empty")} />
-            )}
-          </ChartCard>
-        </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </ChartCard>
       )}
     </section>
   );
@@ -169,18 +207,21 @@ function ChartCard({
   title,
   hint,
   className,
+  action,
   children,
 }: {
   title: string;
   hint: string;
   className?: string;
+  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <Card className={`bg-card/90 ring-1 ring-foreground/10 backdrop-blur ${className ?? ""}`}>
-      <CardHeader>
+      <CardHeader className={action ? "gap-2" : undefined}>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{hint}</CardDescription>
+        {action ? <div className="col-span-full">{action}</div> : null}
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>

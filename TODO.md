@@ -64,11 +64,19 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Vite `/proxy/cursor` + `/proxy/grok`; Tauri `@tauri-apps/plugin-http`
 - [x] Optional macOS-only read of Cursor `state.vscdb` (Linux stub)
 - [x] Auto-refresh 5 minutes (1–60) via shared `sync_enabled` / `sync_interval_min` / `sync_source` (`cursor` | `grok` | `both`)
-- [x] Absolute live apply (write lower used on reset; sync record only when used changed)
+- [x] Absolute live apply (write lower used on reset; insert `source=sync` only when used increased)
 - [x] Backup export redacts session tokens
+- [x] macOS Accessory tray (`/tray` + status-item panel) from main
+- [x] Dashboard heatmap + modular chart layout from main
 - [ ] Keep researching Grok Bot / Agents product breakdown if the proto grows a named segment
-- [ ] Full macOS Accessory tray rewrite (another track)
-- [ ] Heatmap / chart layout (another track)
+
+## Chart polish leftover
+
+- [ ] Persist Day / Week / Month scale (currently component state only)
+- [ ] Optional heatmap filter by pool, and an amount-normalized intensity mode for single-unit views
+- [ ] Drag-and-drop module reorder (up/down buttons are enough for now)
+- [ ] Stacked trend Y-axis still sums raw amounts across mixed units; consider per-unit facets
+- [ ] Heatmap month-label collisions on very narrow cards
 
 ## Polish / leftover gaps (0.7.6)
 
@@ -102,6 +110,10 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] History date-input i18n hint (browser locale picker unchanged)
 - [x] Live Cursor / Grok usage sync (0.8.0; unofficial dashboard endpoints + local tokens)
 - [ ] Signed macOS menu-bar binary / codesign (needs a Mac and certificates)
+- [ ] Verify Accessory on a real Mac: no Dock icon, `LSUIElement`, template status item
+- [ ] Verify the 380×520 panel anchors under the status item (not screen center) and hides on click-outside / deactivate
+- [ ] Confirm `/tray` shows the tightest 1–2 pools + advisor one-liner (en / zh-CN)
+- [ ] Measure release `.app` / `.dmg` size on a Mac (`du -sh`; target < 50MB, ideally 20–30MB) — steps in docs/MACOS.md
 - [ ] Windows installer
 - [ ] GitHub Release asset upload (MCP has no create-release tool)
 - [x] React render-error boundary beyond DB open failures (0.7.2)

@@ -10,23 +10,30 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Added
 
-- Live Cursor usage sync from unofficial `GET https://cursor.com/api/usage-summary` using a user-pasted `WorkosCursorSessionToken`. Maps Auto/Composer (`autoPercentUsed`) and Other/API (`apiPercentUsed`) onto the two Cursor preset pools as percent-of-100. Live apply writes absolute `quota_used` / `quota_total` / `reset_at` (including a lower used after reset) and inserts a sync record only when used changed.
+- Live Cursor usage sync from unofficial `GET https://cursor.com/api/usage-summary` using a user-pasted `WorkosCursorSessionToken`. Maps Auto/Composer (`autoPercentUsed`) and Other/API (`apiPercentUsed`) onto the two Cursor preset pools as percent-of-100. Live apply writes absolute `quota_used` / `quota_total` / `reset_at` (including a lower used after reset) and inserts a `source=sync` record only when used increased.
 - Live Grok usage sync from unofficial `POST https://grok.com/grok_api_v2.GrokBuildBilling/GetGrokCreditsConfig` (gRPC-web empty body). Maps SuperGrok Heavy `credit_usage_percent`. Grok Bot is updated only when a Bot / Agents product segment is present.
 - Settings → Data sources live connect panels (password fields, Connect / Disconnect / Refresh now) above the existing snapshot importer. Dashboard Refresh now syncs configured providers.
 - Vite dev proxies `/proxy/cursor` and `/proxy/grok`. Tauri desktop uses `@tauri-apps/plugin-http` to bypass CORS.
 - Optional macOS-only, read-only Cursor `state.vscdb` helper. Linux builds compile a stub.
 - JSON backup export omits `cursor_session_token`, `grok_session_token`, and `grok_bearer_token`.
-- docs/MACOS.md for tray checks and the vscdb helper.
+- Dashboard Daily Activity heatmap (GitHub-style, last 17 weeks on large screens / 12 weeks when narrow). Intensity is daily usage-record **count**, not summed amounts, so Cursor $ and Grok % stay comparable. Tooltip shows date + total count.
+- Day / Week / Month scale toggle on the main stacked usage chart (Recharts area for day, bars for week/month).
+- Per-pool used% bars replace the single mixed-unit pool-share pie.
+- Dashboard module visibility and order for advisor / heatmap / trend. Keys: `chart_show_heatmap`, `chart_show_trend`, `chart_show_advisor` (default on), and `chart_module_order`. Persisted via `setSetting` on the settings table. Up/down buttons on the dashboard header.
+- macOS Tauri 2 shell is a real menu-bar accessory on top of the existing `LSUIElement` Info.plist: Rust `ActivationPolicy::Accessory`, template status-item icon, hide-on-deactivate, and a 380×520 undecorated panel anchored under the tray rectangle (overrides the Linux 980×720 `center` window). Linux/Windows still compile as a normal tray window.
+- Compact `/tray` route (en + zh-CN) for the accessory panel: tightest 1–2 pools plus an advisor one-liner. Browser preview at `/tray`.
+- `docs/MACOS.md` — Mac build (`pnpm tauri build`), Accessory checklist, codesign note, `.app` / `.dmg` size, and the optional Cursor `state.vscdb` helper.
 
 ### Changed
 
 - Auto-sync reuses `sync_enabled`, `sync_interval_min` (default **5**, was 30), `sync_last_at` / `sync_last_status` / `sync_last_message`, and `useSync`. `sync_source` is now `none` | `cursor` | `grok` | `both`. A connected session token is the auto-sync path; snapshot re-apply is fallback only.
+- Charts section layout: heatmap stays about one quarter of the charts card when shown beside the trend; used% bars sit below the trend.
+- `src-tauri` release profile now uses LTO, `opt-level = "s"`, and strip to keep the Mac bundle toward the < 50MB target.
 - Version 0.8.0. Snapshot import and manual CRUD stay. `optimizeDeps.include: ["sql.js"]` and `fallbackLng` are unchanged.
 
 ## [0.7.6] docs / clipboard follow-up
 
 ### Added
-
 
 - Settings → Local data: Paste JSON fills the import textarea from the clipboard via `navigator.clipboard.readText`. Success and failure flash in zh-CN / en. A pending flash shows immediately; `readText` is raced against a 3s timeout (timeout is treated as failure). Does not auto-apply; the user still clicks Apply backup.
 - Settings → Local data: Copy JSON writes the same backup payload to the clipboard via `navigator.clipboard.writeText`. Success and failure flash in zh-CN / en. Product version stays 0.7.6.
