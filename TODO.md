@@ -109,6 +109,7 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Quota cycle rollover without deleting usage history
 - [x] History date-input i18n hint (browser locale picker unchanged)
 - [x] Live Cursor / Grok usage sync (0.8.0; unofficial dashboard endpoints + local tokens)
+- [x] macOS compile: `App::set_activation_policy` is unit in Tauri 2.11.3 (no `?`)
 - [ ] Signed macOS menu-bar binary / codesign (needs a Mac and certificates)
 - [ ] Verify Accessory on a real Mac: no Dock icon, `LSUIElement`, template status item
 - [ ] Verify the 380×520 panel anchors under the status item (not screen center) and hides on click-outside / deactivate
