@@ -66,7 +66,8 @@ export type ChartPrefs = {
 
 export type ChartModuleGroup =
   | { type: "advisor"; ids: ["advisor"] }
-  | { type: "charts"; ids: ChartModuleId[] };
+  | { type: "heatmap"; ids: ["heatmap"] }
+  | { type: "trend"; ids: ["trend"] };
 
 export type RecordFilters = {
   poolId?: string;
@@ -344,6 +345,10 @@ export function parseChartPrefs(settings: Record<string, string>): ChartPrefs {
   };
 }
 
+export function isChartModuleId(value: string): value is ChartModuleId {
+  return (CHART_MODULE_IDS as readonly string[]).includes(value);
+}
+
 export function moveChartModule(
   order: ChartModuleId[],
   id: ChartModuleId,
@@ -362,20 +367,38 @@ export function moveChartModule(
   return next;
 }
 
+/** Insert `fromId` before `toId`. Hidden modules stay in the array. */
+export function reorderChartModules(
+  order: ChartModuleId[],
+  fromId: ChartModuleId,
+  toId: ChartModuleId,
+): ChartModuleId[] {
+  if (fromId === toId) return [...order];
+  if (!order.includes(fromId) || !order.includes(toId)) return [...order];
+  const next = order.filter((id) => id !== fromId);
+  const insertAt = next.indexOf(toId);
+  if (insertAt < 0) return [...order];
+  next.splice(insertAt, 0, fromId);
+  return next;
+}
+
+/** Visible dashboard stack. Hidden ids stay in `order` so they restore position. */
+export function visibleChartModules(order: ChartModuleId[], show: ChartShowMap): ChartModuleId[] {
+  return order.filter((id) => show[id]);
+}
+
 export function groupChartModules(order: ChartModuleId[], show: ChartShowMap): ChartModuleGroup[] {
-  const groups: ChartModuleGroup[] = [];
-  for (const id of order) {
-    if (!show[id]) continue;
-    if (id === "advisor") {
-      groups.push({ type: "advisor", ids: ["advisor"] });
-      continue;
-    }
-    const last = groups.at(-1);
-    if (last?.type === "charts") {
-      last.ids.push(id);
-    } else {
-      groups.push({ type: "charts", ids: [id] });
-    }
-  }
-  return groups;
+  return visibleChartModules(order, show).map((id) => ({ type: id, ids: [id] }) as ChartModuleGroup);
+}
+
+/** Latest bucket total for day / week / month (one period). */
+export function periodTotal(
+  records: UsageRecord[],
+  scale: ChartScale,
+  poolId?: string,
+  now: Date = new Date(),
+): number {
+  const filtered = poolId ? records.filter((record) => record.pool_id === poolId) : records;
+  const series = scaleSeries(filtered, scale, undefined, now, { days: 1, weeks: 1, months: 1 });
+  return Number(series.at(-1)?.total ?? 0);
 }

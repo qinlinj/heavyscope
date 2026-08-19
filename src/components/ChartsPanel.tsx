@@ -30,7 +30,6 @@ import {
   seriesHasUsage,
 } from "@/lib/charts";
 import { displayPoolName } from "@/lib/poolName";
-import { cn } from "@/lib/utils";
 
 type Props = {
   pools: Pool[];
@@ -39,16 +38,16 @@ type Props = {
   showHeading?: boolean;
 };
 
-const AXIS = { fill: "oklch(0.708 0 0)", fontSize: 11 };
-const GRID = "oklch(1 0 0 / 10%)";
+const AXIS = { fill: "var(--muted-foreground)", fontSize: 11 };
+const GRID = "var(--border)";
 const TOOLTIP_STYLE = {
-  backgroundColor: "oklch(0.205 0 0)",
-  border: "1px solid oklch(1 0 0 / 10%)",
+  backgroundColor: "var(--popover)",
+  border: "1px solid var(--border)",
   borderRadius: "0.75rem",
-  color: "oklch(0.985 0 0)",
-  boxShadow: "0 8px 24px oklch(0 0 0 / 35%)",
+  color: "var(--popover-foreground)",
+  boxShadow: "0 8px 24px color-mix(in oklch, var(--foreground) 18%, transparent)",
 };
-const TOOLTIP_LABEL = { color: "oklch(0.708 0 0)" };
+const TOOLTIP_LABEL = { color: "var(--muted-foreground)" };
 
 const SCALES: ChartScale[] = ["day", "week", "month"];
 
@@ -61,7 +60,6 @@ export function ChartsPanel({ pools, records, modules, showHeading = true }: Pro
   const [scale, setScale] = useState<ChartScale>("day");
   const showHeatmap = modules.includes("heatmap");
   const showTrend = modules.includes("trend");
-  const together = showHeatmap && showTrend;
 
   const series = useMemo(() => scaleSeries(records, scale, pools), [records, scale, pools]);
   const bars = useMemo(
@@ -81,19 +79,10 @@ export function ChartsPanel({ pools, records, modules, showHeading = true }: Pro
         </div>
       ) : null}
 
-      <div
-        className={cn(
-          "grid gap-3",
-          together && "lg:grid-cols-4 lg:items-start",
-        )}
-      >
+      <div className="grid gap-3">
         {showHeatmap && (
-          <ChartCard
-            title={t("charts.heatmap")}
-            hint={t("charts.heatmapHint")}
-            className={together ? "lg:col-span-1" : undefined}
-          >
-            <ActivityHeatmap records={records} weeks={together ? 17 : undefined} />
+          <ChartCard title={t("charts.heatmap")} hint={t("charts.heatmapHint")}>
+            <ActivityHeatmap records={records} />
           </ChartCard>
         )}
 
@@ -101,7 +90,6 @@ export function ChartsPanel({ pools, records, modules, showHeading = true }: Pro
           <ChartCard
             title={t("charts.trend")}
             hint={t(`charts.trendHint.${scale}`)}
-            className={together ? "lg:col-span-3" : undefined}
             action={
               <div className="flex flex-wrap gap-1">
                 {SCALES.map((item) => (
@@ -152,7 +140,7 @@ export function ChartsPanel({ pools, records, modules, showHeading = true }: Pro
                     <Tooltip
                       contentStyle={TOOLTIP_STYLE}
                       labelStyle={TOOLTIP_LABEL}
-                      cursor={{ fill: "oklch(1 0 0 / 6%)" }}
+                      cursor={{ fill: "color-mix(in oklch, var(--foreground) 8%, transparent)" }}
                     />
                     <Legend />
                     {pools.map((pool) => (
@@ -218,7 +206,7 @@ function ChartCard({
 }) {
   return (
     <Card className={`bg-card/90 ring-1 ring-foreground/10 backdrop-blur ${className ?? ""}`}>
-      <CardHeader className={action ? "gap-2" : undefined}>
+      <CardHeader className={action ? "gap-2 pr-9" : "pr-9"}>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{hint}</CardDescription>
         {action ? <div className="col-span-full">{action}</div> : null}

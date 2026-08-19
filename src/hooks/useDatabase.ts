@@ -50,6 +50,7 @@ import {
   SETTING_SYNC_LAST_STATUS,
   SETTING_SYNC_SOURCE,
 } from "@/lib/settings";
+import { applyTheme, parseTheme, SETTING_THEME, THEME_STORAGE_KEY } from "@/lib/theme";
 import { useSync } from "./useSync";
 
 type DatabaseApi = {
@@ -274,6 +275,15 @@ function useDatabaseState(): DatabaseApi {
     void i18n.changeLanguage(language);
     localStorage.setItem(LANG_STORAGE_KEY, language);
     document.documentElement.lang = language;
+  }, [ready, settings]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const raw = settings[SETTING_THEME];
+    if (raw == null || raw === "") return;
+    const theme = parseTheme(raw);
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    applyTheme(theme);
   }, [ready, settings]);
 
   useEffect(() => {

@@ -1,16 +1,33 @@
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { GripVertical } from "lucide-react";
+import { useState, type DragEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { readModuleDrag, writeModuleDrag } from "@/lib/chartDnD";
 import { type ChartModuleId, type ChartPrefs } from "@/lib/charts";
+import { cn } from "@/lib/utils";
 
 type Props = {
   prefs: ChartPrefs;
   onToggle: (id: ChartModuleId, show: boolean) => void;
-  onMove: (id: ChartModuleId, direction: "up" | "down") => void;
+  onReorder: (fromId: ChartModuleId, toId: ChartModuleId) => void;
 };
 
-export function ChartLayoutControls({ prefs, onToggle, onMove }: Props) {
+export function ChartLayoutControls({ prefs, onToggle, onReorder }: Props) {
   const { t } = useTranslation();
+  const [overId, setOverId] = useState<ChartModuleId | null>(null);
+
+  function handleDragOver(event: DragEvent, id: ChartModuleId) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setOverId(id);
+  }
+
+  function handleDrop(event: DragEvent, id: ChartModuleId) {
+    event.preventDefault();
+    setOverId(null);
+    const fromId = readModuleDrag(event);
+    if (!fromId) return;
+    onReorder(fromId, id);
+  }
 
   return (
     <section className="space-y-2">
@@ -19,40 +36,31 @@ export function ChartLayoutControls({ prefs, onToggle, onMove }: Props) {
         <p className="mt-0.5 text-sm text-muted-foreground">{t("charts.modulesHint")}</p>
       </div>
       <ul className="flex flex-wrap gap-2">
-        {prefs.order.map((id, index) => (
+        {prefs.order.map((id) => (
           <li
             key={id}
-            className="flex items-center gap-1 rounded-lg bg-card/90 px-2 py-1 ring-1 ring-foreground/10"
+            draggable
+            onDragStart={(event) => writeModuleDrag(event, id)}
+            onDragOver={(event) => handleDragOver(event, id)}
+            onDragLeave={() => setOverId((current) => (current === id ? null : current))}
+            onDrop={(event) => handleDrop(event, id)}
+            className={cn(
+              "flex cursor-grab items-center gap-1 rounded-lg bg-card/90 px-2 py-1 ring-1 ring-foreground/10 active:cursor-grabbing",
+              overId === id && "ring-2 ring-primary/50",
+            )}
           >
+            <GripVertical className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
             <label className="flex cursor-pointer items-center gap-1.5 pr-1 text-xs font-medium">
               <input
                 type="checkbox"
-                className="size-3.5 accent-emerald-400"
+                className="size-3.5 accent-emerald-600 dark:accent-emerald-400"
                 checked={prefs.show[id]}
                 onChange={(event) => onToggle(id, event.target.checked)}
+                onClick={(event) => event.stopPropagation()}
               />
               {t(`charts.module.${id}`)}
             </label>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              disabled={index === 0}
-              onClick={() => onMove(id, "up")}
-              aria-label={t("charts.moveUp")}
-            >
-              <ChevronUp />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              disabled={index === prefs.order.length - 1}
-              onClick={() => onMove(id, "down")}
-              aria-label={t("charts.moveDown")}
-            >
-              <ChevronDown />
-            </Button>
+            <span className="sr-only">{t("charts.dragHandle")}</span>
           </li>
         ))}
       </ul>

@@ -50,7 +50,7 @@ export function AdvisorPanel({
 
   return (
     <section className="space-y-2.5">
-      <div>
+      <div className="pr-9">
         <h3 className="font-heading text-base font-semibold">{t("advisor.title")}</h3>
         <p className="mt-0.5 text-sm text-muted-foreground">{t("advisor.subtitle")}</p>
       </div>

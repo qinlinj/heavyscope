@@ -8,9 +8,12 @@ import {
   monthlySeries,
   moveChartModule,
   parseChartPrefs,
+  periodTotal,
   poolShare,
   poolUsageBars,
+  reorderChartModules,
   scaleSeries,
+  visibleChartModules,
   weeklySeries,
 } from "@/lib/charts";
 
@@ -202,19 +205,56 @@ describe("chart module prefs", () => {
     expect(moveChartModule([...order], "trend", "down")).toEqual(["advisor", "heatmap", "trend"]);
   });
 
-  it("groups adjacent heatmap/trend modules into one charts card", () => {
+  it("reorders by inserting the dragged module before the drop target", () => {
+    const order = ["advisor", "heatmap", "trend"] as const;
+    expect(reorderChartModules([...order], "trend", "advisor")).toEqual(["trend", "advisor", "heatmap"]);
+    expect(reorderChartModules([...order], "advisor", "trend")).toEqual(["heatmap", "advisor", "trend"]);
+    expect(reorderChartModules([...order], "heatmap", "heatmap")).toEqual(["advisor", "heatmap", "trend"]);
+    expect(reorderChartModules([...order], "heatmap", "advisor")).toEqual(["heatmap", "advisor", "trend"]);
+  });
+
+  it("keeps hidden modules in the order array and skips them in the visible stack", () => {
+    const order = ["advisor", "heatmap", "trend"] as const;
+    const show = { advisor: false, heatmap: true, trend: true };
+    expect(visibleChartModules([...order], show)).toEqual(["heatmap", "trend"]);
+    expect(reorderChartModules([...order], "trend", "heatmap")).toEqual(["advisor", "trend", "heatmap"]);
+    expect(visibleChartModules(["advisor", "trend", "heatmap"], show)).toEqual(["trend", "heatmap"]);
+    expect(groupChartModules(["advisor", "heatmap", "trend"], show)).toEqual([
+      { type: "heatmap", ids: ["heatmap"] },
+      { type: "trend", ids: ["trend"] },
+    ]);
+  });
+
+  it("renders advisor, heatmap, and trend as independent full-width modules", () => {
     expect(groupChartModules(["advisor", "heatmap", "trend"], { advisor: true, heatmap: true, trend: true })).toEqual([
       { type: "advisor", ids: ["advisor"] },
-      { type: "charts", ids: ["heatmap", "trend"] },
+      { type: "heatmap", ids: ["heatmap"] },
+      { type: "trend", ids: ["trend"] },
     ]);
     expect(groupChartModules(["heatmap", "advisor", "trend"], { advisor: true, heatmap: true, trend: true })).toEqual([
-      { type: "charts", ids: ["heatmap"] },
+      { type: "heatmap", ids: ["heatmap"] },
       { type: "advisor", ids: ["advisor"] },
-      { type: "charts", ids: ["trend"] },
+      { type: "trend", ids: ["trend"] },
     ]);
     expect(groupChartModules(["advisor", "heatmap", "trend"], { advisor: false, heatmap: true, trend: false })).toEqual([
-      { type: "charts", ids: ["heatmap"] },
+      { type: "heatmap", ids: ["heatmap"] },
     ]);
+  });
+});
+
+describe("periodTotal", () => {
+  const now = new Date(2026, 7, 18, 12, 0, 0);
+
+  it("sums the current day / week / month bucket for one pool", () => {
+    const records = [
+      record("p1", 5, new Date(2026, 7, 18, 9, 0, 0)),
+      record("p1", 3, new Date(2026, 7, 17, 9, 0, 0)),
+      record("p1", 2, new Date(2026, 6, 10, 9, 0, 0)),
+      record("p2", 9, new Date(2026, 7, 18, 9, 0, 0)),
+    ];
+    expect(periodTotal(records, "day", "p1", now)).toBe(5);
+    expect(periodTotal(records, "week", "p1", now)).toBe(8);
+    expect(periodTotal(records, "month", "p1", now)).toBe(8);
   });
 });
 

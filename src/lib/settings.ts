@@ -1,4 +1,5 @@
 export const SETTING_LANGUAGE = "language";
+export { SETTING_THEME } from "@/lib/theme";
 export const SETTING_WARN_PERCENT = "warn_percent";
 export const SETTING_CRIT_PERCENT = "crit_percent";
 export const SETTING_SYNC_ENABLED = "sync_enabled";

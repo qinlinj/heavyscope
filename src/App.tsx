@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ErrorState } from "@/components/ErrorState";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ThemeSync } from "@/components/ThemeSync";
 import { DatabaseProvider, useDatabase } from "@/hooks/useDatabase";
 import { desktopShellMode, isDesktopShell } from "@/lib/desktop";
 import { Dashboard } from "@/pages/Dashboard";
@@ -24,7 +25,7 @@ function AppRoutes() {
 
   if (error) {
     return (
-      <div className="dark min-h-svh bg-background text-foreground">
+      <div className="min-h-svh bg-background text-foreground">
         <div className="relative mx-auto flex min-h-svh max-w-6xl flex-col px-4 py-5 sm:px-6">
           <ErrorState message={error} />
         </div>
@@ -33,7 +34,7 @@ function AppRoutes() {
   }
 
   if (accessory === null) {
-    return <div className="dark min-h-svh bg-background" />;
+    return <div className="min-h-svh bg-background" />;
   }
 
   return (
@@ -58,6 +59,7 @@ function AppRoutes() {
 export default function App() {
   return (
     <DatabaseProvider>
+      <ThemeSync />
       <AppRoutes />
     </DatabaseProvider>
   );
