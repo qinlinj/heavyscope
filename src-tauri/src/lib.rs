@@ -176,9 +176,9 @@ fn apply_macos_accessory_window(app: &mut tauri::App) {
         let _ = window.set_skip_taskbar(true);
         let _ = window.set_always_on_top(true);
         let _ = window.set_shadow(true);
-        let _ = window.set_size(tauri::LogicalSize::new(380.0, 520.0));
-        let _ = window.set_min_size(Some(tauri::LogicalSize::new(380.0, 520.0)));
-        let _ = window.set_max_size(Some(tauri::LogicalSize::new(420.0, 640.0)));
+        let _ = window.set_size(tauri::LogicalSize::new(380.0, 780.0));
+        let _ = window.set_min_size(Some(tauri::LogicalSize::new(380.0, 780.0)));
+        let _ = window.set_max_size(Some(tauri::LogicalSize::new(420.0, 820.0)));
     }
 }
 

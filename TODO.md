@@ -93,13 +93,20 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Quota overview + Recent records scroll; pies degrade on `sm` / `md`
 - [x] Purple primary for light + dark; version 0.12.0
 - [ ] Verify Grok Bot auto-track on a real Bearer (`Api 11%` → Bot) without manual calibrate
-- [ ] Do not start macOS tray 1.5x / horizontal-scroll work here (next)
+- [x] Do not start macOS tray 1.5x / horizontal-scroll work here (moved to 0.13.0)
+
+## 0.13.0 — tray product polish
+
+- [x] Default `/tray` lists every visible `tray_layout` pool (scroll); no hard cap of 2. Tightest 1–2 stay highlighted. Hidden stay hidden; new pools appear; deleted drop
+- [x] Heatmap uses `squareCellPx` + 8–10px clamp; never stretch; 10-week grid; horizontal overflow scroll
+- [x] Panel ~380×780 (1.5× height). Settings still in-pane with the same keys, connect, interval, Refresh now, Grok `Api → Grok Bot`
+- [x] Version 0.13.0 (package.json + src-tauri). Accessory policy unchanged; no `?` on `App::set_activation_policy`
 
 ## 0.11.0 — tray live connect
 
 - [x] Compact `/tray` Settings pane (same keys as web Data sources)
 - [x] Refresh now + credential-based interval from the menu-bar popup
-- [x] Expand/collapse pool rows (1–2 tightest, one open at a time)
+- [x] Expand/collapse pool rows (one open at a time; 0.13.0 lists every visible pool)
 - [x] Per-provider last sync / not connected / expired on the compact dashboard
 - [x] Version 0.11.0 (package.json + src-tauri)
 - [ ] Verify Settings pane + paste token + refresh + expand pool on a real Mac
@@ -118,7 +125,7 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Heatmap cells stay perfect squares (`squareCellPx`); leftover card space is legend, not stretched cells
 - [x] Independent full-width advisor / heatmap / trend modules + HTML5 drag-and-drop reorder
 - [x] Theme: dark / light / system (`theme` setting + localStorage)
-- [x] Denser compact `/tray` (1–2 pools, Day/Week/Month, used% bars, one-line advisor, small heatmap)
+- [x] Compact `/tray` (0.13.0: all visible pools scroll, square heatmap, ~380×780)
 - [x] iPhone-widget card system with edit mode, resize, reorder, hide/restore (0.9.0)
 - [x] Amount-normalized heatmap intensity when all records share one unit (0.10.0)
 - [ ] Persist Day / Week / Month scale (currently component state only)
@@ -161,8 +168,8 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] macOS compile: `App::set_activation_policy` is unit in Tauri 2.11.3 (no `?`)
 - [ ] Signed macOS menu-bar binary / codesign (needs a Mac and certificates)
 - [ ] Verify Accessory on a real Mac: no Dock icon, `LSUIElement`, template status item
-- [ ] Verify the 380×520 panel anchors under the status item (not screen center) and hides on click-outside / deactivate
-- [x] `/tray` compact plugin: Settings pane, Refresh now, 1–2 expandable pools, last-sync lines, optional small heatmap (en / zh-CN)
+- [ ] Verify the ~380×780 panel anchors under the status item (not screen center) and hides on click-outside / deactivate
+- [x] `/tray` compact plugin: Settings pane, Refresh now, all visible expandable pools, last-sync lines, optional square heatmap (en / zh-CN)
 - [ ] Measure release `.app` / `.dmg` size on a Mac (`du -sh`; target < 50MB, ideally 20–30MB) — steps in docs/MACOS.md
 - [ ] Windows installer
 - [ ] GitHub Release asset upload (MCP has no create-release tool)

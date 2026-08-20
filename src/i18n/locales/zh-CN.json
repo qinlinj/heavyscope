@@ -323,7 +323,7 @@
     "reserved": "即将推出"
   },
   "tray": {
-    "subtitle": "本周期最紧张的额度池",
+    "subtitle": "本周期可见额度池",
     "empty": "还没有额度池。请在网页应用中添加。",
     "lineOnPace": "{{pool}} 节奏正常，使用率 {{percent}}%。",
     "lineOverspend": "{{pool}} 消耗过快，使用率 {{percent}}%。",
@@ -335,6 +335,9 @@
     "editLayout": "布局",
     "expandPool": "展开额度池详情",
     "collapsePool": "收起额度池详情",
-    "grokParsedToggle": "解析到的产品"
+    "grokParsedToggle": "解析到的产品",
+    "tightest": "最紧张",
+    "scrollPrev": "向左滚动",
+    "scrollNext": "向右滚动"
   }
 }

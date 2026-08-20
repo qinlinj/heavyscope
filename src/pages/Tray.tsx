@@ -6,6 +6,7 @@ import { AddCardsStrip } from "@/components/AddCardsStrip";
 import { AdvisorPanel } from "@/components/AdvisorPanel";
 import { ChartsPanel } from "@/components/ChartsPanel";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { OverflowStrip } from "@/components/OverflowStrip";
 import { PiesPanel } from "@/components/PiesPanel";
 import { PoolCard } from "@/components/PoolCard";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -22,7 +23,20 @@ import { chartRecords } from "@/lib/charts";
 import { hiddenTiles, visibleTiles, type LayoutTile } from "@/lib/dashboardLayout";
 import { formatDateTime } from "@/lib/format";
 import { displayPoolName } from "@/lib/poolName";
-import { parseTrayPane, runTrayRefresh, selectTrayDashboardPools, shouldShowTrayHeatmap, toggleExpandedPoolId, trayProviderSync, visiblePoolIds, type TrayPane } from "@/lib/trayView";
+import {
+  highlightedTrayPoolIds,
+  parseTrayPane,
+  runTrayRefresh,
+  selectTrayDashboardPools,
+  shouldShowTrayHeatmap,
+  toggleExpandedPoolId,
+  trayProviderSync,
+  visiblePoolIds,
+  TRAY_HEATMAP_MAX_CELL_PX,
+  TRAY_HEATMAP_MIN_CELL_PX,
+  TRAY_HEATMAP_WEEKS,
+  type TrayPane,
+} from "@/lib/trayView";
 
 export function TrayPage() {
   const { t, i18n } = useTranslation();
@@ -48,14 +62,18 @@ export function TrayPage() {
   );
   const tightest = useMemo(() => tightestAdvice(advices), [advices]);
   const switchAdvice = useMemo(() => crossPoolAdvice(advices), [advices]);
+  const visibleIds = useMemo(() => visiblePoolIds(layout.tiles), [layout.tiles]);
   const dashboardPools = useMemo(
-    () => selectTrayDashboardPools(pools, advices, visiblePoolIds(layout.tiles)),
-    [pools, advices, layout.tiles],
+    () => selectTrayDashboardPools(pools, visibleIds),
+    [pools, visibleIds],
+  );
+  const highlightedIds = useMemo(
+    () => new Set(highlightedTrayPoolIds(advices, visibleIds)),
+    [advices, visibleIds],
   );
   const heatmapVisible = layout.tiles.some((tile) => tile.type === "heatmap" && tile.visible);
   const showHeatmap = shouldShowTrayHeatmap({
     heatmapVisible,
-    expandedPoolId,
     pane,
     editing: editingLayout,
   });
@@ -95,7 +113,7 @@ export function TrayPage() {
   if (!ready) {
     return (
       <TrayShell>
-        <p className="text-sm text-muted-foreground">{error ?? t("common.loading")}</p>
+        <p className="text-xs text-muted-foreground">{error ?? t("common.loading")}</p>
       </TrayShell>
     );
   }
@@ -119,7 +137,7 @@ export function TrayPage() {
               {pane === "settings" ? t("settings.title") : t("app.name")}
             </h1>
             {pane === "dashboard" ? (
-              <p className="truncate text-[10px] text-muted-foreground">{t("tray.subtitle")}</p>
+              <p className="truncate text-xs text-muted-foreground">{t("tray.subtitle")}</p>
             ) : null}
           </div>
         </div>
@@ -153,7 +171,11 @@ export function TrayPage() {
       </header>
 
       {pane === "settings" ? (
-        <TraySettings />
+        <OverflowStrip className="min-h-0 min-w-0 flex-1">
+          <div className="min-w-full">
+            <TraySettings />
+          </div>
+        </OverflowStrip>
       ) : (
         <>
           <div className="flex items-center justify-end">
@@ -161,7 +183,7 @@ export function TrayPage() {
               type="button"
               size="xs"
               variant={editingLayout ? "default" : "ghost"}
-              className="h-5 px-1.5 text-[10px]"
+              className="h-5 px-1.5 text-xs"
               onClick={() => {
                 setEditingLayout((current) => !current);
                 setExpandedPoolId(null);
@@ -173,12 +195,12 @@ export function TrayPage() {
           </div>
 
           {editingLayout ? (
-            <>
-              <p className="rounded-md border border-dashed border-foreground/20 bg-muted/30 px-2 py-1 text-[10px] text-muted-foreground">
+            <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto">
+              <p className="rounded-md border border-dashed border-foreground/20 bg-muted/30 px-2 py-1 text-xs text-muted-foreground">
                 {t("layout.editHint")}
               </p>
               {shown.length === 0 ? (
-                <p className="text-[11px] text-muted-foreground">{t("tray.empty")}</p>
+                <p className="text-xs text-muted-foreground">{t("tray.empty")}</p>
               ) : (
                 <WidgetGrid columns={2} editing>
                   {shown.map((tile) => (
@@ -221,17 +243,17 @@ export function TrayPage() {
                 </WidgetGrid>
               )}
               <AddCardsStrip tiles={hidden} labelFor={tileLabel} onRestore={show} />
-            </>
+            </div>
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col gap-1.5">
-              <p className="text-[11px] leading-snug text-muted-foreground">
+            <div className="flex min-h-0 flex-1 flex-col gap-2">
+              <p className="text-xs leading-snug text-muted-foreground">
                 {formatAdvisorLine(t, tightest, switchAdvice, pools) ?? t("tray.empty")}
               </p>
 
               {dashboardPools.length === 0 ? (
-                <p className="text-[11px] text-muted-foreground">{t("tray.empty")}</p>
+                <p className="text-xs text-muted-foreground">{t("tray.empty")}</p>
               ) : (
-                <div className="space-y-1.5">
+                <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto">
                   {dashboardPools.map((pool) => (
                     <TrayPoolRow
                       key={pool.id}
@@ -239,6 +261,7 @@ export function TrayPage() {
                       records={liveRecords.filter((record) => record.pool_id === pool.id)}
                       advice={advices.find((item) => item.poolId === pool.id)}
                       expanded={expandedPoolId === pool.id}
+                      highlighted={highlightedIds.has(pool.id)}
                       warnPercent={thresholds.warn}
                       critPercent={thresholds.crit}
                       onToggle={(id) => setExpandedPoolId((current) => toggleExpandedPoolId(current, id))}
@@ -247,13 +270,7 @@ export function TrayPage() {
                 </div>
               )}
 
-              {showHeatmap ? (
-                <div className="max-h-24 min-h-0 overflow-hidden">
-                  <ActivityHeatmap records={liveRecords} pools={pools} weeks={8} compact />
-                </div>
-              ) : null}
-
-              <div className="space-y-0.5 text-[10px] leading-snug text-muted-foreground">
+              <div className="space-y-0.5 text-xs leading-snug text-muted-foreground">
                 <p>
                   {t("live.lastSyncedCursor")}:{" "}
                   {providerSync.cursor.configured
@@ -278,12 +295,23 @@ export function TrayPage() {
                 </p>
                 {syncFlash ? <p>{syncFlash}</p> : null}
               </div>
+
+              {showHeatmap ? (
+                <ActivityHeatmap
+                  records={liveRecords}
+                  pools={pools}
+                  weeks={TRAY_HEATMAP_WEEKS}
+                  compact
+                  minCellPx={TRAY_HEATMAP_MIN_CELL_PX}
+                  maxCellPx={TRAY_HEATMAP_MAX_CELL_PX}
+                />
+              ) : null}
             </div>
           )}
         </>
       )}
 
-      <p className="text-[10px] text-muted-foreground">{t("tray.hideHint")}</p>
+      <p className="text-xs text-muted-foreground">{t("tray.hideHint")}</p>
     </TrayShell>
   );
 
@@ -308,9 +336,11 @@ export function TrayPage() {
 
 function TrayShell({ children }: { children: ReactNode }) {
   return (
-    <div className="h-svh overflow-hidden bg-background text-foreground">
+    <div className="h-svh overflow-hidden bg-background text-xs text-foreground">
       <div className="pointer-events-none fixed inset-0 dark:bg-[radial-gradient(circle_at_top,_oklch(0.32_0.08_300/_0.40),_transparent_55%)]" />
-      <div className="relative flex h-full flex-col gap-2 overflow-y-auto px-2.5 py-2.5">{children}</div>
+      <div className="relative flex h-full min-h-0 flex-col gap-2 overflow-x-auto overflow-y-auto px-2.5 py-2.5">
+        {children}
+      </div>
     </div>
   );
 }

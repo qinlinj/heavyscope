@@ -51,6 +51,8 @@ https://github.com/qinlinj/heavyscope
 - 0.9.0 — widget dashboard + tray edit mode (done)
 - 0.10.0 — usable web dashboard (done)
 - 0.11.0 — tray Settings + live sync + expand rows (done)
+- 0.12.0 — web polish + Grok Bot productUsage (done)
+- 0.13.0 — tray product polish (visible pools, square heatmap, ~380×780)
 
 ## Commits
 

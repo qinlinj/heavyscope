@@ -37,15 +37,16 @@ describe("default layouts", () => {
     );
   });
 
-  it("keeps the tray compact: two pools, one-line advisor, small heatmap, hidden trend", () => {
-    const layout = defaultTrayLayout(["a", "b", "c"]);
+  it("shows every tray pool by default with a one-line advisor, small heatmap, and hidden trend", () => {
+    const layout = defaultTrayLayout(["a", "b", "c", "d"]);
     expect(layout.tiles.find((tile) => tile.id === "advisor")).toMatchObject({ size: "md", visible: true });
     expect(layout.tiles.find((tile) => tile.id === "heatmap")).toMatchObject({ size: "md", visible: true });
     expect(layout.tiles.find((tile) => tile.id === "trend")).toMatchObject({ size: "lg", visible: false });
     expect(layout.tiles.filter((tile) => tile.type === "pool").map((tile) => tile.visible)).toEqual([
       true,
       true,
-      false,
+      true,
+      true,
     ]);
   });
 });
@@ -179,10 +180,17 @@ describe("ensureAllPools / pruneMissingPools", () => {
     expect(pruned.tiles.some((tile) => tile.id === "advisor")).toBe(true);
   });
 
-  it("hides newly created pools on the tray so the 380x520 panel stays dense", () => {
+  it("appends newly created pools on the tray so they appear in the default list", () => {
     const tray = defaultTrayLayout(["a"]);
     const next = ensureAllPools(tray, ["a", "b"], "tray");
-    expect(next.tiles.find((tile) => tile.poolId === "b")).toMatchObject({ size: "md", visible: false });
+    expect(next.tiles.find((tile) => tile.poolId === "b")).toMatchObject({ size: "md", visible: true });
+  });
+
+  it("leaves user-hidden tray pools hidden when a new pool is added", () => {
+    const tray = hideTile(defaultTrayLayout(["a", "b"]), "pool:b");
+    const next = ensureAllPools(tray, ["a", "b", "c"], "tray");
+    expect(next.tiles.find((tile) => tile.poolId === "b")?.visible).toBe(false);
+    expect(next.tiles.find((tile) => tile.poolId === "c")?.visible).toBe(true);
   });
 });
 
@@ -201,7 +209,7 @@ describe("resolveLayout", () => {
     const saved = serializeLayout(defaultDashboardLayout(["p1", "p2", "p3"]));
     const tray = resolveLayout({ dashboard_layout: saved }, ["p1", "p2", "p3"], "tray");
     expect(tray.tiles.find((tile) => tile.id === "trend")?.visible).toBe(false);
-    expect(tray.tiles.filter((tile) => tile.type === "pool" && tile.visible)).toHaveLength(2);
+    expect(tray.tiles.filter((tile) => tile.type === "pool" && tile.visible)).toHaveLength(3);
   });
 
   it("prunes and fills against a stored dashboard_layout", () => {

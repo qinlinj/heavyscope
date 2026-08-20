@@ -18,6 +18,7 @@ type Props = {
   records: UsageRecord[];
   advice?: PoolAdvice;
   expanded: boolean;
+  highlighted?: boolean;
   warnPercent?: number;
   critPercent?: number;
   onToggle: (poolId: string) => void;
@@ -28,6 +29,7 @@ export function TrayPoolRow({
   records,
   advice,
   expanded,
+  highlighted = false,
   warnPercent,
   critPercent,
   onToggle,
@@ -45,18 +47,22 @@ export function TrayPoolRow({
       aria-label={expanded ? t("tray.collapsePool") : t("tray.expandPool")}
       onClick={() => onToggle(pool.id)}
       className={cn(
-        "w-full rounded-lg border border-foreground/10 bg-card/90 px-2.5 py-1.5 text-left backdrop-blur",
+        "w-full rounded-lg border bg-card/90 px-2.5 py-1.5 text-left text-xs backdrop-blur",
         "outline-none transition-colors hover:bg-card focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50",
+        highlighted ? "border-primary/50 ring-1 ring-primary/30" : "border-foreground/10",
       )}
     >
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-1.5">
           <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: pool.color }} />
-          <span className="truncate text-[13px] font-medium">{displayPoolName(pool, t)}</span>
+          <span className="truncate text-xs font-medium">{displayPoolName(pool, t)}</span>
+          {highlighted ? (
+            <span className="shrink-0 text-[11px] font-medium text-primary">{t("tray.tightest")}</span>
+          ) : null}
         </span>
         <span
           className={cn(
-            "shrink-0 text-[13px] font-semibold tabular-nums",
+            "shrink-0 text-xs font-semibold tabular-nums",
             tone === "ok" && "text-emerald-600 dark:text-emerald-400",
             tone === "warn" && "text-amber-600 dark:text-amber-400",
             tone === "crit" && "text-red-600 dark:text-red-400",
