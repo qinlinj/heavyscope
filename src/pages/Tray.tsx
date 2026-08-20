@@ -309,7 +309,7 @@ export function TrayPage() {
 function TrayShell({ children }: { children: ReactNode }) {
   return (
     <div className="h-svh overflow-hidden bg-background text-foreground">
-      <div className="pointer-events-none fixed inset-0 dark:bg-[radial-gradient(circle_at_top,_oklch(0.28_0.04_250/_0.45),_transparent_55%)]" />
+      <div className="pointer-events-none fixed inset-0 dark:bg-[radial-gradient(circle_at_top,_oklch(0.32_0.08_300/_0.40),_transparent_55%)]" />
       <div className="relative flex h-full flex-col gap-2 overflow-y-auto px-2.5 py-2.5">{children}</div>
     </div>
   );

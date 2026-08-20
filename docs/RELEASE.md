@@ -2,6 +2,12 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.12.0
+
+- Web polish: Grok Bot auto-tracks from CLI billing `productUsage: Api` when a Bearer is saved. Heatmap cells stay square. Quota overview and Recent records scroll. Pies drop labels when compact.
+- GetGrokCreditsConfig walks field 7 `product_usage`. Heavy stays on `creditUsagePercent`.
+- Purple primary for light and dark. Version 0.12.0. No Tauri behavior change.
+
 ## v0.11.0
 
 - Compact `/tray` is a menu-bar plugin, not a shrunk website: Refresh now, Settings gear, 1–2 expandable pool rows, last-sync lines, optional tiny heatmap.

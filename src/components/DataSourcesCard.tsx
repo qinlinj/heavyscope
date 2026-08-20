@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { useDatabase } from "@/hooks/useDatabase";
 import { isMacDesktop, readCursorSessionTokenFromApp } from "@/lib/desktop";
+import { formatGrokProductLine } from "@/adapters/grokLive";
 import { formatDateTime } from "@/lib/format";
 import {
   nextSyncAt,
@@ -354,7 +355,13 @@ export function DataSourcesCard() {
             <p className="text-xs text-muted-foreground">
               {t("live.grokParsed")}:{" "}
               {parseGrokParsedProducts(settings[SETTING_GROK_PARSED_PRODUCTS])
-                .map((item) => `${item.name || t("live.unnamedProduct")} ${item.percent.toFixed(1)}%`)
+                .map((item) =>
+                  formatGrokProductLine(item, {
+                    bot: t("presets.preset-grok-bot"),
+                    heavy: t("presets.preset-grok-heavy"),
+                    unnamed: t("live.unnamedProduct"),
+                  }),
+                )
                 .join(" · ")}
             </p>
           )}

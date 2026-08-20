@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   GROK_NEEDS_BEARER,
+  formatGrokProductLine,
+  grokProductTarget,
   hexToBytes,
   isBotProductName,
+  isHeavyProductName,
   mapGrokCliBillingJson,
   mapGrokCreditsResponse,
+  mergeGrokLiveResults,
   parseGrokCreditsPayload,
   pickBotProduct,
 } from "./grokLive";
@@ -159,11 +163,13 @@ const SUPERGROK_BOT_HEX = [
 ].join("");
 
 describe("isBotProductName", () => {
-  it("matches Bot / Grok Bot / SuperGrok Bot / Agents / API-for-bots and rejects Heavy", () => {
+  it("matches Bot / Grok Bot / SuperGrok Bot / Agents / Api / API-for-bots and rejects Heavy", () => {
     expect(isBotProductName("Grok Bot")).toBe(true);
     expect(isBotProductName("SuperGrok Bot")).toBe(true);
     expect(isBotProductName("Bot")).toBe(true);
     expect(isBotProductName("Agents")).toBe(true);
+    expect(isBotProductName("Api")).toBe(true);
+    expect(isBotProductName("API")).toBe(true);
     expect(isBotProductName("API for bots")).toBe(true);
     expect(isBotProductName("x.com bots")).toBe(true);
     expect(isBotProductName("API-for-bot")).toBe(true);
@@ -171,6 +177,34 @@ describe("isBotProductName", () => {
     expect(isBotProductName("PRODUCT_GROK_AGENTS")).toBe(true);
     expect(isBotProductName("SuperGrok Heavy")).toBe(false);
     expect(isBotProductName("PRODUCT_GROK_BUILD")).toBe(false);
+    expect(isBotProductName("GrokBuild")).toBe(false);
+  });
+});
+
+describe("isHeavyProductName", () => {
+  it("matches Heavy / GrokBuild / Build and rejects Bot / Api", () => {
+    expect(isHeavyProductName("SuperGrok Heavy")).toBe(true);
+    expect(isHeavyProductName("GrokBuild")).toBe(true);
+    expect(isHeavyProductName("PRODUCT_GROK_BUILD")).toBe(true);
+    expect(isHeavyProductName("Build")).toBe(true);
+    expect(isHeavyProductName("Api")).toBe(false);
+    expect(isHeavyProductName("Grok Bot")).toBe(false);
+  });
+});
+
+describe("grokProductTarget", () => {
+  it("maps Api to Bot and GrokBuild to Heavy for Settings display", () => {
+    expect(grokProductTarget("Api")).toBe("grok_bot");
+    expect(grokProductTarget("GrokBuild")).toBe("grok_heavy");
+    expect(grokProductTarget("Chat")).toBeNull();
+    expect(grokProductTarget("")).toBeNull();
+  });
+
+  it("formats Settings lines without inventing unmapped percents", () => {
+    const labels = { bot: "Grok Bot", heavy: "Grok Heavy", unnamed: "Unnamed" };
+    expect(formatGrokProductLine({ name: "Api", percent: 11 }, labels)).toBe("Api 11% → Grok Bot");
+    expect(formatGrokProductLine({ name: "GrokBuild", percent: 0 }, labels)).toBe("GrokBuild 0% → Grok Heavy");
+    expect(formatGrokProductLine({ name: "Chat", percent: 3.4 }, labels)).toBe("Chat 3.4%");
   });
 });
 
@@ -221,6 +255,11 @@ function encodeF32(field: number, value: number): number[] {
   return [...fieldKey(field, 5), ...new Uint8Array(buf)];
 }
 
+function encodeStr(field: number, text: string): number[] {
+  const bytes = [...new TextEncoder().encode(text)];
+  return [...fieldKey(field, 2), ...encodeVarint(bytes.length), ...bytes];
+}
+
 function grpcFrame(payload: number[], flags = 0): Uint8Array {
   const len = payload.length;
   return new Uint8Array([flags, (len >>> 24) & 0xff, (len >>> 16) & 0xff, (len >>> 8) & 0xff, len & 0xff, ...payload]);
@@ -242,7 +281,7 @@ describe("GetGrokCreditsConfig fields 2–6", () => {
       ...encodeLen(4, start),
       ...encodeLen(5, end),
       ...encodeLen(6, history),
-      ...encodeLen(7, prepaid),
+      ...encodeLen(12, prepaid),
     ];
     const body = grpcFrame(encodeLen(1, config));
     const result = parseGrokCreditsPayload(body);
@@ -269,6 +308,21 @@ describe("GetGrokCreditsConfig fields 2–6", () => {
     expect(result.historyPoints?.[0]?.quotaUsed).toBeCloseTo(18, 5);
     expect(result.historyPoints?.[0]?.recordedAt).toBe("2026-06-01T00:00:00.000Z");
     expect(result.pools.some((pool) => pool.poolHint === "grok_bot")).toBe(false);
+  });
+
+  it("parses field 7 product_usage string Api as Bot without using GrokBuild as Heavy", () => {
+    const api = [...encodeStr(1, "Api"), ...encodeF32(2, 11)];
+    const build = [...encodeStr(1, "GrokBuild"), ...encodeF32(2, 0)];
+    const config = [...encodeF32(1, 11.2), ...encodeLen(7, api), ...encodeLen(7, build)];
+    const result = parseGrokCreditsPayload(grpcFrame(encodeLen(1, config)));
+    expect(result.ok).toBe(true);
+    expect(result.pools.find((pool) => pool.poolHint === "grok_heavy")?.quotaUsed).toBeCloseTo(11.2, 5);
+    expect(result.pools.find((pool) => pool.poolHint === "grok_bot")?.quotaUsed).toBeCloseTo(11, 5);
+    expect(result.botUnavailable).toBe(false);
+    expect(result.parsedProducts).toEqual([
+      { name: "Api", percent: 11 },
+      { name: "GrokBuild", percent: 0 },
+    ]);
   });
 });
 
@@ -325,5 +379,75 @@ describe("mapGrokCliBillingJson", () => {
     });
     expect(result.pools.find((pool) => pool.poolHint === "grok_bot")?.quotaUsed).toBe(4);
     expect(result.botUnavailable).toBe(false);
+  });
+
+  it("maps documented CLI billing JSON: Api → Bot, Heavy from creditUsagePercent", () => {
+    const result = mapGrokCliBillingJson({
+      config: {
+        creditUsagePercent: 11.2,
+        currentPeriod: { type: "WEEKLY", start: "2026-08-17T00:00:00Z", end: "2026-08-24T00:00:00Z" },
+        productUsage: [
+          { product: "Api", usagePercent: 11 },
+          { product: "GrokBuild", usagePercent: 0 },
+        ],
+        onDemandCap: { val: 0 },
+        onDemandUsed: { val: 0 },
+        prepaidBalance: { val: 0 },
+      },
+    });
+    expect(result.ok).toBe(true);
+    expect(result.pools.find((pool) => pool.poolHint === "grok_heavy")?.quotaUsed).toBeCloseTo(11.2, 5);
+    const bot = result.pools.find((pool) => pool.poolHint === "grok_bot");
+    expect(bot?.quotaUsed).toBe(11);
+    expect(bot?.note).toMatch(/Api/i);
+    expect(result.botUnavailable).toBe(false);
+    expect(result.parsedProducts).toEqual([
+      { name: "Api", percent: 11 },
+      { name: "GrokBuild", percent: 0 },
+    ]);
+    expect(result.pools.filter((pool) => pool.poolHint === "grok_heavy")).toHaveLength(1);
+  });
+
+  it("does not invent Bot when productUsage is only GrokBuild", () => {
+    const result = mapGrokCliBillingJson({
+      config: {
+        creditUsagePercent: 42.5,
+        productUsage: [{ product: "GrokBuild", usagePercent: 0 }],
+      },
+    });
+    expect(result.botUnavailable).toBe(true);
+    expect(result.pools.map((pool) => pool.poolHint)).toEqual(["grok_heavy"]);
+  });
+});
+
+describe("mergeGrokLiveResults", () => {
+  it("lets CLI JSON Bot win when proto has only Heavy", () => {
+    const proto = mapGrokCliBillingJson({
+      config: { creditUsagePercent: 11.2, productUsage: [{ product: "GrokBuild", usagePercent: 0 }] },
+    });
+    const json = mapGrokCliBillingJson({
+      config: {
+        creditUsagePercent: 11.2,
+        productUsage: [
+          { product: "Api", usagePercent: 11 },
+          { product: "GrokBuild", usagePercent: 0 },
+        ],
+      },
+    });
+    const merged = mergeGrokLiveResults(proto, json);
+    expect(merged.ok).toBe(true);
+    expect(merged.pools.find((pool) => pool.poolHint === "grok_bot")?.quotaUsed).toBe(11);
+    expect(merged.pools.find((pool) => pool.poolHint === "grok_heavy")?.quotaUsed).toBeCloseTo(11.2, 5);
+    expect(merged.botUnavailable).toBe(false);
+    expect(merged.message).toMatch(/CLI billing/i);
+  });
+
+  it("keeps proto when CLI JSON fails", () => {
+    const proto = parseGrokCreditsPayload(hexToBytes(PERCENT_25_HEX));
+    const failed = { ok: false as const, code: "http" as const, message: "CLI down", pools: [] };
+    const merged = mergeGrokLiveResults(proto, failed);
+    expect(merged.ok).toBe(true);
+    expect(merged.pools[0]?.quotaUsed).toBeCloseTo(25, 5);
+    expect(merged.botUnavailable).toBe(true);
   });
 });

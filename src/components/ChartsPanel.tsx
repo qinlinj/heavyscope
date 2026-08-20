@@ -180,7 +180,7 @@ export function ChartsPanel({
               )
             ) : null}
             {showTrend && bars.length > 0 && (
-              <ul className={showStackedChart ? "mt-3 space-y-2.5" : "space-y-2.5"}>
+              <ul className={`max-h-36 overflow-y-auto pr-1 ${showStackedChart ? "mt-3 space-y-2.5" : "space-y-2.5"}`}>
                 {bars.map((bar) => (
                   <li key={bar.id} className="space-y-1">
                     <div className="flex items-center justify-between gap-3 text-xs">

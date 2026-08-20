@@ -138,6 +138,21 @@ export function heatmapCellIntensity(cell: HeatmapCell, grid: HeatmapGrid): numb
 }
 
 /** Quartile buckets against the busiest day in the window (0 = empty). */
+/** Gap between GitHub-style heatmap cells (px). */
+export const HEATMAP_CELL_GAP_PX = 3;
+
+/**
+ * Perfect-square cell size. Never stretches to fill leftover card width/height.
+ * `width` / `height` are the box for the week×7 grid, including gaps.
+ */
+export function squareCellPx(width: number, height: number, weeks: number, gap = HEATMAP_CELL_GAP_PX): number {
+  const cols = Math.max(1, Math.round(weeks));
+  const innerW = width - gap * Math.max(0, cols - 1);
+  const innerH = height - gap * 6;
+  if (innerW <= 0 || innerH <= 0) return 0;
+  return Math.max(0, Math.floor(Math.min(innerW / cols, innerH / 7)));
+}
+
 export function heatmapLevel(value: number, maxValue: number): 0 | 1 | 2 | 3 | 4 {
   if (value <= 0 || maxValue <= 0) return 0;
   const ratio = value / maxValue;

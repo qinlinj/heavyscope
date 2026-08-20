@@ -158,10 +158,10 @@ export function Dashboard() {
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="border-b border-foreground/10 pb-2 sm:border-0 sm:pb-0">
+        <div className="min-w-0 max-w-xl border-b border-foreground/10 pb-2 sm:border-0 sm:pb-0">
           <h2 className="font-heading text-xl font-semibold">{t("dashboard.title")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{t("dashboard.subtitle")}</p>
-          <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+          <div className="mt-1 max-h-16 space-y-0.5 overflow-y-auto text-xs text-muted-foreground">
             {cursorConfigured ? (
               <p>
                 {t("live.lastSyncedCursor")}:{" "}

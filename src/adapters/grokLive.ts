@@ -4,14 +4,17 @@ import type { LiveHistoryPoint, LivePoolUpdate, LiveProviderResult } from "./liv
 type ProtoField = { number: number; wire: number; value: number | Uint8Array };
 
 /**
- * Bot / Agents product names seen in grok.com Settings → Usage, CLI productUsage,
- * and public trackers. SuperGrok Heavy / PRODUCT_GROK_BUILD stay on the Heavy meter.
+ * Bot / Agents product names seen in grok.com Settings → Usage, CLI productUsage
+ * (`Api`, SuperGrok Bot, Agents), and public trackers.
+ * SuperGrok Heavy / GrokBuild / PRODUCT_GROK_BUILD stay on the Heavy meter.
  */
 const BOT_NAME =
-  /(super[\s-]*grok[\s-]*bot|grok[\s-]*bot|^bot$|\bagents?\b|api[\s-]*for[\s-]*bots?|x\.com[\s-]*bots?|xai[\s-]*bots?|product[_-]*grok[_-]*(bot|agents?)|product[_-]*(bot|agents?))/i;
-const HEAVY_NAME = /heavy|super[\s-]*grok(?![\s-]*bot)|product[_-]*grok[_-]*(build|heavy)/i;
+  /(super[\s-]*grok[\s-]*bot|grok[\s-]*bot|^bot$|\bagents?\b|^api$|\bapi\b|api[\s-]*for[\s-]*bots?|x\.com[\s-]*bots?|xai[\s-]*bots?|product[_-]*grok[_-]*(bot|agents?)|product[_-]*(bot|agents?))/i;
+const HEAVY_NAME =
+  /heavy|super[\s-]*grok(?![\s-]*bot)|product[_-]*grok[_-]*(build|heavy)|grok[\s_-]*build|^build$/i;
 
-const KNOWN_CONFIG_FIELDS = new Set([1, 2, 3, 4, 5, 6]);
+/** 1–6 documented; 7 product_usage; 8 current_period; 12 prepaid_balance. */
+const KNOWN_CONFIG_FIELDS = new Set([1, 2, 3, 4, 5, 6, 7, 8, 12]);
 const GRPC_UNAUTHENTICATED = 16;
 
 export const GROK_NEEDS_BEARER =
@@ -186,6 +189,11 @@ export type GrokBillingMeta = {
 };
 
 function walkProducts(message: Uint8Array, out: ProductSegment[]): void {
+  const entry = parseProductUsageMessage(message);
+  if (entry) {
+    out.push(entry);
+    return;
+  }
   const fields = iterFields(message);
   if (!fields) return;
   const names: string[] = [];
@@ -211,6 +219,60 @@ function walkProducts(message: Uint8Array, out: ProductSegment[]): void {
   } else if (percents.length > 0) {
     for (const percent of percents) out.push({ name: "", percent });
   }
+}
+
+/**
+ * GetGrokCreditsConfig field 7: `repeated ProductUsage product_usage`.
+ * Product is a string or enum in live payloads; unofficial dumps type it as a
+ * shopping Product message (name collision). Parse string, then nested strings,
+ * then an unlabeled percent. Do not invent enum→name maps.
+ */
+function parseProductUsageMessage(message: Uint8Array): ProductSegment | null {
+  const fields = iterFields(message);
+  if (!fields || fields.length === 0) return null;
+  let name = "";
+  let percent: number | null = null;
+  for (const field of fields) {
+    if (field.number === 2 && field.wire === 5 && field.value instanceof Uint8Array) {
+      percent = parseFloat32(field.value);
+      continue;
+    }
+    if (field.number !== 1) continue;
+    if (field.wire === 2 && field.value instanceof Uint8Array) {
+      const asString = isPrintableUtf8(field.value);
+      if (asString) name = asString;
+      else {
+        const nested = iterFields(field.value);
+        if (nested) {
+          for (const inner of nested) {
+            if (inner.wire === 2 && inner.value instanceof Uint8Array) {
+              const text = isPrintableUtf8(inner.value);
+              if (text && !name) name = text;
+            }
+          }
+        }
+      }
+    }
+  }
+  if (percent == null || !isPercentLike(percent)) return null;
+  return { name, percent };
+}
+
+function parseUsagePeriod(message: Uint8Array): { start: string | null; end: string | null } {
+  const fields = iterFields(message);
+  if (!fields) return { start: null, end: null };
+  let start: string | null = null;
+  let end: string | null = null;
+  for (const field of fields) {
+    if (field.wire !== 2 || !(field.value instanceof Uint8Array)) continue;
+    const stamp = looksLikeTimestamp(field.value) ? parseTimestamp(field.value) : null;
+    if (!stamp) continue;
+    if (field.number === 2 && !start) start = stamp;
+    else if (field.number === 3 && !end) end = stamp;
+    else if (!start) start = stamp;
+    else if (!end) end = stamp;
+  }
+  return { start, end };
 }
 
 function isPercentLike(value: number): boolean {
@@ -283,9 +345,9 @@ export function pickBotProduct(
   const named = products.find((item) => isBotProductName(item.name));
   if (named) return named;
 
-  const leftover = products.filter((item) => {
+    const leftover = products.filter((item) => {
     if (isHeavyProductName(item.name)) return false;
-    if (item.name.trim() && /heavy|grok[_-]?build/i.test(item.name) && !isBotProductName(item.name)) {
+    if (item.name.trim() && /heavy|grok[\s_-]*build|^build$/i.test(item.name) && !isBotProductName(item.name)) {
       return false;
     }
     return Math.abs(item.percent - heavyPercent) > 0.05;
@@ -298,6 +360,97 @@ export function pickBotProduct(
 
 export function isBotProductName(name: string): boolean {
   return BOT_NAME.test(name.trim());
+}
+
+/** Settings display: named product → Heavy / Bot, or unmapped. Never invents a percent. */
+export function grokProductTarget(name: string): "grok_bot" | "grok_heavy" | null {
+  const trimmed = name.trim();
+  if (!trimmed) return null;
+  if (isBotProductName(trimmed)) return "grok_bot";
+  if (isHeavyProductName(trimmed)) return "grok_heavy";
+  return null;
+}
+
+export function formatGrokProductLine(
+  item: ProductSegment,
+  labels: { bot: string; heavy: string; unnamed: string },
+): string {
+  const name = item.name.trim() || labels.unnamed;
+  const percent = `${trimPercent(item.percent)}%`;
+  const target = grokProductTarget(item.name);
+  if (target === "grok_bot") return `${name} ${percent} → ${labels.bot}`;
+  if (target === "grok_heavy") return `${name} ${percent} → ${labels.heavy}`;
+  return `${name} ${percent}`;
+}
+
+function trimPercent(value: number): string {
+  if (!Number.isFinite(value)) return "0";
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function poolByHint(result: LiveProviderResult, hint: string): LivePoolUpdate | undefined {
+  return result.pools.find((item) => item.poolHint === hint);
+}
+
+function mergeParsedProducts(left?: ProductSegment[], right?: ProductSegment[]): ProductSegment[] {
+  const out: ProductSegment[] = [];
+  const seen = new Set<string>();
+  for (const item of [...(left ?? []), ...(right ?? [])]) {
+    const key = `${item.name.trim().toLowerCase()}|${item.percent}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
+  }
+  return out;
+}
+
+/**
+ * Combine GetGrokCreditsConfig proto with CLI billing JSON.
+ * Heavy stays on creditUsagePercent (do not overwrite with GrokBuild 0).
+ * If JSON has Bot/Api and proto does not, JSON wins for Bot.
+ */
+export function mergeGrokLiveResults(
+  proto: LiveProviderResult,
+  json: LiveProviderResult | null,
+): LiveProviderResult {
+  if (!json) return proto;
+  if (!proto.ok && json.ok) return json;
+  if (proto.ok && !json.ok) return proto;
+  if (!proto.ok && !json.ok) {
+    return proto.code === "expired" ? proto : json;
+  }
+
+  const protoBot = poolByHint(proto, "grok_bot");
+  const jsonBot = poolByHint(json, "grok_bot");
+  const heavy = poolByHint(proto, "grok_heavy") ?? poolByHint(json, "grok_heavy");
+  const bot = jsonBot ?? protoBot;
+  const products = mergeParsedProducts(proto.parsedProducts, json.parsedProducts);
+  const billing = json.billing ?? proto.billing;
+  const historyPoints = [
+    ...(proto.historyPoints ?? []),
+    ...(json.historyPoints ?? []),
+  ];
+  const pools: LivePoolUpdate[] = [];
+  if (heavy) pools.push(heavy);
+  if (bot) pools.push(bot);
+  const botUnavailable = !bot;
+
+  return {
+    ok: true,
+    code: "ok",
+    message: botUnavailable
+      ? "Grok Heavy mapped; Bot live sync unavailable — calibrate manually"
+      : jsonBot && !protoBot
+        ? "Grok credits mapped (Bot from CLI billing productUsage)"
+        : "Grok credits mapped",
+    pools,
+    resetAt: proto.resetAt ?? json.resetAt,
+    botUnavailable,
+    parsedProducts: products,
+    billing,
+    historyPoints,
+  };
 }
 
 export type GrpcWebDecoded = {
@@ -416,8 +569,8 @@ function historyPointsFromBilling(history: GrokHistoryPoint[]): LiveHistoryPoint
  * Loose protobuf walker for GetGrokCreditsConfig (lsaether/grok-credits-tracker + vct-core).
  * 1 credit_usage_percent (fixed32) · 2 on_demand_cap · 3 on_demand_used
  * 4 billing_period_start · 5 billing_period_end · 6 history
- * prepaid_balance field number is not confirmed — extra Cent messages are captured.
- * Never throws. Never invents Bot usage.
+ * 7 product_usage (repeated ProductUsage) · 8 current_period · 12 prepaid_balance
+ * Never throws. Never invents Bot usage. Heavy stays on credit_usage_percent.
  */
 export function parseGrokCreditsPayload(body: Uint8Array, headers?: Record<string, string>): LiveProviderResult {
   const decoded = decodeGrpcWeb(body, headers);
@@ -460,6 +613,14 @@ export function parseGrokCreditsPayload(body: Uint8Array, headers?: Record<strin
       periodEnd = parseTimestamp(field.value);
     } else if (field.number === 6 && field.wire === 2 && field.value instanceof Uint8Array) {
       history.push(parsePeriodUsage(field.value));
+    } else if (field.number === 7 && field.wire === 2 && field.value instanceof Uint8Array) {
+      walkProducts(field.value, products);
+    } else if (field.number === 8 && field.wire === 2 && field.value instanceof Uint8Array) {
+      const period = parseUsagePeriod(field.value);
+      if (period.start && !periodStart) periodStart = period.start;
+      if (period.end && !periodEnd) periodEnd = period.end;
+    } else if (field.number === 12 && field.wire === 2 && field.value instanceof Uint8Array) {
+      prepaidBalanceCents = parseCent(field.value);
     } else if (
       field.wire === 2 &&
       field.value instanceof Uint8Array &&
@@ -606,7 +767,8 @@ function readString(value: unknown): string | null {
 
 /**
  * CLI proxy `GET /v1/billing?format=credits` JSON (xai-org/grok-build billing.rs).
- * Maps Heavy from creditUsagePercent. Bot only from a named non-Heavy productUsage.
+ * Heavy from creditUsagePercent (shared Heavy meter — do not also write GrokBuild).
+ * Bot from productUsage Api / Bot / Agents automatically.
  */
 export function mapGrokCliBillingJson(raw: unknown): LiveProviderResult {
   const root = asRecord(raw);

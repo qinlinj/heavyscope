@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Pool, UsageRecord } from "@/db/schema";
-import { HEATMAP_GITHUB_COLORS, heatmapGrid, heatmapLevel } from "@/lib/heatmap";
+import { HEATMAP_GITHUB_COLORS, heatmapGrid, heatmapLevel, squareCellPx } from "@/lib/heatmap";
 
 function record(poolId: string, amount: number, recordedAt: Date): UsageRecord {
   const iso = recordedAt.toISOString();
@@ -72,6 +72,20 @@ describe("HEATMAP_GITHUB_COLORS", () => {
   it("matches GitHub contribution greens for light and dark", () => {
     expect(HEATMAP_GITHUB_COLORS.light).toEqual(["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"]);
     expect(HEATMAP_GITHUB_COLORS.dark).toEqual(["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"]);
+  });
+});
+
+describe("squareCellPx", () => {
+  it("uses the tighter of width/weeks and height/7 and never stretches wide cards", () => {
+    expect(squareCellPx(260, 70, 26, 0)).toBe(10);
+    expect(squareCellPx(800, 70, 26, 0)).toBe(10);
+    expect(squareCellPx(260, 400, 26, 0)).toBe(10);
+  });
+
+  it("accounts for a 3px gap so cells stay square", () => {
+    expect(squareCellPx(260, 70, 26, 3)).toBe(7);
+    expect(squareCellPx(0, 70, 26)).toBe(0);
+    expect(squareCellPx(100, 20, 0)).toBeGreaterThanOrEqual(0);
   });
 });
 
