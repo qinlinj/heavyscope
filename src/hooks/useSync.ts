@@ -35,15 +35,19 @@ export function useSync(opts: SyncSchedulerOpts): void {
   useEffect(() => {
     if (!ready || !enabled) return;
     const parsed: SyncSource = parseSyncSource(source);
-    if (parsed === "none") return;
+    if (parsed === "none" && !cursorLive && !grokLive && !hasSnapshot) return;
 
     const tick = async () => {
       const live: Array<"cursor" | "grok"> = [];
-      if (syncSourceHas(parsed, "cursor") && cursorLive) live.push("cursor");
-      if (syncSourceHas(parsed, "grok") && grokLive) live.push("grok");
+      // Credentials, not *_connected, decide membership. A failed tick must
+      // not drop a provider from future intervals.
+      const wantCursor = cursorLive && (parsed === "none" || syncSourceHas(parsed, "cursor"));
+      const wantGrok = grokLive && (parsed === "none" || syncSourceHas(parsed, "grok"));
+      if (wantCursor) live.push("cursor");
+      if (wantGrok) live.push("grok");
       if (live.length > 0) await applyLive(live);
       // Snapshot string is fallback only when no session token is stored.
-      if (syncSourceHas(parsed, "cursor") && !cursorHasToken && hasSnapshot) {
+      if ((parsed === "none" || syncSourceHas(parsed, "cursor")) && !cursorHasToken && hasSnapshot) {
         await applySnapshot();
       }
     };

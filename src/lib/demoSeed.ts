@@ -67,7 +67,7 @@ export function buildDemoUsageRecords(now = new Date()): UsageRecord[] {
         amount,
         recorded_at: when.toISOString(),
         note: pattern.note,
-        source: "import",
+        source: "demo",
       });
     }
   }

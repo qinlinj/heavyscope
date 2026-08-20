@@ -41,7 +41,7 @@ export type BackupApplyReport = {
 
 const POOL_TYPES = new Set(["credits", "requests", "usd", "custom"]);
 const RESET_CYCLES = new Set(["weekly", "monthly", "none"]);
-const USAGE_SOURCES = new Set(["manual", "import", "sync"]);
+const USAGE_SOURCES = new Set(["manual", "import", "sync", "demo"]);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

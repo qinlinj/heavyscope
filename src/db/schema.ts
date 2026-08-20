@@ -4,7 +4,8 @@ export const SCHEMA_VERSION = 1;
 
 export type PoolType = "credits" | "requests" | "usd" | "custom";
 export type ResetCycle = "weekly" | "monthly" | "none";
-export type UsageSource = "manual" | "import" | "sync";
+export const USAGE_SOURCES = ["manual", "import", "sync", "demo"] as const;
+export type UsageSource = (typeof USAGE_SOURCES)[number];
 
 export type Pool = {
   id: string;

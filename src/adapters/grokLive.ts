@@ -3,7 +3,13 @@ import type { LivePoolUpdate, LiveProviderResult } from "./liveTypes";
 
 type ProtoField = { number: number; wire: number; value: number | Uint8Array };
 
-const BOT_NAME = /(grok[\s-]*bot|^bot$|\bagents?\b|api[\s-]*for[\s-]*bot)/i;
+/**
+ * Bot / Agents product names seen in grok.com Settings → Usage and public trackers.
+ * SuperGrok Heavy is excluded so the Heavy weekly meter is never remapped to Bot.
+ */
+const BOT_NAME =
+  /(super[\s-]*grok[\s-]*bot|grok[\s-]*bot|^bot$|\bagents?\b|api[\s-]*for[\s-]*bots?|x\.com[\s-]*bots?|xai[\s-]*bots?)/i;
+const HEAVY_NAME = /heavy|super[\s-]*grok(?![\s-]*bot)/i;
 
 function readVarint(data: Uint8Array, pos: number): { value: number; pos: number } | null {
   let value = 0;
@@ -103,7 +109,7 @@ function isPrintableUtf8(bytes: Uint8Array): string | null {
   }
 }
 
-type ProductSegment = { name: string; percent: number };
+export type ProductSegment = { name: string; percent: number };
 
 function walkProducts(message: Uint8Array, out: ProductSegment[]): void {
   const fields = iterFields(message);
@@ -122,8 +128,45 @@ function walkProducts(message: Uint8Array, out: ProductSegment[]): void {
     }
   }
   if (names.length > 0 && percents.length > 0) {
-    out.push({ name: names[0], percent: percents[0] });
+    const count = Math.max(names.length, percents.length);
+    for (let i = 0; i < count; i += 1) {
+      const percent = percents[i] ?? percents[0];
+      if (percent == null) continue;
+      out.push({ name: names[i] ?? names[0] ?? "", percent });
+    }
+  } else if (percents.length > 0) {
+    for (const percent of percents) out.push({ name: "", percent });
   }
+}
+
+export function isHeavyProductName(name: string): boolean {
+  const trimmed = name.trim();
+  if (!trimmed) return false;
+  if (isBotProductName(trimmed)) return false;
+  return HEAVY_NAME.test(trimmed);
+}
+
+/**
+ * Prefer a named Bot/Agents product. If the proto has a second percent /
+ * remaining-style meter that is not Heavy, map that leftover segment to Bot.
+ * Never invent a Bot number when only Heavy exists.
+ */
+export function pickBotProduct(
+  products: ProductSegment[],
+  heavyPercent: number,
+): ProductSegment | null {
+  const named = products.find((item) => isBotProductName(item.name));
+  if (named) return named;
+
+  const leftover = products.filter((item) => {
+    if (isHeavyProductName(item.name)) return false;
+    if (item.name.trim() && /heavy/i.test(item.name) && !isBotProductName(item.name)) return false;
+    return Math.abs(item.percent - heavyPercent) > 0.05;
+  });
+  if (leftover.length === 1) return leftover[0] ?? null;
+  const unnamed = leftover.filter((item) => !item.name.trim());
+  if (unnamed.length === 1 && leftover.length === unnamed.length) return unnamed[0] ?? null;
+  return null;
 }
 
 export function isBotProductName(name: string): boolean {
@@ -207,10 +250,11 @@ export function parseGrokCreditsPayload(body: Uint8Array): LiveProviderResult {
     },
   ];
 
-  const bot = products.find((item) => isBotProductName(item.name));
+  const bot = pickBotProduct(products, creditUsagePercent);
   let botUnavailable = true;
   if (bot) {
     botUnavailable = false;
+    const label = bot.name.trim() || "second meter";
     pools.push({
       poolHint: "grok_bot",
       quotaUsed: bot.percent,
@@ -218,7 +262,7 @@ export function parseGrokCreditsPayload(body: Uint8Array): LiveProviderResult {
       resetAt: periodEnd,
       resetCycle: "weekly",
       unit: LIVE_PERCENT_UNIT,
-      note: `Grok live sync (${bot.name})`,
+      note: `Grok live sync (${label})`,
       recordedAt: fetchedAt,
     });
   }
@@ -232,6 +276,7 @@ export function parseGrokCreditsPayload(body: Uint8Array): LiveProviderResult {
     pools,
     resetAt: periodEnd,
     botUnavailable,
+    parsedProducts: products,
   };
 }
 

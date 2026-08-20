@@ -10,19 +10,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { UsageSource } from "@/db/schema";
 import { useDatabase } from "@/hooks/useDatabase";
 import { filterRecords } from "@/lib/charts";
 import { formatAmount, formatDateTime } from "@/lib/format";
 import { displayPoolName } from "@/lib/poolName";
+import type { HistorySourceFilter } from "@/lib/usageSource";
 
-const SOURCES: UsageSource[] = ["manual", "import", "sync"];
+const SOURCES: HistorySourceFilter[] = ["live", "manual", "import", "sync", "demo"];
 
 export function History() {
   const { t, i18n } = useTranslation();
   const { ready, error, pools, records } = useDatabase();
   const [poolId, setPoolId] = useState("all");
-  const [source, setSource] = useState("all");
+  const [source, setSource] = useState<HistorySourceFilter>("live");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
@@ -30,7 +30,7 @@ export function History() {
     () =>
       filterRecords(records, {
         poolId,
-        source: source as UsageSource | "all",
+        source,
         from: from || undefined,
         to: to || undefined,
       }),
@@ -75,7 +75,6 @@ export function History() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t("history.allSources")}</SelectItem>
               {SOURCES.map((item) => (
                 <SelectItem key={item} value={item}>
                   {t(`history.sources.${item}`)}
@@ -96,7 +95,7 @@ export function History() {
             className="w-full"
             onClick={() => {
               setPoolId("all");
-              setSource("all");
+              setSource("live");
               setFrom("");
               setTo("");
             }}

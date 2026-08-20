@@ -21,6 +21,8 @@ export type LiveProviderResult = {
   resetAt?: string | null;
   /** Grok Bot / Agents segment could not be mapped from the proto. */
   botUnavailable?: boolean;
+  /** Product names + percents walked from the proto (for Settings diagnostics). */
+  parsedProducts?: Array<{ name: string; percent: number }>;
 };
 
 export type LiveApplyReport = {

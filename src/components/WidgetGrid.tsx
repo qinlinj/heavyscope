@@ -13,8 +13,10 @@ export function WidgetGrid({ columns, editing, children }: Props) {
       data-widget-grid={columns}
       data-editing={editing ? "true" : "false"}
       className={cn(
-        "grid gap-3",
-        columns === 4 ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2",
+        "grid items-stretch gap-3 [grid-auto-flow:row]",
+        columns === 4
+          ? "grid-cols-1 md:grid-cols-[repeat(4,minmax(0,1fr))]"
+          : "grid-cols-[repeat(2,minmax(0,1fr))]",
         editing && "rounded-2xl border border-dashed border-foreground/25 bg-muted/15 p-2 sm:p-3",
       )}
     >

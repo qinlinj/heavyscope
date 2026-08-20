@@ -4,6 +4,7 @@ import {
   isBotProductName,
   mapGrokCreditsResponse,
   parseGrokCreditsPayload,
+  pickBotProduct,
 } from "./grokLive";
 
 /**
@@ -70,6 +71,25 @@ describe("parseGrokCreditsPayload", () => {
     expect(result.pools.map((pool) => pool.poolHint)).toEqual(["grok_heavy"]);
   });
 
+  it("maps SuperGrok Bot by name", () => {
+    const result = parseGrokCreditsPayload(hexToBytes(SUPERGROK_BOT_HEX));
+    expect(result.ok).toBe(true);
+    const bot = result.pools.find((pool) => pool.poolHint === "grok_bot");
+    expect(bot?.quotaUsed).toBeCloseTo(18, 5);
+    expect(result.botUnavailable).toBe(false);
+  });
+
+  it("maps an unnamed second percent that is not Heavy", () => {
+    const result = parseGrokCreditsPayload(hexToBytes(SECOND_PERCENT_HEX));
+    expect(result.ok).toBe(true);
+    expect(result.pools[0]?.quotaUsed).toBeCloseTo(25, 5);
+    const bot = result.pools.find((pool) => pool.poolHint === "grok_bot");
+    expect(bot?.quotaUsed).toBeCloseTo(40, 5);
+    expect(result.parsedProducts?.some((item) => item.percent === 40 || Math.abs(item.percent - 40) < 0.01)).toBe(
+      true,
+    );
+  });
+
   it("returns an error result for empty / malformed bytes without throwing", () => {
     expect(() => parseGrokCreditsPayload(new Uint8Array())).not.toThrow();
     const empty = parseGrokCreditsPayload(new Uint8Array());
@@ -88,12 +108,59 @@ describe("mapGrokCreditsResponse", () => {
   });
 });
 
+/**
+ * Config with Heavy 25% plus an unnamed second fixed32 40.0 (not Heavy).
+ * Heuristic maps the leftover meter to Bot without inventing a third number.
+ */
+const SECOND_PERCENT_HEX = [
+  "0a",
+  "0c",
+  "0d 00 00 c8 41",
+  "3a 06",
+  "15 00 00 20 42",
+].join("");
+
+/**
+ * Nested product named "SuperGrok Bot" with percent 18.
+ * SuperGrok Bot = 53 75 70 65 72 47 72 6f 6b 20 42 6f 74
+ */
+const SUPERGROK_BOT_HEX = [
+  "0a",
+  "1b",
+  "0d 00 00 48 41",
+  "3a",
+  "14",
+  "0a 0d 53 75 70 65 72 47 72 6f 6b 20 42 6f 74",
+  "15 00 00 90 41",
+].join("");
+
 describe("isBotProductName", () => {
-  it("matches Bot / Grok Bot / Agents / API-for-bot and rejects Heavy", () => {
+  it("matches Bot / Grok Bot / SuperGrok Bot / Agents / API-for-bots and rejects Heavy", () => {
     expect(isBotProductName("Grok Bot")).toBe(true);
+    expect(isBotProductName("SuperGrok Bot")).toBe(true);
     expect(isBotProductName("Bot")).toBe(true);
     expect(isBotProductName("Agents")).toBe(true);
+    expect(isBotProductName("API for bots")).toBe(true);
+    expect(isBotProductName("x.com bots")).toBe(true);
     expect(isBotProductName("API-for-bot")).toBe(true);
     expect(isBotProductName("SuperGrok Heavy")).toBe(false);
+  });
+});
+
+describe("pickBotProduct", () => {
+  it("maps a second non-Heavy percent even without a perfect name", () => {
+    const bot = pickBotProduct(
+      [
+        { name: "SuperGrok Heavy", percent: 12.5 },
+        { name: "", percent: 40 },
+      ],
+      12.5,
+    );
+    expect(bot?.percent).toBe(40);
+  });
+
+  it("does not invent Bot when only Heavy exists", () => {
+    expect(pickBotProduct([{ name: "SuperGrok Heavy", percent: 25 }], 25)).toBeNull();
+    expect(pickBotProduct([], 25)).toBeNull();
   });
 });

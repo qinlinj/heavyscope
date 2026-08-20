@@ -15,6 +15,8 @@ import { useDatabase } from "@/hooks/useDatabase";
 import { isMacDesktop, readCursorSessionTokenFromApp } from "@/lib/desktop";
 import { formatDateTime } from "@/lib/format";
 import {
+  nextSyncAt,
+  parseGrokParsedProducts,
   parseSyncInterval,
   parseSyncSource,
   syncSourceHas,
@@ -27,6 +29,7 @@ import {
   SETTING_GROK_BEARER_TOKEN,
   SETTING_GROK_BOT_LIVE,
   SETTING_GROK_CONNECTED,
+  SETTING_GROK_PARSED_PRODUCTS,
   SETTING_GROK_LAST_SYNCED_AT,
   SETTING_GROK_SESSION_TOKEN,
   SETTING_GROK_SYNC_MESSAGE,
@@ -37,6 +40,7 @@ import {
   SETTING_SYNC_LAST_MESSAGE,
   SETTING_SYNC_LAST_STATUS,
   SETTING_SYNC_SOURCE,
+  SYNC_INTERVAL_OPTIONS,
 } from "@/lib/settings";
 
 function connectorLabel(
@@ -248,6 +252,9 @@ export function DataSourcesCard() {
             {settings[SETTING_CURSOR_LAST_SYNCED_AT]
               ? formatDateTime(settings[SETTING_CURSOR_LAST_SYNCED_AT], i18n.language)
               : t("live.lastSyncedNever")}
+            {cursorHasToken
+              ? ` · ${t("live.nextSync")}: ${formatDateTime(nextSyncAt(settings[SETTING_CURSOR_LAST_SYNCED_AT], Number(interval)) ?? new Date().toISOString(), i18n.language)}`
+              : ""}
             {settings[SETTING_CURSOR_SYNC_SOURCE]
               ? ` · ${t(`live.badge.${settings[SETTING_CURSOR_SYNC_SOURCE]}`)}`
               : ""}
@@ -329,6 +336,9 @@ export function DataSourcesCard() {
             {settings[SETTING_GROK_LAST_SYNCED_AT]
               ? formatDateTime(settings[SETTING_GROK_LAST_SYNCED_AT], i18n.language)
               : t("live.lastSyncedNever")}
+            {grokHasToken
+              ? ` · ${t("live.nextSync")}: ${formatDateTime(nextSyncAt(settings[SETTING_GROK_LAST_SYNCED_AT], Number(interval)) ?? new Date().toISOString(), i18n.language)}`
+              : ""}
             {settings[SETTING_GROK_SYNC_SOURCE]
               ? ` · ${t(`live.badge.${settings[SETTING_GROK_SYNC_SOURCE]}`)}`
               : ""}
@@ -336,6 +346,14 @@ export function DataSourcesCard() {
           </p>
           {settings[SETTING_GROK_BOT_LIVE] === "unavailable" && (
             <p className="text-xs text-amber-400">{t("live.grokBotUnavailable")}</p>
+          )}
+          {parseGrokParsedProducts(settings[SETTING_GROK_PARSED_PRODUCTS]).length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {t("live.grokParsed")}:{" "}
+              {parseGrokParsedProducts(settings[SETTING_GROK_PARSED_PRODUCTS])
+                .map((item) => `${item.name || t("live.unnamedProduct")} ${item.percent.toFixed(1)}%`)
+                .join(" · ")}
+            </p>
           )}
         </section>
 
@@ -396,20 +414,23 @@ export function DataSourcesCard() {
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="grid gap-1.5">
-            <Label htmlFor="sync-interval">{t("settings.syncInterval")}</Label>
-            <Input
-              id="sync-interval"
-              type="number"
-              min={1}
-              max={60}
-              step={1}
+            <Label>{t("settings.syncInterval")}</Label>
+            <Select
               value={interval}
+              onValueChange={(value) => setSetting(SETTING_SYNC_INTERVAL_MIN, String(parseSyncInterval(value)))}
               disabled={!ready}
-              onChange={(event) => {
-                const next = parseSyncInterval(event.target.value);
-                setSetting(SETTING_SYNC_INTERVAL_MIN, String(next));
-              }}
-            />
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SYNC_INTERVAL_OPTIONS.map((minutes) => (
+                  <SelectItem key={minutes} value={String(minutes)}>
+                    {t("live.intervalMinutes", { count: minutes })}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-1.5">
             <Label>{t("settings.syncSource")}</Label>

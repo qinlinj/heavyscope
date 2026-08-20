@@ -39,6 +39,7 @@ import {
   SETTING_GROK_BOT_LIVE,
   SETTING_GROK_CONNECTED,
   SETTING_GROK_LAST_SYNCED_AT,
+  SETTING_GROK_PARSED_PRODUCTS,
   SETTING_GROK_SESSION_TOKEN,
   SETTING_GROK_SYNC_MESSAGE,
   SETTING_GROK_SYNC_SOURCE,
@@ -121,6 +122,7 @@ function writeGrokLiveMeta(store: HeavyScopeDB, result: LiveProviderResult): voi
     store.setSetting(SETTING_GROK_CONNECTED, "true");
     store.setSetting(SETTING_GROK_SYNC_MESSAGE, result.message);
     store.setSetting(SETTING_GROK_BOT_LIVE, result.botUnavailable ? "unavailable" : "ok");
+    store.setSetting(SETTING_GROK_PARSED_PRODUCTS, JSON.stringify(result.parsedProducts ?? []));
     writeSyncMeta(store, "ok", result.message);
     return;
   }
@@ -483,22 +485,19 @@ function useDatabaseState(): DatabaseApi {
   }, [db, refresh]);
 
   const thresholds = useMemo(() => parseThresholds(settings), [settings]);
-  const cursorLiveConnected =
-    Boolean(settings[SETTING_CURSOR_SESSION_TOKEN]?.trim()) &&
-    settings[SETTING_CURSOR_CONNECTED] === "true";
-  const grokLiveConnected =
-    (Boolean(settings[SETTING_GROK_SESSION_TOKEN]?.trim()) ||
-      Boolean(settings[SETTING_GROK_BEARER_TOKEN]?.trim())) &&
-    settings[SETTING_GROK_CONNECTED] === "true";
+  const cursorHasToken = Boolean(settings[SETTING_CURSOR_SESSION_TOKEN]?.trim());
+  const grokHasToken =
+    Boolean(settings[SETTING_GROK_SESSION_TOKEN]?.trim()) ||
+    Boolean(settings[SETTING_GROK_BEARER_TOKEN]?.trim());
 
   useSync({
     ready,
     enabled: settings[SETTING_SYNC_ENABLED] === "true",
     source: settings[SETTING_SYNC_SOURCE],
     intervalMin: parseSyncInterval(settings[SETTING_SYNC_INTERVAL_MIN]),
-    cursorLive: cursorLiveConnected,
-    grokLive: grokLiveConnected,
-    cursorHasToken: Boolean(settings[SETTING_CURSOR_SESSION_TOKEN]?.trim()),
+    cursorLive: cursorHasToken,
+    grokLive: grokHasToken,
+    cursorHasToken,
     hasSnapshot: Boolean(settings[SETTING_CURSOR_SNAPSHOT]?.trim()),
     applyLive: refreshLiveProviders,
     applySnapshot: applyStoredSnapshot,

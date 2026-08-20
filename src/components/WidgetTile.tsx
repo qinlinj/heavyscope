@@ -50,58 +50,62 @@ export function WidgetTile({
     <div
       data-tile-id={tile.id}
       data-tile-size={tile.size}
-      className={cn("relative min-w-0", spanClass(tile.size, columns), tile.size === "xl" && "min-h-80")}
+      className={cn(
+        "relative min-w-0 min-h-0",
+        spanClass(tile.size, columns),
+        tile.size === "xl" && "min-h-80",
+      )}
       onDragOver={handleDragOver}
       onDragLeave={() => setOver(false)}
       onDrop={handleDrop}
     >
-      {editing ? (
-        <div className="mb-1 flex flex-wrap items-center gap-1">
-          <button
-            type="button"
-            draggable
-            onDragStart={(event) => writeTileDrag(event, tile.id)}
-            className="inline-flex size-6 cursor-grab items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing"
-            aria-label={t("layout.dragHandle")}
-          >
-            <GripVertical className="size-3.5" />
-          </button>
-          <div className="flex flex-wrap items-center gap-0.5" role="group" aria-label={t("layout.sizeGroup")}>
-            {sizes.map((size) => (
-              <Button
-                key={size}
-                type="button"
-                size="xs"
-                variant={tile.size === size ? "default" : "ghost"}
-                className="px-1.5"
-                onClick={() => onSize(tile.id, size)}
-                aria-pressed={tile.size === size}
-                aria-label={t(`layout.sizeAria.${size}`)}
-              >
-                {t(`layout.size.${size}`)}
-              </Button>
-            ))}
-          </div>
-          <Button
-            type="button"
-            size="icon-xs"
-            variant="ghost"
-            onClick={() => onHide(tile.id)}
-            aria-label={t("layout.hideCard")}
-          >
-            <EyeOff />
-          </Button>
-        </div>
-      ) : null}
       <div
         className={cn(
-          "h-full min-h-0 transition duration-150",
-          !editing && "hover:-translate-y-0.5 hover:shadow-md",
-          editing && "rounded-xl ring-2 ring-dashed ring-primary/30",
+          "relative h-full min-h-0 overflow-hidden rounded-xl",
+          !editing && "transition duration-150 hover:-translate-y-0.5 hover:shadow-md",
+          editing && "ring-2 ring-dashed ring-primary/30",
           over && "ring-2 ring-primary/60",
         )}
       >
-        {children}
+        {editing ? (
+          <div className="absolute top-1.5 right-1.5 z-20 flex flex-wrap items-center justify-end gap-0.5 rounded-md bg-background/90 p-0.5 shadow-sm ring-1 ring-foreground/10 backdrop-blur">
+            <button
+              type="button"
+              draggable
+              onDragStart={(event) => writeTileDrag(event, tile.id)}
+              className="inline-flex size-6 cursor-grab items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing"
+              aria-label={t("layout.dragHandle")}
+            >
+              <GripVertical className="size-3.5" />
+            </button>
+            <div className="flex flex-wrap items-center gap-0.5" role="group" aria-label={t("layout.sizeGroup")}>
+              {sizes.map((size) => (
+                <Button
+                  key={size}
+                  type="button"
+                  size="xs"
+                  variant={tile.size === size ? "default" : "ghost"}
+                  className="px-1.5"
+                  onClick={() => onSize(tile.id, size)}
+                  aria-pressed={tile.size === size}
+                  aria-label={t(`layout.sizeAria.${size}`)}
+                >
+                  {t(`layout.size.${size}`)}
+                </Button>
+              ))}
+            </div>
+            <Button
+              type="button"
+              size="icon-xs"
+              variant="ghost"
+              onClick={() => onHide(tile.id)}
+              aria-label={t("layout.hideCard")}
+            >
+              <EyeOff />
+            </Button>
+          </div>
+        ) : null}
+        <div className="h-full min-h-0 overflow-hidden">{children}</div>
       </div>
     </div>
   );
@@ -110,6 +114,6 @@ export function WidgetTile({
 function spanClass(size: TileSize, columns: 2 | 4): string {
   if (columns === 2) return size === "sm" ? "col-span-1" : "col-span-2";
   if (size === "sm") return "col-span-1";
-  if (size === "md") return "col-span-2";
-  return "col-span-2 lg:col-span-4";
+  if (size === "md") return "col-span-1 md:col-span-2";
+  return "col-span-1 md:col-span-4";
 }

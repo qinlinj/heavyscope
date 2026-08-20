@@ -27,6 +27,7 @@ describe("default layouts", () => {
       "advisor",
       "heatmap",
       "trend",
+      "pies",
       "pool:preset-cursor-models",
       "pool:preset-grok-heavy",
     ]);
@@ -76,6 +77,16 @@ describe("parse / serialize", () => {
     expect(parseLayout('{"version":1,"tiles":[]}')).toBeNull();
   });
 
+  it("parses a pies system tile", () => {
+    const parsed = parseLayout(
+      JSON.stringify({
+        version: 1,
+        tiles: [{ type: "pies", size: "md", visible: true }],
+      }),
+    );
+    expect(parsed?.tiles).toEqual([{ id: "pies", type: "pies", size: "md", visible: true }]);
+  });
+
   it("defaults a missing size and treats visible !== false as shown", () => {
     const parsed = parseLayout(
       JSON.stringify({
@@ -102,6 +113,7 @@ describe("migrateFromChartPrefs", () => {
       ["trend", false],
       ["heatmap", false],
       ["advisor", true],
+      ["pies", true],
       ["pool:preset-cursor-models", true],
       ["pool:preset-grok-heavy", true],
     ]);
@@ -110,7 +122,12 @@ describe("migrateFromChartPrefs", () => {
   });
 
   it("uses the default advisor → heatmap → trend stack when prefs are empty", () => {
-    expect(migrateFromChartPrefs({}, []).tiles.map((tile) => tile.id)).toEqual(["advisor", "heatmap", "trend"]);
+    expect(migrateFromChartPrefs({}, []).tiles.map((tile) => tile.id)).toEqual([
+      "advisor",
+      "heatmap",
+      "trend",
+      "pies",
+    ]);
   });
 });
 
@@ -124,6 +141,7 @@ describe("reorder / size / hide", () => {
       "trend",
       "advisor",
       "heatmap",
+      "pies",
       "pool:p1",
       "pool:p2",
     ]);
@@ -175,7 +193,7 @@ describe("resolveLayout", () => {
       ["p1"],
       "dashboard",
     );
-    expect(layout.tiles.map((tile) => tile.id)).toEqual(["heatmap", "advisor", "trend", "pool:p1"]);
+    expect(layout.tiles.map((tile) => tile.id)).toEqual(["heatmap", "advisor", "trend", "pies", "pool:p1"]);
     expect(layout.tiles.find((tile) => tile.id === "trend")?.visible).toBe(false);
   });
 
