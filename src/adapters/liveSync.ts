@@ -1,5 +1,40 @@
-import { applyAbsoluteUsage } from "./apply";
-import type { LiveApplyDeps, LiveApplyReport, LiveProviderResult } from "./liveTypes";
+import { applyAbsoluteUsage, resolvePoolId } from "./apply";
+import type { LiveApplyDeps, LiveApplyReport, LiveHistoryPoint, LiveProviderResult } from "./liveTypes";
+
+const USED_EPSILON = 1e-6;
+
+function seedHistoryDeltas(points: LiveHistoryPoint[] | undefined, deps: LiveApplyDeps): number {
+  if (!points || points.length === 0) return 0;
+  const pools = deps.listPools();
+  const grouped = new Map<string, LiveHistoryPoint[]>();
+  for (const point of points) {
+    const poolId = resolvePoolId(point.poolHint, pools);
+    if (!poolId) continue;
+    const list = grouped.get(poolId) ?? [];
+    list.push(point);
+    grouped.set(poolId, list);
+  }
+
+  let added = 0;
+  for (const [poolId, rows] of grouped) {
+    const sorted = [...rows].sort((a, b) => a.recordedAt.localeCompare(b.recordedAt));
+    let previous = 0;
+    for (const row of sorted) {
+      if (deps.hasUsageAt?.(poolId, row.recordedAt)) {
+        previous = row.quotaUsed;
+        continue;
+      }
+      const dropped = row.quotaUsed + USED_EPSILON < previous;
+      const delta = dropped ? row.quotaUsed : row.quotaUsed - previous;
+      previous = row.quotaUsed;
+      if (delta <= USED_EPSILON) continue;
+      deps.insertUsageRecord(poolId, delta, row.note ?? "Grok history seed", row.recordedAt);
+      deps.updatePoolFields(poolId, { quota_used: row.quotaUsed });
+      added += 1;
+    }
+  }
+  return added;
+}
 
 export function applyLiveSnapshot(result: LiveProviderResult, deps: LiveApplyDeps): LiveApplyReport {
   if (!result.ok) {
@@ -12,6 +47,7 @@ export function applyLiveSnapshot(result: LiveProviderResult, deps: LiveApplyDep
     };
   }
 
+  const seeded = seedHistoryDeltas(result.historyPoints, deps);
   const report = applyAbsoluteUsage(
     result.pools.map((item) => ({
       poolHint: item.poolHint,
@@ -28,10 +64,13 @@ export function applyLiveSnapshot(result: LiveProviderResult, deps: LiveApplyDep
 
   return {
     updated: result.pools.length - report.unmatched.length,
-    recordsAdded: report.added,
+    recordsAdded: report.added + seeded,
     unmatched: report.unmatched,
     skipped: report.skipped,
-    message: report.message,
+    message:
+      seeded > 0
+        ? `${report.message} Seeded ${seeded} history delta(s).`
+        : report.message,
   };
 }
 

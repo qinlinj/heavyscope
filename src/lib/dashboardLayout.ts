@@ -7,10 +7,11 @@ import {
 /**
  * Widget layout for the Web dashboard and compact `/tray` panel.
  *
- * Web dashboard: 4-column CSS grid, gap ~12px (`gap-3`).
- * - sm: 1 column (~1/4, small widget)
+ * Web dashboard: 1 column below `md`, then a stable 4-column CSS grid
+ * (`repeat(4, minmax(0,1fr))`, gap ~12px). Span meaning does not change at `lg`.
+ * - sm: 1 column (~1/4)
  * - md: 2 columns (~1/2, default for pool cards)
- * - lg: 4 columns (full width, default for advisor / heatmap / trend)
+ * - lg: 4 columns (full width, default for advisor / heatmap / trend / pies)
  * - xl: 4 columns + extra min-height (optional tall full-width)
  *
  * Tray: 2-column grid.
@@ -26,10 +27,10 @@ export const SETTING_TRAY_LAYOUT = "tray_layout";
 export const TILE_SIZES = ["sm", "md", "lg", "xl"] as const;
 export type TileSize = (typeof TILE_SIZES)[number];
 
-export const TILE_TYPES = ["advisor", "heatmap", "trend", "pool"] as const;
+export const TILE_TYPES = ["advisor", "heatmap", "trend", "pies", "pool"] as const;
 export type TileType = (typeof TILE_TYPES)[number];
 
-export const SYSTEM_TILE_TYPES = ["advisor", "heatmap", "trend"] as const;
+export const SYSTEM_TILE_TYPES = ["advisor", "heatmap", "trend", "pies"] as const;
 export type SystemTileType = (typeof SYSTEM_TILE_TYPES)[number];
 
 export const LAYOUT_SURFACES = ["dashboard", "tray"] as const;
@@ -76,9 +77,10 @@ export function tileColumnSpan(size: TileSize, columns: 2 | 4): number {
 
 export function defaultSystemTile(type: SystemTileType, surface: LayoutSurface): LayoutTile {
   if (surface === "tray") {
-    if (type === "trend") return { id: type, type, size: "lg", visible: false };
+    if (type === "trend" || type === "pies") return { id: type, type, size: "lg", visible: false };
     return { id: type, type, size: "md", visible: true };
   }
+  if (type === "pies") return { id: type, type, size: "lg", visible: true };
   return { id: type, type, size: "lg", visible: true };
 }
 
@@ -99,6 +101,7 @@ export function defaultDashboardLayout(poolIds: string[]): DashboardLayout {
       defaultSystemTile("advisor", "dashboard"),
       defaultSystemTile("heatmap", "dashboard"),
       defaultSystemTile("trend", "dashboard"),
+      defaultSystemTile("pies", "dashboard"),
       ...poolIds.map((poolId) => defaultPoolTile(poolId, true)),
     ],
   };
@@ -112,6 +115,7 @@ export function defaultTrayLayout(poolIds: string[]): DashboardLayout {
       defaultSystemTile("advisor", "tray"),
       defaultSystemTile("heatmap", "tray"),
       defaultSystemTile("trend", "tray"),
+      defaultSystemTile("pies", "tray"),
       ...poolIds.map((poolId, index) => defaultPoolTile(poolId, index < 2)),
     ],
   };
@@ -189,6 +193,9 @@ export function migrateFromChartPrefs(
   }
   for (const id of CHART_MODULE_IDS) {
     if (!seen.has(id)) tiles.push({ id, type: id, size: "lg", visible: prefs.show[id] });
+  }
+  if (!seen.has("pies" as ChartModuleId)) {
+    tiles.push(defaultSystemTile("pies", "dashboard"));
   }
   for (const poolId of poolIds) {
     tiles.push(defaultPoolTile(poolId, true));

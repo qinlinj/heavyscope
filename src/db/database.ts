@@ -153,6 +153,15 @@ export class HeavyScopeDB {
     if (!version) {
       this.setSetting(VERSION_KEY, String(SCHEMA_VERSION));
     }
+    this.migrateDemoSources();
+  }
+
+  /** Existing demo seed rows used source=import and a "Demo seed:" note. */
+  private migrateDemoSources(): void {
+    this.db.run(
+      `UPDATE usage_records SET source = 'demo'
+       WHERE source != 'demo' AND note LIKE 'Demo seed:%'`,
+    );
   }
 
   private seedIfEmpty(): void {

@@ -1,5 +1,6 @@
 import type { Pool, UsageRecord, UsageSource } from "@/db/schema";
-import { usagePercent } from "@/lib/format";
+import { remaining, usagePercent } from "@/lib/format";
+import { isDemoRecord, matchesHistorySource, type HistorySourceFilter } from "@/lib/usageSource";
 
 export type DailyPoint = {
   date: string;
@@ -77,7 +78,8 @@ export type RecordFilters = {
   poolId?: string;
   from?: string;
   to?: string;
-  source?: UsageSource | "all";
+  /** `live` = manual + import + sync (hides demo). Default chart aggregations use this. */
+  source?: UsageSource | "all" | "live";
 };
 
 const FALLBACK_COLOR = "#94a3b8";
@@ -123,16 +125,21 @@ function poolIdsFrom(records: UsageRecord[], pools?: Pool[]): string[] {
 }
 
 export function filterRecords(records: UsageRecord[], filters: RecordFilters = {}): UsageRecord[] {
-  const { poolId, from, to, source } = filters;
+  const { poolId, from, to, source = "live" } = filters;
   return records.filter((record) => {
     if (poolId && poolId !== "all" && record.pool_id !== poolId) return false;
-    if (source && source !== "all" && record.source !== source) return false;
+    if (!matchesHistorySource(record, source as HistorySourceFilter)) return false;
     const ts = new Date(record.recorded_at).getTime();
     if (Number.isNaN(ts)) return false;
     if (from && ts < startOfLocalDay(from).getTime()) return false;
     if (to && ts > endOfLocalDay(to).getTime()) return false;
     return true;
   });
+}
+
+/** Default chart aggregations hide demo-seeded sample rows. */
+export function chartRecords(records: UsageRecord[]): UsageRecord[] {
+  return records.filter((record) => !isDemoRecord(record));
 }
 
 export function dailySeries(
@@ -308,6 +315,89 @@ export function poolUsageBars(
     color: pool.color || FALLBACK_COLOR,
     unit: pool.unit,
   }));
+}
+
+export type PieSlice = SharePoint & {
+  remaining: number;
+  unit: string;
+  id: string;
+};
+
+export type RemainingPie = {
+  mode: "absolute" | "remaining_percent";
+  unit: string | null;
+  slices: PieSlice[];
+};
+
+function normalizeUnit(unit: string): string {
+  const trimmed = unit.trim().toLowerCase();
+  if (trimmed === "$" || trimmed === "usd") return "usd";
+  if (trimmed === "%" || trimmed === "percent" || trimmed === "pct") return "%";
+  if (/(token|credit|req|request)/i.test(trimmed)) return "token";
+  return trimmed;
+}
+
+function isPercentUnit(unit: string): boolean {
+  return normalizeUnit(unit) === "%";
+}
+
+/** Pie A: each pool's used percent. Mixed $ / % is safe because every slice is 0–100. */
+export function usedPercentPies(pools: Pool[], labelFor?: (pool: Pool) => string): PieSlice[] {
+  return pools.map((pool) => ({
+    id: pool.id,
+    name: labelFor ? labelFor(pool) : pool.name,
+    value: usagePercent(pool),
+    remaining: remaining(pool),
+    unit: pool.unit,
+    color: pool.color || FALLBACK_COLOR,
+  }));
+}
+
+/**
+ * Pie B: remaining share among pools that share a comparable absolute unit
+ * (`usd` / token-like). Percent-only pools are omitted from that grouping.
+ * If no shared absolute unit exists, fall back to remaining % of each pool
+ * (a second percent pie — still never mixes $ and %).
+ */
+export function remainingSharePie(pools: Pool[], labelFor?: (pool: Pool) => string): RemainingPie {
+  const groups = new Map<string, Pool[]>();
+  for (const pool of pools) {
+    if (isPercentUnit(pool.unit)) continue;
+    const key = normalizeUnit(pool.unit);
+    const list = groups.get(key) ?? [];
+    list.push(pool);
+    groups.set(key, list);
+  }
+
+  const comparable = [...groups.entries()].find(([, items]) => items.length >= 2);
+  if (comparable) {
+    const [unitKey, items] = comparable;
+    return {
+      mode: "absolute",
+      unit: items[0]?.unit ?? unitKey,
+      slices: items.map((pool) => ({
+        id: pool.id,
+        name: labelFor ? labelFor(pool) : pool.name,
+        value: remaining(pool),
+        remaining: remaining(pool),
+        unit: pool.unit,
+        color: pool.color || FALLBACK_COLOR,
+      })),
+    };
+  }
+
+  return {
+    mode: "remaining_percent",
+    unit: "%",
+    slices: pools.map((pool) => ({
+      id: pool.id,
+      name: labelFor ? labelFor(pool) : pool.name,
+      value: Math.max(0, 100 - usagePercent(pool)),
+      remaining: remaining(pool),
+      unit: pool.unit,
+      color: pool.color || FALLBACK_COLOR,
+    })),
+  };
 }
 
 function parseBoolSetting(value: string | undefined, fallback = true): boolean {

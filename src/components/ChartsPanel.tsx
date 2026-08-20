@@ -25,6 +25,7 @@ import type { Pool, UsageRecord } from "@/db/schema";
 import {
   type ChartModuleId,
   type ChartScale,
+  chartRecords,
   poolUsageBars,
   scaleSeries,
   seriesHasUsage,
@@ -72,7 +73,8 @@ export function ChartsPanel({
   const showTrend = modules.includes("trend");
   const chartHeight = size === "xl" ? 320 : compact || size === "sm" ? 160 : 240;
 
-  const series = useMemo(() => scaleSeries(records, scale, pools), [records, scale, pools]);
+  const liveRecords = useMemo(() => chartRecords(records), [records]);
+  const series = useMemo(() => scaleSeries(liveRecords, scale, pools), [liveRecords, scale, pools]);
   const bars = useMemo(
     () => poolUsageBars(pools, (pool) => displayPoolName(pool, t)),
     [pools, t],
@@ -83,7 +85,7 @@ export function ChartsPanel({
   if (!showHeatmap && !showTrend) return null;
 
   return (
-    <section className="flex h-full flex-col gap-2.5">
+    <section className="flex h-full min-h-0 flex-col gap-2.5">
       {showHeading ? (
         <div>
           <h3 className="font-heading text-base font-semibold">{t("charts.title")}</h3>
@@ -91,10 +93,10 @@ export function ChartsPanel({
         </div>
       ) : null}
 
-      <div className="grid gap-3">
+      <div className="grid min-h-0 flex-1 gap-3">
         {showHeatmap && (
           <ChartCard title={t("charts.heatmap")} hint={t("charts.heatmapHint")}>
-            <ActivityHeatmap records={records} compact={compact || size === "sm"} />
+            <ActivityHeatmap records={liveRecords} pools={pools} compact={compact || size === "sm"} />
           </ChartCard>
         )}
 
@@ -132,6 +134,7 @@ export function ChartsPanel({
                         contentStyle={TOOLTIP_STYLE}
                         labelStyle={TOOLTIP_LABEL}
                         cursor={{ stroke: GRID }}
+                        formatter={(value) => [`+${Number(value ?? 0)}`, undefined]}
                       />
                       <Legend />
                       {pools.map((pool) => (
@@ -156,6 +159,7 @@ export function ChartsPanel({
                         contentStyle={TOOLTIP_STYLE}
                         labelStyle={TOOLTIP_LABEL}
                         cursor={{ fill: "color-mix(in oklch, var(--foreground) 8%, transparent)" }}
+                        formatter={(value) => [`+${Number(value ?? 0)}`, undefined]}
                       />
                       <Legend />
                       {pools.map((pool) => (
@@ -218,13 +222,13 @@ function ChartCard({
   children: ReactNode;
 }) {
   return (
-    <Card className={`h-full bg-card/90 ring-1 ring-foreground/10 backdrop-blur ${className ?? ""}`}>
+    <Card className={`flex h-full min-h-0 flex-col overflow-hidden bg-card/90 ring-1 ring-foreground/10 backdrop-blur ${className ?? ""}`}>
       <CardHeader className={action ? "gap-2" : undefined}>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{hint}</CardDescription>
         {action ? <div className="col-span-full">{action}</div> : null}
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className="min-h-0 flex-1">{children}</CardContent>
     </Card>
   );
 }

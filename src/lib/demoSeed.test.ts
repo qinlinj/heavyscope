@@ -47,7 +47,7 @@ describe("buildDemoUsageRecords", () => {
       expect(record.amount).toBeGreaterThan(0);
       expect(record.note).toMatch(/Demo seed:/);
       expect(record.note).toMatch(/[A-Za-z]/);
-      expect(record.source).toBe("import");
+      expect(record.source).toBe("demo");
     }
   });
 });

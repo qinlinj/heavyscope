@@ -70,6 +70,20 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Dashboard heatmap + modular chart layout from main
 - [ ] Keep researching Grok Bot / Agents product breakdown if the proto grows a named segment
 
+## 0.10.0 — web dashboard usable
+
+- [x] Stable 4-column grid from `md` (no lg span hybrid); overlay edit chrome; same-row stretch
+- [x] Informative 1/4 pool cards (name, used%, bar, remaining, reset, unit)
+- [x] History / default charts hide demo; live sync + manual is the default source
+- [x] Timer from stored credentials for Cursor and Grok; per-provider last / next sync
+- [x] Broader Grok Bot name match + second-percent heuristic + parsed-product line
+- [x] GetGrokCreditsConfig fields 2–6 + prepaid diagnostics; gRPC 16 needs-bearer; CLI billing JSON fallback (fixtures)
+- [x] Interval membership from cookie/bearer/token immediately (no `grokLive` / `sync_source` gate)
+- [x] Trend uses live deltas; heatmap 26 weeks + amount intensity when units match
+- [x] Unit-safe pies restored (used % + remaining share)
+- [x] Version 0.10.0 (package.json + src-tauri)
+- [ ] Tray feature-parity beyond shared grid/sync helpers (next)
+
 ## 0.9.0 — widget dashboard reshape
 
 - [x] 4-column widget grid with `sm` / `md` / `lg` / `xl` tiles for advisor, heatmap, trend, and every pool
@@ -86,10 +100,12 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Theme: dark / light / system (`theme` setting + localStorage)
 - [x] Denser compact `/tray` (1–2 pools, Day/Week/Month, used% bars, one-line advisor, small heatmap)
 - [x] iPhone-widget card system with edit mode, resize, reorder, hide/restore (0.9.0)
+- [x] Amount-normalized heatmap intensity when all records share one unit (0.10.0)
 - [ ] Persist Day / Week / Month scale (currently component state only)
-- [ ] Optional heatmap filter by pool, and an amount-normalized intensity mode for single-unit views
+- [ ] Optional heatmap filter by pool
 - [ ] Stacked trend Y-axis still sums raw amounts across mixed units; consider per-unit facets
 - [ ] Heatmap month-label collisions on very narrow cards
+- [ ] macOS tray feature-parity with the 0.10.0 web dashboard
 
 ## Polish / leftover gaps (0.7.6)
 

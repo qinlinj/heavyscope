@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { AddCardsStrip } from "@/components/AddCardsStrip";
 import { AdvisorPanel } from "@/components/AdvisorPanel";
 import { ChartsPanel } from "@/components/ChartsPanel";
+import { PiesPanel } from "@/components/PiesPanel";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { PoolCard } from "@/components/PoolCard";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -11,6 +12,7 @@ import { WidgetGrid } from "@/components/WidgetGrid";
 import { WidgetTile } from "@/components/WidgetTile";
 import { Button } from "@/components/ui/button";
 import { advisePool, crossPoolAdvice, tightestAdvice } from "@/lib/burnRate";
+import { chartRecords } from "@/lib/charts";
 import { hiddenTiles, visibleTiles, type LayoutTile } from "@/lib/dashboardLayout";
 import { displayPoolName } from "@/lib/poolName";
 import { useDatabase } from "@/hooks/useDatabase";
@@ -25,9 +27,10 @@ export function TrayPage() {
   const hidden = useMemo(() => hiddenTiles(layout), [layout]);
   const [editingLayout, setEditingLayout] = useState(false);
 
+  const liveRecords = useMemo(() => chartRecords(records), [records]);
   const advices = useMemo(
-    () => pools.map((pool) => advisePool(pool, records)),
-    [pools, records],
+    () => pools.map((pool) => advisePool(pool, liveRecords)),
+    [pools, liveRecords],
   );
   const tightest = useMemo(() => tightestAdvice(advices), [advices]);
   const switchAdvice = useMemo(() => crossPoolAdvice(advices), [advices]);
@@ -106,10 +109,12 @@ export function TrayPage() {
                   critPercent={thresholds.crit}
                   compact
                 />
+              ) : tile.type === "pies" ? (
+                <PiesPanel pools={pools} compact size="sm" />
               ) : tile.type === "heatmap" || tile.type === "trend" ? (
                 <ChartsPanel
                   pools={pools}
-                  records={records}
+                  records={liveRecords}
                   modules={[tile.type]}
                   showHeading={false}
                   compact
@@ -135,7 +140,7 @@ export function TrayPage() {
     return (
       <PoolCard
         pool={pool}
-        records={records.filter((record) => record.pool_id === pool.id)}
+        records={liveRecords.filter((record) => record.pool_id === pool.id)}
         advice={advices.find((item) => item.poolId === pool.id)}
         warnPercent={thresholds.warn}
         critPercent={thresholds.crit}

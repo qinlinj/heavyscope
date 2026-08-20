@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { UsageRecord } from "@/db/schema";
+import type { Pool, UsageRecord } from "@/db/schema";
+import { formatAmount } from "@/lib/format";
 import type { HeatmapCell } from "@/lib/heatmap";
-import { heatmapGrid, heatmapLevel } from "@/lib/heatmap";
+import { heatmapCellIntensity, heatmapGrid, heatmapLevel } from "@/lib/heatmap";
 import { cn } from "@/lib/utils";
 
 type Props = {
   records: UsageRecord[];
+  pools?: Pick<Pool, "id" | "unit">[];
   weeks?: number;
   compact?: boolean;
 };
@@ -14,21 +16,22 @@ type Props = {
 const HEAT_LEVELS = [0, 1, 2, 3, 4] as const;
 const WEEK_COLUMNS = (weeks: number) => `repeat(${weeks}, minmax(0, 1fr))`;
 
-export function ActivityHeatmap({ records, weeks, compact = false }: Props) {
+export function ActivityHeatmap({ records, pools, weeks, compact = false }: Props) {
   const { t, i18n } = useTranslation();
   const autoWeeks = useHeatmapWeeks(compact);
   const resolvedWeeks = weeks ?? autoWeeks;
-  const grid = useMemo(() => heatmapGrid(records, resolvedWeeks), [records, resolvedWeeks]);
+  const grid = useMemo(() => heatmapGrid(records, resolvedWeeks, new Date(), pools), [records, resolvedWeeks, pools]);
   const locale = i18n.resolvedLanguage ?? i18n.language;
-  const [tip, setTip] = useState<{ date: string; total: number } | null>(null);
+  const [tip, setTip] = useState<HeatmapCell | null>(null);
   const weekdays = useMemo(() => weekdayLabels(locale), [locale]);
   const months = useMemo(() => monthLabels(grid.cells, grid.weeks, locale), [grid, locale]);
   const today = useMemo(() => localTodayKey(), []);
   const weekTemplate = WEEK_COLUMNS(grid.weeks);
+  const maxValue = grid.intensityMetric === "amount" ? grid.maxAmount : grid.maxCount;
 
   return (
-    <div className="w-full">
-      <div className="grid w-full grid-cols-[auto_minmax(0,1fr)] gap-x-1">
+    <div className="flex h-full min-h-0 w-full flex-col">
+      <div className="grid min-h-0 w-full flex-1 grid-cols-[auto_minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-x-1">
         <div aria-hidden="true" />
         <div
           className={cn(
@@ -54,31 +57,32 @@ export function ActivityHeatmap({ records, weeks, compact = false }: Props) {
           ))}
         </div>
         <div
-          className="grid w-full grid-flow-col grid-rows-7 gap-[3px]"
+          className="grid h-full min-h-0 w-full grid-flow-col grid-rows-7 gap-[3px]"
           style={{ gridTemplateColumns: weekTemplate }}
         >
           {grid.cells.map((cell) => {
-            const level = heatmapLevel(cell.count, grid.maxCount);
-            const label = t("charts.heatmapTooltip", { date: cell.date, total: cell.total });
+            const intensity = heatmapCellIntensity(cell, grid);
+            const level = heatmapLevel(intensity, maxValue);
+            const tooltip = heatmapTooltip(t, cell);
             return (
               <button
                 key={cell.date}
                 type="button"
                 className={cn(
-                  "aspect-square w-full min-w-0 rounded-[2px]",
+                  "min-h-0 min-w-0 rounded-[2px]",
                   cell.date === today && "ring-1 ring-foreground/50",
                 )}
                 style={{
                   backgroundColor: `var(--heat-${level})`,
                   boxShadow: "inset 0 0 0 1px var(--heat-outline)",
                 }}
-                title={label}
-                onMouseEnter={() => setTip({ date: cell.date, total: cell.total })}
+                title={tooltip}
+                onMouseEnter={() => setTip(cell)}
                 onMouseLeave={() => setTip(null)}
-                onFocus={() => setTip({ date: cell.date, total: cell.total })}
+                onFocus={() => setTip(cell)}
                 onBlur={() => setTip(null)}
               >
-                <span className="sr-only">{label}</span>
+                <span className="sr-only">{tooltip}</span>
               </button>
             );
           })}
@@ -91,7 +95,7 @@ export function ActivityHeatmap({ records, weeks, compact = false }: Props) {
         )}
       >
         <span className="min-h-4 min-w-0 truncate tabular-nums">
-          {tip ? t("charts.heatmapTooltip", { date: tip.date, total: tip.total }) : t("charts.heatmapLegend")}
+          {tip ? heatmapTooltip(t, tip) : t("charts.heatmapLegend")}
         </span>
         <span className="flex shrink-0 items-center gap-1">
           <span>{t("charts.less")}</span>
@@ -112,18 +116,32 @@ export function ActivityHeatmap({ records, weeks, compact = false }: Props) {
   );
 }
 
+function heatmapTooltip(
+  t: (key: string, opts?: Record<string, unknown>) => string,
+  cell: HeatmapCell,
+): string {
+  if (cell.unit && cell.count > 0) {
+    return t("charts.heatmapTooltipAmount", {
+      date: cell.date,
+      count: cell.count,
+      amount: formatAmount(cell.amount, cell.unit === "usd" ? "USD" : cell.unit),
+    });
+  }
+  return t("charts.heatmapTooltip", { date: cell.date, total: cell.count });
+}
+
 function useHeatmapWeeks(compact: boolean): number {
-  const [weeks, setWeeks] = useState(compact ? 10 : 17);
+  const [weeks, setWeeks] = useState(compact ? 10 : 26);
   useEffect(() => {
     if (compact) {
       setWeeks(10);
       return;
     }
-    const media = window.matchMedia("(min-width: 1024px)");
-    const apply = () => setWeeks(media.matches ? 17 : 12);
+    const wide = window.matchMedia("(min-width: 1024px)");
+    const apply = () => setWeeks(wide.matches ? 26 : 12);
     apply();
-    media.addEventListener("change", apply);
-    return () => media.removeEventListener("change", apply);
+    wide.addEventListener("change", apply);
+    return () => wide.removeEventListener("change", apply);
   }, [compact]);
   return weeks;
 }

@@ -22,6 +22,7 @@ import {
   usageTone,
 } from "@/lib/format";
 import { displayPoolName } from "@/lib/poolName";
+import { compactPoolView } from "@/lib/poolView";
 import type { PoolSyncBadge } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 
@@ -67,9 +68,10 @@ export function PoolCard({
   const left = remaining(pool);
 
   if (compact) {
+    const view = compactPoolView(pool);
     return (
-      <Card size="sm" className="h-full bg-card/90 backdrop-blur">
-        <CardContent className="space-y-1.5 py-1">
+      <Card size="sm" className="h-full min-h-0 overflow-hidden bg-card/90 backdrop-blur">
+        <CardContent className="flex h-full min-h-0 flex-col justify-center space-y-1.5 py-1.5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-1.5">
               <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: pool.color }} />
@@ -83,11 +85,11 @@ export function PoolCard({
                 tone === "crit" && "text-red-600 dark:text-red-400",
               )}
             >
-              {percent.toFixed(0)}%
+              {view.percent.toFixed(0)}%
             </span>
           </div>
           <Progress
-            value={percent}
+            value={view.percent}
             className={cn(
               "h-1.5",
               tone === "ok" && "[&_[data-slot=progress-indicator]]:bg-emerald-500",
@@ -95,13 +97,23 @@ export function PoolCard({
               tone === "crit" && "[&_[data-slot=progress-indicator]]:bg-red-500",
             )}
           />
+          <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] leading-tight">
+            <p className="truncate text-muted-foreground">{t("pool.remaining")}</p>
+            <p className="truncate text-right font-medium tabular-nums">
+              {formatAmount(view.remaining, view.unit)}
+            </p>
+            <p className="truncate text-muted-foreground">{t("pool.reset")}</p>
+            <p className="truncate text-right font-medium tabular-nums">
+              {formatCountdown(view.resetAt, i18n.language)}
+            </p>
+          </div>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card size="sm" className="h-full bg-card/90 backdrop-blur">
+    <Card size="sm" className="h-full min-h-0 overflow-hidden bg-card/90 backdrop-blur">
       <CardHeader>
         <CardTitle className={cn("flex items-center gap-2", showActions && "pr-16")}>
           <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: pool.color }} />

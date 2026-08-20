@@ -11,8 +11,10 @@ import {
   periodTotal,
   poolShare,
   poolUsageBars,
+  remainingSharePie,
   reorderChartModules,
   scaleSeries,
+  usedPercentPies,
   visibleChartModules,
   weeklySeries,
 } from "@/lib/charts";
@@ -275,5 +277,45 @@ describe("filterRecords", () => {
 
   it("treats poolId=all and source=all as no filter", () => {
     expect(filterRecords(records, { poolId: "all", source: "all" })).toHaveLength(3);
+  });
+
+  it("hides demo-seeded records from the default live History view", () => {
+    const withDemo = [
+      ...records,
+      record("p1", 99, new Date(2026, 7, 18, 12, 0, 0), "demo"),
+      {
+        ...record("p2", 7, new Date(2026, 7, 18, 12, 0, 0), "import"),
+        note: "Demo seed: leftover import row",
+      },
+    ];
+    expect(filterRecords(withDemo).map((item) => item.amount)).toEqual([1, 2, 3]);
+    expect(filterRecords(withDemo, { source: "live" })).toHaveLength(3);
+    expect(filterRecords(withDemo, { source: "demo" }).map((item) => item.amount)).toEqual([99, 7]);
+  });
+});
+
+describe("unit-safe pies", () => {
+  it("builds a used-percent pie and a remaining-share pie that never mix $ and %", () => {
+    const pools = [
+      pool({ id: "pct", name: "Heavy", quota_used: 40, quota_total: 100, unit: "%" }),
+      pool({ id: "usd", name: "Other", quota_used: 20, quota_total: 80, unit: "USD" }),
+      pool({ id: "cash", name: "Cash", quota_used: 10, quota_total: 50, unit: "$" }),
+    ];
+    const used = usedPercentPies(pools);
+    expect(used.map((slice) => slice.value)).toEqual([40, 25, 20]);
+    const remaining = remainingSharePie(pools);
+    expect(remaining.mode).toBe("absolute");
+    expect(remaining.slices.map((slice) => slice.id).sort()).toEqual(["cash", "usd"]);
+    expect(remaining.slices.find((slice) => slice.id === "usd")?.remaining).toBe(60);
+  });
+
+  it("falls back to remaining percent when no shared absolute unit exists", () => {
+    const pools = [
+      pool({ id: "pct", name: "Heavy", quota_used: 25, quota_total: 100, unit: "%" }),
+      pool({ id: "usd", name: "Other", quota_used: 10, quota_total: 40, unit: "USD" }),
+    ];
+    const remaining = remainingSharePie(pools);
+    expect(remaining.mode).toBe("remaining_percent");
+    expect(remaining.slices).toHaveLength(2);
   });
 });

@@ -1,6 +1,7 @@
 import { cursorCookieHeader, mapCursorUsageResponse } from "./cursorLive";
 import {
   grokCookieHeader,
+  mapGrokCliBillingResponse,
   mapGrokCreditsResponse,
   normalizeGrokBearer,
   type GrokAuth,
@@ -9,6 +10,8 @@ import {
   BROWSER_USER_AGENT,
   CURSOR_USAGE_PATH,
   GRPC_WEB_EMPTY_BODY,
+  GROK_CLI_BILLING_PATH,
+  GROK_CLI_TOKEN_AUTH,
   GROK_CREDITS_PATH,
   GROK_ORIGIN,
 } from "./liveConstants";
@@ -36,6 +39,31 @@ export async function fetchCursorUsage(token: string): Promise<LiveProviderResul
   return mapCursorUsageResponse(response.status, response.bodyText);
 }
 
+async function fetchGrokCliBilling(auth: GrokAuth): Promise<LiveProviderResult> {
+  const bearer = auth.bearerToken ? normalizeGrokBearer(auth.bearerToken) : "";
+  if (!bearer) {
+    return { ok: false, code: "invalid", message: "Grok CLI billing needs a Bearer token", pools: [] };
+  }
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${bearer}`,
+    "x-xai-token-auth": GROK_CLI_TOKEN_AUTH,
+    Accept: "application/json",
+    "User-Agent": BROWSER_USER_AGENT,
+  };
+  if (auth.sessionCookie) headers.Cookie = grokCookieHeader(auth.sessionCookie);
+
+  const response = await liveFetch({
+    provider: "grok-cli",
+    method: "GET",
+    path: GROK_CLI_BILLING_PATH,
+    headers,
+  });
+  if (isLiveHttpError(response)) {
+    return { ok: false, code: response.code, message: response.message, pools: [] };
+  }
+  return mapGrokCliBillingResponse(response.status, response.bodyText);
+}
+
 export async function fetchGrokCredits(auth: GrokAuth): Promise<LiveProviderResult> {
   const cookie = auth.sessionCookie ? grokCookieHeader(auth.sessionCookie) : "";
   const bearer = auth.bearerToken ? normalizeGrokBearer(auth.bearerToken) : "";
@@ -50,6 +78,7 @@ export async function fetchGrokCredits(auth: GrokAuth): Promise<LiveProviderResu
     Referer: `${GROK_ORIGIN}/`,
     "User-Agent": BROWSER_USER_AGENT,
   };
+  // Prefer Bearer when saved; still send Cookie if present (CodexBar #2812).
   if (bearer) headers.Authorization = `Bearer ${bearer}`;
   if (cookie) headers.Cookie = cookie;
 
@@ -63,5 +92,10 @@ export async function fetchGrokCredits(auth: GrokAuth): Promise<LiveProviderResu
   if (isLiveHttpError(response)) {
     return { ok: false, code: response.code, message: response.message, pools: [] };
   }
-  return mapGrokCreditsResponse(response.status, response.bodyBytes);
+  const mapped = mapGrokCreditsResponse(response.status, response.bodyBytes, response.headers);
+  if (mapped.ok || mapped.code !== "expired" || !bearer) return mapped;
+
+  const cli = await fetchGrokCliBilling(auth);
+  if (cli.ok) return cli;
+  return mapped;
 }

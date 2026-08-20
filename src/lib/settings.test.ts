@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SYNC_INTERVAL_MIN,
+  hasCursorCredentials,
+  hasGrokCredentials,
+  nextSyncAt,
+  parseGrokBillingMeta,
   parseSyncInterval,
   parseSyncSource,
   redactSettings,
+  syncProvidersFromCredentials,
   syncSourceHas,
   withSyncProvider,
 } from "./settings";
@@ -36,6 +41,48 @@ describe("withSyncProvider", () => {
     expect(syncSourceHas("both", "grok")).toBe(true);
     expect(withSyncProvider("both", "cursor", false)).toBe("grok");
     expect(withSyncProvider("grok", "grok", false)).toBe("none");
+  });
+});
+
+describe("credentials vs connected flag", () => {
+  it("treats a stored token as enough to put a provider on the timer", () => {
+    expect(hasCursorCredentials({ cursor_session_token: "tok" })).toBe(true);
+    expect(hasGrokCredentials({ grok_bearer_token: "bear" })).toBe(true);
+    expect(hasGrokCredentials({ grok_session_token: "sess" })).toBe(true);
+    expect(syncProvidersFromCredentials({ grok_bearer_token: "bear" })).toBe("grok");
+    expect(
+      syncProvidersFromCredentials({
+        cursor_session_token: "tok",
+        grok_session_token: "sess",
+      }),
+    ).toBe("both");
+  });
+});
+
+describe("nextSyncAt", () => {
+  it("adds the interval to the last successful tick", () => {
+    expect(nextSyncAt("2026-08-20T00:00:00.000Z", 5, new Date("2026-08-20T00:01:00.000Z"))).toBe(
+      "2026-08-20T00:05:00.000Z",
+    );
+  });
+});
+
+describe("parseGrokBillingMeta", () => {
+  it("reads on-demand / prepaid / history diagnostics", () => {
+    const meta = parseGrokBillingMeta(
+      JSON.stringify({
+        onDemandCapUsd: 50,
+        onDemandUsedUsd: 12.34,
+        prepaidBalanceUsd: 7.5,
+        periodStart: "2026-06-01T00:00:00.000Z",
+        periodEnd: "2026-06-08T00:00:00.000Z",
+        history: [{ year: 2026, month: 5, onDemandUsedUsd: 1 }],
+      }),
+    );
+    expect(meta?.onDemandCapUsd).toBe(50);
+    expect(meta?.prepaidBalanceUsd).toBe(7.5);
+    expect(meta?.history).toHaveLength(1);
+    expect(parseGrokBillingMeta("nope")).toBeNull();
   });
 });
 

@@ -23,6 +23,8 @@ export const SETTING_GROK_SYNC_MESSAGE = "grok_sync_message";
 export const SETTING_CURSOR_CONNECTED = "cursor_connected";
 export const SETTING_GROK_CONNECTED = "grok_connected";
 export const SETTING_GROK_BOT_LIVE = "grok_bot_live";
+export const SETTING_GROK_PARSED_PRODUCTS = "grok_parsed_products";
+export const SETTING_GROK_BILLING_META = "grok_billing_meta";
 
 export const SECRET_SETTING_KEYS = [
   SETTING_CURSOR_SESSION_TOKEN,
@@ -38,6 +40,7 @@ export const DEFAULT_SYNC_ENABLED = "false";
 export const DEFAULT_SYNC_INTERVAL_MIN = 5;
 export const DEFAULT_SYNC_SOURCE = "none";
 export const LEGACY_SYNC_INTERVAL_MIN = 30;
+export const SYNC_INTERVAL_OPTIONS = [1, 5, 15, 30, 60] as const;
 
 export type AlertThresholds = {
   warn: number;
@@ -101,19 +104,105 @@ export function hasSecretSetting(settings: Record<string, string>, key: string):
   return Boolean(settings[key]?.trim());
 }
 
-export function isCursorLiveConnected(settings: Record<string, string>): boolean {
+export function hasCursorCredentials(settings: Record<string, string>): boolean {
+  return hasSecretSetting(settings, SETTING_CURSOR_SESSION_TOKEN);
+}
+
+export function hasGrokCredentials(settings: Record<string, string>): boolean {
   return (
-    hasSecretSetting(settings, SETTING_CURSOR_SESSION_TOKEN) &&
-    settings[SETTING_CURSOR_CONNECTED] === "true"
+    hasSecretSetting(settings, SETTING_GROK_SESSION_TOKEN) ||
+    hasSecretSetting(settings, SETTING_GROK_BEARER_TOKEN)
   );
 }
 
+export function isCursorLiveConnected(settings: Record<string, string>): boolean {
+  return hasCursorCredentials(settings) && settings[SETTING_CURSOR_CONNECTED] === "true";
+}
+
 export function isGrokLiveConnected(settings: Record<string, string>): boolean {
-  return (
-    (hasSecretSetting(settings, SETTING_GROK_SESSION_TOKEN) ||
-      hasSecretSetting(settings, SETTING_GROK_BEARER_TOKEN)) &&
-    settings[SETTING_GROK_CONNECTED] === "true"
+  return hasGrokCredentials(settings) && settings[SETTING_GROK_CONNECTED] === "true";
+}
+
+/** Timer membership: a stored token is enough. Do not require *_connected. */
+export function syncProvidersFromCredentials(settings: Record<string, string>): SyncSource {
+  return withSyncProvider(
+    withSyncProvider("none", "cursor", hasCursorCredentials(settings)),
+    "grok",
+    hasGrokCredentials(settings),
   );
+}
+
+export function nextSyncAt(
+  lastAt: string | undefined,
+  intervalMin: number,
+  now: Date = new Date(),
+): string | null {
+  if (!lastAt) return new Date(now.getTime() + Math.max(1, intervalMin) * 60_000).toISOString();
+  const parsed = Date.parse(lastAt);
+  if (Number.isNaN(parsed)) return null;
+  return new Date(parsed + Math.max(1, intervalMin) * 60_000).toISOString();
+}
+
+export type GrokParsedProduct = { name: string; percent: number };
+
+export type GrokBillingMetaSetting = {
+  onDemandCapUsd: number;
+  onDemandUsedUsd: number;
+  prepaidBalanceUsd: number | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  history: Array<{
+    recordedAt?: string;
+    year?: number;
+    month?: number;
+    percent?: number;
+    onDemandUsedUsd?: number;
+    includedUsedUsd?: number;
+  }>;
+};
+
+export function parseGrokBillingMeta(raw: string | undefined): GrokBillingMetaSetting | null {
+  if (!raw?.trim()) return null;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return null;
+    const row = parsed as Partial<GrokBillingMetaSetting>;
+    const onDemandCapUsd = Number(row.onDemandCapUsd);
+    const onDemandUsedUsd = Number(row.onDemandUsedUsd);
+    if (!Number.isFinite(onDemandCapUsd) || !Number.isFinite(onDemandUsedUsd)) return null;
+    return {
+      onDemandCapUsd,
+      onDemandUsedUsd,
+      prepaidBalanceUsd:
+        row.prepaidBalanceUsd == null || !Number.isFinite(Number(row.prepaidBalanceUsd))
+          ? null
+          : Number(row.prepaidBalanceUsd),
+      periodStart: typeof row.periodStart === "string" ? row.periodStart : null,
+      periodEnd: typeof row.periodEnd === "string" ? row.periodEnd : null,
+      history: Array.isArray(row.history) ? row.history : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function parseGrokParsedProducts(raw: string | undefined): GrokParsedProduct[] {
+  if (!raw?.trim()) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const row = item as { name?: unknown; percent?: unknown };
+        const percent = Number(row.percent);
+        if (!Number.isFinite(percent)) return null;
+        return { name: typeof row.name === "string" ? row.name : "", percent };
+      })
+      .filter((item): item is GrokParsedProduct => item != null);
+  } catch {
+    return [];
+  }
 }
 
 /** Live-connected preset pools skip local rollover; the API is the source of truth. */

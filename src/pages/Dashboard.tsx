@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { AddCardsStrip } from "@/components/AddCardsStrip";
 import { AdvisorPanel } from "@/components/AdvisorPanel";
 import { ChartsPanel } from "@/components/ChartsPanel";
+import { PiesPanel } from "@/components/PiesPanel";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PoolCard, type PoolSyncMeta } from "@/components/PoolCard";
 import { PoolFormDialog } from "@/components/PoolFormDialog";
@@ -13,12 +14,15 @@ import { WidgetTile } from "@/components/WidgetTile";
 import { Button } from "@/components/ui/button";
 import type { Pool, PoolDraft, UsageRecord } from "@/db/schema";
 import { advisePool, crossPoolAdvice, tightestAdvice } from "@/lib/burnRate";
+import { chartRecords } from "@/lib/charts";
 import { hiddenTiles, visibleTiles, type LayoutTile } from "@/lib/dashboardLayout";
 import { useDatabase } from "@/hooks/useDatabase";
 import { useWidgetLayout } from "@/hooks/useWidgetLayout";
 import { formatDateTime } from "@/lib/format";
 import { displayPoolName } from "@/lib/poolName";
 import {
+  nextSyncAt,
+  parseSyncInterval,
   SETTING_CURSOR_CONNECTED,
   SETTING_CURSOR_LAST_SYNCED_AT,
   SETTING_CURSOR_SESSION_TOKEN,
@@ -28,7 +32,9 @@ import {
   SETTING_GROK_CONNECTED,
   SETTING_GROK_LAST_SYNCED_AT,
   SETTING_GROK_SESSION_TOKEN,
+  SETTING_GROK_SYNC_MESSAGE,
   SETTING_GROK_SYNC_SOURCE,
+  SETTING_SYNC_INTERVAL_MIN,
   type PoolSyncBadge,
 } from "@/lib/settings";
 
@@ -79,9 +85,10 @@ export function Dashboard() {
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncFlash, setSyncFlash] = useState<string | null>(null);
 
+  const liveRecords = useMemo(() => chartRecords(records), [records]);
   const advices = useMemo(
-    () => pools.map((pool) => advisePool(pool, records)),
-    [pools, records],
+    () => pools.map((pool) => advisePool(pool, liveRecords)),
+    [pools, liveRecords],
   );
   const tightest = useMemo(() => tightestAdvice(advices), [advices]);
   const switchAdvice = useMemo(() => crossPoolAdvice(advices), [advices]);
@@ -90,10 +97,11 @@ export function Dashboard() {
   const grokConfigured = Boolean(
     settings[SETTING_GROK_SESSION_TOKEN]?.trim() || settings[SETTING_GROK_BEARER_TOKEN]?.trim(),
   );
-  const lastSyncAt = [settings[SETTING_CURSOR_LAST_SYNCED_AT], settings[SETTING_GROK_LAST_SYNCED_AT]]
-    .filter(Boolean)
-    .sort()
-    .at(-1);
+  const intervalMin = parseSyncInterval(settings[SETTING_SYNC_INTERVAL_MIN]);
+  const cursorNext = cursorConfigured
+    ? nextSyncAt(settings[SETTING_CURSOR_LAST_SYNCED_AT], intervalMin)
+    : null;
+  const grokNext = grokConfigured ? nextSyncAt(settings[SETTING_GROK_LAST_SYNCED_AT], intervalMin) : null;
 
   function handleSubmit(draft: PoolDraft) {
     if (editing) updatePool(editing.id, draft);
@@ -153,11 +161,33 @@ export function Dashboard() {
         <div className="border-b border-foreground/10 pb-2 sm:border-0 sm:pb-0">
           <h2 className="font-heading text-xl font-semibold">{t("dashboard.title")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{t("dashboard.subtitle")}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {t("live.lastSynced")}:{" "}
-            {lastSyncAt ? formatDateTime(lastSyncAt, i18n.language) : t("live.lastSyncedNever")}
-            {syncFlash ? ` — ${syncFlash}` : ""}
-          </p>
+          <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+            {cursorConfigured ? (
+              <p>
+                {t("live.lastSyncedCursor")}:{" "}
+                {settings[SETTING_CURSOR_LAST_SYNCED_AT]
+                  ? formatDateTime(settings[SETTING_CURSOR_LAST_SYNCED_AT], i18n.language)
+                  : t("live.lastSyncedNever")}
+                {cursorNext ? ` · ${t("live.nextSync")}: ${formatDateTime(cursorNext, i18n.language)}` : ""}
+              </p>
+            ) : null}
+            {grokConfigured ? (
+              <p>
+                {t("live.lastSyncedGrok")}:{" "}
+                {settings[SETTING_GROK_LAST_SYNCED_AT]
+                  ? formatDateTime(settings[SETTING_GROK_LAST_SYNCED_AT], i18n.language)
+                  : t("live.lastSyncedNever")}
+                {grokNext ? ` · ${t("live.nextSync")}: ${formatDateTime(grokNext, i18n.language)}` : ""}
+                {settings[SETTING_GROK_SYNC_MESSAGE] ? ` — ${settings[SETTING_GROK_SYNC_MESSAGE]}` : ""}
+              </p>
+            ) : null}
+            {!cursorConfigured && !grokConfigured ? (
+              <p>
+                {t("live.lastSynced")}: {t("live.lastSyncedNever")}
+              </p>
+            ) : null}
+            {syncFlash ? <p>{syncFlash}</p> : null}
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
@@ -267,11 +297,14 @@ export function Dashboard() {
         />
       );
     }
+    if (tile.type === "pies") {
+      return <PiesPanel pools={pools} compact={tile.size === "sm"} size={tile.size} />;
+    }
     if (tile.type === "heatmap" || tile.type === "trend") {
       return (
         <ChartsPanel
           pools={pools}
-          records={records}
+          records={liveRecords}
           modules={[tile.type]}
           showHeading={false}
           compact={tile.size === "sm"}
@@ -281,7 +314,7 @@ export function Dashboard() {
     }
     const pool = pools.find((item) => item.id === tile.poolId);
     if (!pool) return null;
-    const poolRecords = records.filter((record) => record.pool_id === pool.id);
+    const poolRecords = liveRecords.filter((record) => record.pool_id === pool.id);
     return (
       <PoolCard
         pool={pool}

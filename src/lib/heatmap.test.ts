@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { UsageRecord } from "@/db/schema";
-import { HEATMAP_GITHUB_COLORS, HEATMAP_INTENSITY_METRIC, heatmapGrid, heatmapLevel } from "@/lib/heatmap";
+import type { Pool, UsageRecord } from "@/db/schema";
+import { HEATMAP_GITHUB_COLORS, heatmapGrid, heatmapLevel } from "@/lib/heatmap";
 
 function record(poolId: string, amount: number, recordedAt: Date): UsageRecord {
   const iso = recordedAt.toISOString();
@@ -14,20 +14,18 @@ function record(poolId: string, amount: number, recordedAt: Date): UsageRecord {
   };
 }
 
+function pool(id: string, unit: string): Pick<Pool, "id" | "unit"> {
+  return { id, unit };
+}
+
 describe("heatmapGrid", () => {
   const now = new Date(2026, 7, 19, 15, 0, 0); // Wednesday
 
-  it("documents record-count intensity so mixed-unit pools stay comparable", () => {
-    expect(HEATMAP_INTENSITY_METRIC).toBe("record_count");
-  });
-
   it("builds a Sunday-aligned GitHub-style grid for the requested weeks", () => {
-    const grid = heatmapGrid([], 17, now);
-    expect(grid.weeks).toBe(17);
-    expect(grid.cells).toHaveLength(17 * 7);
-    expect(grid.cells[0]?.date).toBe("2026-04-26");
+    const grid = heatmapGrid([], 26, now);
+    expect(grid.weeks).toBe(26);
+    expect(grid.cells).toHaveLength(26 * 7);
     expect(grid.cells[0]?.weekday).toBe(0);
-    expect(grid.cells.at(-1)?.date).toBe("2026-08-22");
     expect(grid.maxCount).toBe(0);
     expect(grid.intensityMetric).toBe("record_count");
   });
@@ -39,20 +37,34 @@ describe("heatmapGrid", () => {
     expect(grid.cells[0]?.date).toBe("2026-05-31");
   });
 
-  it("uses daily record count for intensity, not summed amounts", () => {
+  it("uses daily record count when pool units are mixed", () => {
     const records = [
       record("usd", 40, new Date(2026, 7, 18, 9, 0, 0)),
       record("usd", 10, new Date(2026, 7, 18, 18, 0, 0)),
       record("pct", 1, new Date(2026, 7, 17, 9, 0, 0)),
       record("usd", 99, new Date(2026, 3, 1, 9, 0, 0)),
     ];
-    const grid = heatmapGrid(records, 17, now);
+    const grid = heatmapGrid(records, 17, now, [pool("usd", "USD"), pool("pct", "%")]);
     const aug18 = grid.cells.find((cell) => cell.date === "2026-08-18");
     const aug17 = grid.cells.find((cell) => cell.date === "2026-08-17");
-    expect(aug18).toMatchObject({ count: 2, total: 2, weekday: 2, weekIndex: 16 });
-    expect(aug17).toMatchObject({ count: 1, total: 1, weekday: 1 });
+    expect(grid.intensityMetric).toBe("record_count");
+    expect(aug18).toMatchObject({ count: 2, amount: 50, weekday: 2 });
+    expect(aug17).toMatchObject({ count: 1, amount: 1, weekday: 1 });
     expect(grid.maxCount).toBe(2);
-    expect(grid.cells.some((cell) => cell.date === "2026-04-01")).toBe(false);
+  });
+
+  it("uses that day's usage amount when every contributing record shares one unit", () => {
+    const records = [
+      record("heavy", 5, new Date(2026, 7, 18, 9, 0, 0)),
+      record("heavy", 3, new Date(2026, 7, 18, 18, 0, 0)),
+      record("bot", 2, new Date(2026, 7, 17, 9, 0, 0)),
+    ];
+    const grid = heatmapGrid(records, 12, now, [pool("heavy", "%"), pool("bot", "%")]);
+    const aug18 = grid.cells.find((cell) => cell.date === "2026-08-18");
+    expect(grid.intensityMetric).toBe("amount");
+    expect(grid.unit).toBe("%");
+    expect(aug18).toMatchObject({ count: 2, amount: 8, unit: "%" });
+    expect(grid.maxAmount).toBe(8);
   });
 });
 

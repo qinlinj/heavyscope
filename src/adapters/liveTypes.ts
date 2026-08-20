@@ -13,6 +13,29 @@ export type LivePoolUpdate = {
   recordedAt?: string;
 };
 
+export type LiveHistoryPoint = {
+  poolHint: string;
+  quotaUsed: number;
+  recordedAt: string;
+  note?: string;
+};
+
+export type LiveBillingMeta = {
+  onDemandCapUsd: number;
+  onDemandUsedUsd: number;
+  prepaidBalanceUsd: number | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  history: Array<{
+    recordedAt?: string;
+    year?: number;
+    month?: number;
+    percent?: number;
+    onDemandUsedUsd?: number;
+    includedUsedUsd?: number;
+  }>;
+};
+
 export type LiveProviderResult = {
   ok: boolean;
   code: LiveErrorCode;
@@ -21,6 +44,15 @@ export type LiveProviderResult = {
   resetAt?: string | null;
   /** Grok Bot / Agents segment could not be mapped from the proto. */
   botUnavailable?: boolean;
+  /** Product names + percents walked from the proto (for Settings diagnostics). */
+  parsedProducts?: Array<{ name: string; percent: number }>;
+  /** On-demand / prepaid / period history (Settings diagnostics; $ is not Bot). */
+  billing?: LiveBillingMeta;
+  /**
+   * Honest Heavy % history points only. Applied as heatmap/trend seed deltas.
+   * Cents-only history must not appear here.
+   */
+  historyPoints?: LiveHistoryPoint[];
 };
 
 export type LiveApplyReport = {
@@ -58,4 +90,6 @@ export type LiveApplyDeps = {
     note: string | null,
     recordedAt?: string,
   ) => void;
+  /** Skip history-seed inserts when this recordedAt already exists for the pool. */
+  hasUsageAt?: (poolId: string, recordedAt: string) => boolean;
 };
