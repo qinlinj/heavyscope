@@ -11,6 +11,11 @@ export const GROK_CREDITS_PATH = "/grok_api_v2.GrokBuildBilling/GetGrokCreditsCo
 export const GROK_ORIGIN = "https://grok.com";
 export const GROK_PROXY_PREFIX = "/proxy/grok";
 
+export const GROK_CLI_ORIGIN = "https://cli-chat-proxy.grok.com";
+export const GROK_CLI_PROXY_PREFIX = "/proxy/grok-cli";
+export const GROK_CLI_BILLING_PATH = "/v1/billing?format=credits";
+export const GROK_CLI_TOKEN_AUTH = "xai-grok-cli";
+
 export const GRPC_WEB_EMPTY_BODY = new Uint8Array([0, 0, 0, 0, 0]);
 
 export const LIVE_CURSOR_CORS_ERROR =

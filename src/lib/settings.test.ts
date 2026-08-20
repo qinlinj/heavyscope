@@ -4,6 +4,7 @@ import {
   hasCursorCredentials,
   hasGrokCredentials,
   nextSyncAt,
+  parseGrokBillingMeta,
   parseSyncInterval,
   parseSyncSource,
   redactSettings,
@@ -63,6 +64,25 @@ describe("nextSyncAt", () => {
     expect(nextSyncAt("2026-08-20T00:00:00.000Z", 5, new Date("2026-08-20T00:01:00.000Z"))).toBe(
       "2026-08-20T00:05:00.000Z",
     );
+  });
+});
+
+describe("parseGrokBillingMeta", () => {
+  it("reads on-demand / prepaid / history diagnostics", () => {
+    const meta = parseGrokBillingMeta(
+      JSON.stringify({
+        onDemandCapUsd: 50,
+        onDemandUsedUsd: 12.34,
+        prepaidBalanceUsd: 7.5,
+        periodStart: "2026-06-01T00:00:00.000Z",
+        periodEnd: "2026-06-08T00:00:00.000Z",
+        history: [{ year: 2026, month: 5, onDemandUsedUsd: 1 }],
+      }),
+    );
+    expect(meta?.onDemandCapUsd).toBe(50);
+    expect(meta?.prepaidBalanceUsd).toBe(7.5);
+    expect(meta?.history).toHaveLength(1);
+    expect(parseGrokBillingMeta("nope")).toBeNull();
   });
 });
 

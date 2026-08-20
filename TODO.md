@@ -77,6 +77,8 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] History / default charts hide demo; live sync + manual is the default source
 - [x] Timer from stored credentials for Cursor and Grok; per-provider last / next sync
 - [x] Broader Grok Bot name match + second-percent heuristic + parsed-product line
+- [x] GetGrokCreditsConfig fields 2–6 + prepaid diagnostics; gRPC 16 needs-bearer; CLI billing JSON fallback (fixtures)
+- [x] Interval membership from cookie/bearer/token immediately (no `grokLive` / `sync_source` gate)
 - [x] Trend uses live deltas; heatmap 26 weeks + amount intensity when units match
 - [x] Unit-safe pies restored (used % + remaining share)
 - [x] Version 0.10.0 (package.json + src-tauri)

@@ -47,7 +47,7 @@
     "cursorReadApp": "Read from Cursor app (Mac)",
     "cursorVscdbFailed": "Could not read Cursor state.vscdb. This helper only works on a real Mac desktop build.",
     "grokTitle": "Grok live connect",
-    "grokHint": "Paste a grok.com session cookie and/or a Bearer token (xAI OAuth / grok.com session). Stored only on this device.",
+    "grokHint": "Paste a grok.com session cookie and/or a Bearer token (xAI OAuth / grok.com session). Prefer Bearer — cookie-only GetGrokCreditsConfig can fail with gRPC 16. Stored only on this device.",
     "grokCookie": "grok.com session cookie",
     "grokCookiePlaceholder": "Paste the Cookie header or session pair…",
     "grokBearer": "Bearer token",
@@ -68,6 +68,9 @@
     "lastSyncedNever": "Never",
     "grokBotUnavailable": "Live sync unavailable — calibrate manually",
     "grokParsed": "Parsed from last Grok payload",
+    "grokOnDemand": "On-demand",
+    "grokPrepaid": "Prepaid",
+    "grokHistoryMeta": "{{count}} history period(s) ({{percents}} Heavy % seed, {{cents}} $ only)",
     "unnamedProduct": "Unnamed meter",
     "badge": {
       "api": "api",

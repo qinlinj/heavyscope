@@ -47,7 +47,7 @@
     "cursorReadApp": "从 Cursor 应用读取（Mac）",
     "cursorVscdbFailed": "无法读取 Cursor state.vscdb。该助手仅在真实 Mac 桌面版可用。",
     "grokTitle": "Grok 实时连接",
-    "grokHint": "粘贴 grok.com 会话 Cookie 和/或 Bearer 令牌（xAI OAuth / grok.com 会话）。只保存在本机。",
+    "grokHint": "粘贴 grok.com 会话 Cookie 和/或 Bearer 令牌（xAI OAuth / grok.com 会话）。优先使用 Bearer：仅 Cookie 的 GetGrokCreditsConfig 可能返回 gRPC 16。只保存在本机。",
     "grokCookie": "grok.com 会话 Cookie",
     "grokCookiePlaceholder": "粘贴 Cookie 头或会话键值…",
     "grokBearer": "Bearer 令牌",
@@ -68,6 +68,9 @@
     "lastSyncedNever": "从未",
     "grokBotUnavailable": "实时同步不可用 — 请手动校准",
     "grokParsed": "上次 Grok 载荷解析到",
+    "grokOnDemand": "按需",
+    "grokPrepaid": "预付",
+    "grokHistoryMeta": "{{count}} 段历史（{{percents}} 条 Heavy % 可播种，{{cents}} 条仅为金额）",
     "unnamedProduct": "未命名额度",
     "badge": {
       "api": "api",

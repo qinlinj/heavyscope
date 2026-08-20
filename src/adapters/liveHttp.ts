@@ -3,13 +3,15 @@ import {
   BROWSER_USER_AGENT,
   CURSOR_ORIGIN,
   CURSOR_PROXY_PREFIX,
+  GROK_CLI_ORIGIN,
+  GROK_CLI_PROXY_PREFIX,
   GROK_ORIGIN,
   GROK_PROXY_PREFIX,
   LIVE_CURSOR_CORS_ERROR,
   LIVE_GROK_CORS_ERROR,
 } from "./liveConstants";
 
-export type LiveProviderId = "cursor" | "grok";
+export type LiveProviderId = "cursor" | "grok" | "grok-cli";
 
 export type LiveHttpRequest = {
   provider: LiveProviderId;
@@ -23,6 +25,7 @@ export type LiveHttpResponse = {
   status: number;
   bodyText: string;
   bodyBytes: Uint8Array;
+  headers: Record<string, string>;
   transport: "tauri" | "proxy";
 };
 
@@ -54,8 +57,14 @@ function canUseDevProxy(): boolean {
 }
 
 function resolveUrl(provider: LiveProviderId, path: string, transport: "tauri" | "proxy"): string {
-  const origin = provider === "cursor" ? CURSOR_ORIGIN : GROK_ORIGIN;
-  const prefix = provider === "cursor" ? CURSOR_PROXY_PREFIX : GROK_PROXY_PREFIX;
+  const origin =
+    provider === "cursor" ? CURSOR_ORIGIN : provider === "grok-cli" ? GROK_CLI_ORIGIN : GROK_ORIGIN;
+  const prefix =
+    provider === "cursor"
+      ? CURSOR_PROXY_PREFIX
+      : provider === "grok-cli"
+        ? GROK_CLI_PROXY_PREFIX
+        : GROK_PROXY_PREFIX;
   if (transport === "tauri") return `${origin}${path}`;
   return `${prefix}${path}`;
 }
@@ -94,10 +103,18 @@ async function tauriFetch(url: string, req: LiveHttpRequest): Promise<Response |
   }
 }
 
+function responseHeaders(response: Response): Record<string, string> {
+  const headers: Record<string, string> = {};
+  response.headers.forEach((value, key) => {
+    headers[key.toLowerCase()] = value;
+  });
+  return headers;
+}
+
 async function readResponse(response: Response, transport: "tauri" | "proxy"): Promise<LiveHttpResponse> {
   const bodyBytes = new Uint8Array(await response.arrayBuffer());
   const bodyText = new TextDecoder().decode(bodyBytes);
-  return { status: response.status, bodyText, bodyBytes, transport };
+  return { status: response.status, bodyText, bodyBytes, headers: responseHeaders(response), transport };
 }
 
 /**

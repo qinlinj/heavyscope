@@ -1,15 +1,21 @@
 import { LIVE_PERCENT_TOTAL, LIVE_PERCENT_UNIT } from "./liveConstants";
-import type { LivePoolUpdate, LiveProviderResult } from "./liveTypes";
+import type { LiveHistoryPoint, LivePoolUpdate, LiveProviderResult } from "./liveTypes";
 
 type ProtoField = { number: number; wire: number; value: number | Uint8Array };
 
 /**
- * Bot / Agents product names seen in grok.com Settings → Usage and public trackers.
- * SuperGrok Heavy is excluded so the Heavy weekly meter is never remapped to Bot.
+ * Bot / Agents product names seen in grok.com Settings → Usage, CLI productUsage,
+ * and public trackers. SuperGrok Heavy / PRODUCT_GROK_BUILD stay on the Heavy meter.
  */
 const BOT_NAME =
-  /(super[\s-]*grok[\s-]*bot|grok[\s-]*bot|^bot$|\bagents?\b|api[\s-]*for[\s-]*bots?|x\.com[\s-]*bots?|xai[\s-]*bots?)/i;
-const HEAVY_NAME = /heavy|super[\s-]*grok(?![\s-]*bot)/i;
+  /(super[\s-]*grok[\s-]*bot|grok[\s-]*bot|^bot$|\bagents?\b|api[\s-]*for[\s-]*bots?|x\.com[\s-]*bots?|xai[\s-]*bots?|product[_-]*grok[_-]*(bot|agents?)|product[_-]*(bot|agents?))/i;
+const HEAVY_NAME = /heavy|super[\s-]*grok(?![\s-]*bot)|product[_-]*grok[_-]*(build|heavy)/i;
+
+const KNOWN_CONFIG_FIELDS = new Set([1, 2, 3, 4, 5, 6]);
+const GRPC_UNAUTHENTICATED = 16;
+
+export const GROK_NEEDS_BEARER =
+  "Grok session expired or needs a Bearer token (gRPC 16 / unauthenticated). Cookie-only GetGrokCreditsConfig can fail; auto-refresh stays on.";
 
 function readVarint(data: Uint8Array, pos: number): { value: number; pos: number } | null {
   let value = 0;
@@ -109,7 +115,64 @@ function isPrintableUtf8(bytes: Uint8Array): string | null {
   }
 }
 
+/** proto3 Cent / Money: field 1 varint (or numeric string). Empty message = 0. */
+function parseCent(message: Uint8Array | null): number | null {
+  if (!message) return null;
+  if (message.length === 0) return 0;
+  const fields = iterFields(message);
+  if (!fields) return null;
+  let cents: number | null = null;
+  for (const field of fields) {
+    if (field.number !== 1) return null;
+    if (field.wire === 0 && typeof field.value === "number") cents = field.value;
+    else if (field.wire === 2 && field.value instanceof Uint8Array) {
+      const text = isPrintableUtf8(field.value);
+      if (!text || !/^-?\d+$/.test(text)) return null;
+      cents = Number(text);
+    } else {
+      return null;
+    }
+  }
+  return cents;
+}
+
+function centsToUsd(cents: number | null): number | null {
+  if (cents == null || !Number.isFinite(cents)) return null;
+  return cents / 100;
+}
+
+function parseBillingCycle(message: Uint8Array): { year: number; month: number } | null {
+  const fields = iterFields(message);
+  if (!fields) return null;
+  let year = 0;
+  let month = 0;
+  for (const field of fields) {
+    if (field.number === 1 && field.wire === 0 && typeof field.value === "number") year = field.value;
+    if (field.number === 2 && field.wire === 0 && typeof field.value === "number") month = field.value;
+  }
+  if (year < 2000 || month < 1 || month > 12) return null;
+  return { year, month };
+}
+
 export type ProductSegment = { name: string; percent: number };
+
+export type GrokHistoryPoint = {
+  recordedAt?: string;
+  year?: number;
+  month?: number;
+  percent?: number;
+  onDemandUsedUsd?: number;
+  includedUsedUsd?: number;
+};
+
+export type GrokBillingMeta = {
+  onDemandCapUsd: number;
+  onDemandUsedUsd: number;
+  prepaidBalanceUsd: number | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  history: GrokHistoryPoint[];
+};
 
 function walkProducts(message: Uint8Array, out: ProductSegment[]): void {
   const fields = iterFields(message);
@@ -139,6 +202,55 @@ function walkProducts(message: Uint8Array, out: ProductSegment[]): void {
   }
 }
 
+function isPercentLike(value: number): boolean {
+  return Number.isFinite(value) && value >= 0 && value <= 100;
+}
+
+function parsePeriodUsage(message: Uint8Array): GrokHistoryPoint {
+  const fields = iterFields(message) ?? [];
+  const point: GrokHistoryPoint = {};
+  for (const field of fields) {
+    if (field.wire === 5 && field.value instanceof Uint8Array) {
+      const percent = parseFloat32(field.value);
+      if (percent != null && isPercentLike(percent)) point.percent = percent;
+      continue;
+    }
+    if (field.wire !== 2 || !(field.value instanceof Uint8Array)) continue;
+    const cycle = parseBillingCycle(field.value);
+    if (cycle) {
+      point.year = cycle.year;
+      point.month = cycle.month;
+      point.recordedAt = `${cycle.year}-${String(cycle.month).padStart(2, "0")}-01T00:00:00.000Z`;
+      continue;
+    }
+    const stamp = parseTimestamp(field.value);
+    if (stamp) {
+      point.recordedAt = stamp;
+      continue;
+    }
+    const cents = parseCent(field.value);
+    if (cents == null) {
+      const nested = parsePeriodUsage(field.value);
+      if (nested.percent != null) point.percent = nested.percent;
+      if (nested.recordedAt) point.recordedAt = nested.recordedAt;
+      if (nested.year) point.year = nested.year;
+      if (nested.month) point.month = nested.month;
+      if (nested.onDemandUsedUsd != null && point.onDemandUsedUsd == null) {
+        point.onDemandUsedUsd = nested.onDemandUsedUsd;
+      }
+      if (nested.includedUsedUsd != null && point.includedUsedUsd == null) {
+        point.includedUsedUsd = nested.includedUsedUsd;
+      }
+      continue;
+    }
+    const usd = cents / 100;
+    if (field.number === 3 && point.includedUsedUsd == null) point.includedUsedUsd = usd;
+    else if (point.onDemandUsedUsd == null) point.onDemandUsedUsd = usd;
+    else if (point.includedUsedUsd == null) point.includedUsedUsd = usd;
+  }
+  return point;
+}
+
 export function isHeavyProductName(name: string): boolean {
   const trimmed = name.trim();
   if (!trimmed) return false;
@@ -160,7 +272,9 @@ export function pickBotProduct(
 
   const leftover = products.filter((item) => {
     if (isHeavyProductName(item.name)) return false;
-    if (item.name.trim() && /heavy/i.test(item.name) && !isBotProductName(item.name)) return false;
+    if (item.name.trim() && /heavy|grok[_-]?build/i.test(item.name) && !isBotProductName(item.name)) {
+      return false;
+    }
     return Math.abs(item.percent - heavyPercent) > 0.05;
   });
   if (leftover.length === 1) return leftover[0] ?? null;
@@ -173,8 +287,47 @@ export function isBotProductName(name: string): boolean {
   return BOT_NAME.test(name.trim());
 }
 
-function unwrapGrpcWeb(body: Uint8Array): Uint8Array | null {
-  if (body.length < 5) return body.length > 0 ? body : null;
+export type GrpcWebDecoded = {
+  message: Uint8Array | null;
+  grpcStatus: number | null;
+  grpcMessage: string;
+};
+
+function parseTrailerMap(payload: Uint8Array): Record<string, string> {
+  const text = new TextDecoder().decode(payload);
+  const out: Record<string, string> = {};
+  for (const line of text.split(/\r?\n/)) {
+    const idx = line.indexOf(":");
+    if (idx < 0) continue;
+    const key = line.slice(0, idx).trim().toLowerCase();
+    const value = line.slice(idx + 1).trim();
+    if (key) out[key] = value;
+  }
+  return out;
+}
+
+function headerLookup(headers: Record<string, string> | undefined, name: string): string | undefined {
+  if (!headers) return undefined;
+  const want = name.toLowerCase();
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === want) return value;
+  }
+  return undefined;
+}
+
+export function decodeGrpcWeb(body: Uint8Array, headers?: Record<string, string>): GrpcWebDecoded {
+  let grpcStatus = Number.parseInt(headerLookup(headers, "grpc-status") ?? "", 10);
+  if (!Number.isFinite(grpcStatus)) grpcStatus = NaN;
+  let grpcMessage = headerLookup(headers, "grpc-message") ?? "";
+
+  if (body.length < 5) {
+    return {
+      message: body.length > 0 ? body : null,
+      grpcStatus: Number.isFinite(grpcStatus) ? grpcStatus : null,
+      grpcMessage,
+    };
+  }
+
   const messages: Uint8Array[] = [];
   let pos = 0;
   let sawFrame = false;
@@ -187,32 +340,82 @@ function unwrapGrpcWeb(body: Uint8Array): Uint8Array | null {
     pos += length;
     sawFrame = true;
     const isTrailer = (flags & 0x80) !== 0;
-    if (!isTrailer) messages.push(payload);
+    if (isTrailer) {
+      const trailers = parseTrailerMap(payload);
+      const status = Number.parseInt(trailers["grpc-status"] ?? "", 10);
+      if (Number.isFinite(status)) grpcStatus = status;
+      if (trailers["grpc-message"]) grpcMessage = trailers["grpc-message"];
+    } else {
+      messages.push(payload);
+    }
   }
-  if (!sawFrame) return body;
-  if (messages.length === 0) return null;
-  if (messages.length === 1) return messages[0];
-  const joined = new Uint8Array(messages.reduce((sum, item) => sum + item.length, 0));
-  let offset = 0;
-  for (const item of messages) {
-    joined.set(item, offset);
-    offset += item.length;
+
+  let message: Uint8Array | null = null;
+  if (!sawFrame) message = body;
+  else if (messages.length === 1) message = messages[0] ?? null;
+  else if (messages.length > 1) {
+    const joined = new Uint8Array(messages.reduce((sum, item) => sum + item.length, 0));
+    let offset = 0;
+    for (const item of messages) {
+      joined.set(item, offset);
+      offset += item.length;
+    }
+    message = joined;
   }
-  return joined;
+
+  return {
+    message,
+    grpcStatus: Number.isFinite(grpcStatus) ? grpcStatus : null,
+    grpcMessage,
+  };
+}
+
+export function isGrpcUnauthenticated(status: number | null, message = ""): boolean {
+  if (status === GRPC_UNAUTHENTICATED) return true;
+  return /unauthenticated|wke\s*=\s*unauthenticated|no-credentials/i.test(message);
+}
+
+function expiredNeedsBearer(detail?: string): LiveProviderResult {
+  const suffix = detail?.trim() ? ` ${detail.trim()}` : "";
+  return {
+    ok: false,
+    code: "expired",
+    message: GROK_NEEDS_BEARER + suffix,
+    pools: [],
+  };
+}
+
+function historyPointsFromBilling(history: GrokHistoryPoint[]): LiveHistoryPoint[] {
+  return history.flatMap((item) => {
+    if (item.percent == null || !isPercentLike(item.percent) || !item.recordedAt) return [];
+    return [
+      {
+        poolHint: "grok_heavy",
+        quotaUsed: item.percent,
+        recordedAt: item.recordedAt,
+        note: "Grok history seed",
+      },
+    ];
+  });
 }
 
 /**
- * Loose protobuf walker for GetGrokCreditsConfig (see lsaether/grok-credits-tracker).
- * `credit_usage_percent` is field 1, fixed32 float. Omitted proto3 default = 0.
- * Never throws.
+ * Loose protobuf walker for GetGrokCreditsConfig (lsaether/grok-credits-tracker + vct-core).
+ * 1 credit_usage_percent (fixed32) · 2 on_demand_cap · 3 on_demand_used
+ * 4 billing_period_start · 5 billing_period_end · 6 history
+ * prepaid_balance field number is not confirmed — extra Cent messages are captured.
+ * Never throws. Never invents Bot usage.
  */
-export function parseGrokCreditsPayload(body: Uint8Array): LiveProviderResult {
-  const message = unwrapGrpcWeb(body);
-  if (!message) {
+export function parseGrokCreditsPayload(body: Uint8Array, headers?: Record<string, string>): LiveProviderResult {
+  const decoded = decodeGrpcWeb(body, headers);
+  if (isGrpcUnauthenticated(decoded.grpcStatus, decoded.grpcMessage)) {
+    return expiredNeedsBearer(decoded.grpcMessage);
+  }
+  if (!decoded.message) {
     return { ok: false, code: "invalid", message: "Grok credits response had no protobuf message", pools: [] };
   }
 
-  const config = firstMessage(message, 1) ?? (iterFields(message) ? message : null);
+  const config = firstMessage(decoded.message, 1) ?? (iterFields(decoded.message) ? decoded.message : null);
   if (!config) {
     return { ok: false, code: "invalid", message: "Grok credits response was not valid protobuf", pools: [] };
   }
@@ -223,16 +426,40 @@ export function parseGrokCreditsPayload(body: Uint8Array): LiveProviderResult {
   }
 
   let creditUsagePercent = 0;
+  let periodStart: string | null = null;
   let periodEnd: string | null = null;
+  let onDemandCapCents: number | null = null;
+  let onDemandUsedCents: number | null = null;
+  let prepaidBalanceCents: number | null = null;
   const products: ProductSegment[] = [];
+  const history: GrokHistoryPoint[] = [];
 
   for (const field of fields) {
     if (field.number === 1 && field.wire === 5 && field.value instanceof Uint8Array) {
       creditUsagePercent = parseFloat32(field.value) ?? 0;
+    } else if (field.number === 2 && field.wire === 2 && field.value instanceof Uint8Array) {
+      onDemandCapCents = parseCent(field.value);
+    } else if (field.number === 3 && field.wire === 2 && field.value instanceof Uint8Array) {
+      onDemandUsedCents = parseCent(field.value);
+    } else if (field.number === 4 && field.wire === 2 && field.value instanceof Uint8Array) {
+      periodStart = parseTimestamp(field.value);
     } else if (field.number === 5 && field.wire === 2 && field.value instanceof Uint8Array) {
       periodEnd = parseTimestamp(field.value);
-    } else if (field.wire === 2 && field.value instanceof Uint8Array && field.number !== 2 && field.number !== 3) {
-      walkProducts(field.value, products);
+    } else if (field.number === 6 && field.wire === 2 && field.value instanceof Uint8Array) {
+      history.push(parsePeriodUsage(field.value));
+    } else if (
+      field.wire === 2 &&
+      field.value instanceof Uint8Array &&
+      !KNOWN_CONFIG_FIELDS.has(field.number)
+    ) {
+      const extraCent = parseCent(field.value);
+      if (extraCent != null && prepaidBalanceCents == null) {
+        prepaidBalanceCents = extraCent;
+      } else if (extraCent == null) {
+        const stamp = parseTimestamp(field.value);
+        if (stamp && !periodEnd) periodEnd = stamp;
+        else walkProducts(field.value, products);
+      }
     }
   }
 
@@ -267,6 +494,16 @@ export function parseGrokCreditsPayload(body: Uint8Array): LiveProviderResult {
     });
   }
 
+  const billing: GrokBillingMeta = {
+    onDemandCapUsd: centsToUsd(onDemandCapCents) ?? 0,
+    onDemandUsedUsd: centsToUsd(onDemandUsedCents) ?? 0,
+    prepaidBalanceUsd: centsToUsd(prepaidBalanceCents),
+    periodStart,
+    periodEnd,
+    history,
+  };
+  const historyPoints = historyPointsFromBilling(history);
+
   return {
     ok: true,
     code: "ok",
@@ -277,17 +514,18 @@ export function parseGrokCreditsPayload(body: Uint8Array): LiveProviderResult {
     resetAt: periodEnd,
     botUnavailable,
     parsedProducts: products,
+    billing,
+    historyPoints,
   };
 }
 
-export function mapGrokCreditsResponse(status: number, body: Uint8Array): LiveProviderResult {
+export function mapGrokCreditsResponse(
+  status: number,
+  body: Uint8Array,
+  headers?: Record<string, string>,
+): LiveProviderResult {
   if (status === 401 || status === 403) {
-    return {
-      ok: false,
-      code: "expired",
-      message: "Grok session expired or was rejected (HTTP " + status + ")",
-      pools: [],
-    };
+    return expiredNeedsBearer(`HTTP ${status}`);
   }
   if (status < 200 || status >= 300) {
     return {
@@ -297,10 +535,15 @@ export function mapGrokCreditsResponse(status: number, body: Uint8Array): LivePr
       pools: [],
     };
   }
+  const headerStatus = Number.parseInt(headerLookup(headers, "grpc-status") ?? "", 10);
+  const headerMessage = headerLookup(headers, "grpc-message") ?? "";
+  if (isGrpcUnauthenticated(Number.isFinite(headerStatus) ? headerStatus : null, headerMessage)) {
+    return expiredNeedsBearer(headerMessage);
+  }
   if (body.length === 0) {
     return { ok: false, code: "invalid", message: "Grok credits response was empty", pools: [] };
   }
-  return parseGrokCreditsPayload(body);
+  return parseGrokCreditsPayload(body, headers);
 }
 
 export function hexToBytes(hex: string): Uint8Array {
@@ -324,4 +567,159 @@ export function normalizeGrokBearer(raw: string): string {
 
 export function grokCookieHeader(raw: string): string {
   return raw.trim().replace(/^Cookie:\s*/i, "");
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+}
+
+function readNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() && Number.isFinite(Number(value))) return Number(value);
+  return null;
+}
+
+function readCent(value: unknown): number | null {
+  const direct = readNumber(value);
+  if (direct != null) return direct;
+  const row = asRecord(value);
+  if (!row) return null;
+  return readNumber(row.val ?? row.value ?? row.cents);
+}
+
+function readString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+/**
+ * CLI proxy `GET /v1/billing?format=credits` JSON (xai-org/grok-build billing.rs).
+ * Maps Heavy from creditUsagePercent. Bot only from a named non-Heavy productUsage.
+ */
+export function mapGrokCliBillingJson(raw: unknown): LiveProviderResult {
+  const root = asRecord(raw);
+  if (!root) {
+    return { ok: false, code: "invalid", message: "Grok CLI billing JSON was not an object", pools: [] };
+  }
+  const config = asRecord(root.config) ?? root;
+  const creditUsagePercent =
+    readNumber(config.creditUsagePercent ?? config.credit_usage_percent) ?? 0;
+  const currentPeriod = asRecord(config.currentPeriod ?? config.current_period);
+  const periodEnd =
+    readString(currentPeriod?.end) ??
+    readString(config.billingPeriodEnd ?? config.billing_period_end);
+  const periodStart =
+    readString(currentPeriod?.start) ??
+    readString(config.billingPeriodStart ?? config.billing_period_start);
+  const onDemandCapCents = readCent(config.onDemandCap ?? config.on_demand_cap);
+  const onDemandUsedCents = readCent(config.onDemandUsed ?? config.on_demand_used);
+  const prepaidBalanceCents = readCent(config.prepaidBalance ?? config.prepaid_balance);
+
+  const products: ProductSegment[] = [];
+  const usageRows = config.productUsage ?? config.product_usage;
+  if (Array.isArray(usageRows)) {
+    for (const row of usageRows) {
+      const item = asRecord(row);
+      if (!item) continue;
+      const name = readString(item.product ?? item.name) ?? "";
+      const percent = readNumber(item.usagePercent ?? item.usage_percent ?? item.percent);
+      if (percent == null) continue;
+      products.push({ name, percent });
+    }
+  }
+
+  const history: GrokHistoryPoint[] = [];
+  if (Array.isArray(config.history)) {
+    for (const row of config.history) {
+      const item = asRecord(row);
+      if (!item) continue;
+      const cycle = asRecord(item.billingCycle ?? item.billing_cycle);
+      const period = asRecord(item.period);
+      const year = readNumber(cycle?.year);
+      const month = readNumber(cycle?.month);
+      const recordedAt =
+        readString(period?.end) ??
+        (year != null && month != null
+          ? `${year}-${String(month).padStart(2, "0")}-01T00:00:00.000Z`
+          : undefined);
+      const percent = readNumber(item.usagePercent ?? item.usage_percent ?? item.creditUsagePercent);
+      history.push({
+        recordedAt,
+        year: year ?? undefined,
+        month: month ?? undefined,
+        percent: percent != null && isPercentLike(percent) ? percent : undefined,
+        onDemandUsedUsd: centsToUsd(readCent(item.onDemandUsed ?? item.on_demand_used)) ?? undefined,
+        includedUsedUsd: centsToUsd(readCent(item.includedUsed ?? item.included_used)) ?? undefined,
+      });
+    }
+  }
+
+  const fetchedAt = new Date().toISOString();
+  const pools: LivePoolUpdate[] = [
+    {
+      poolHint: "grok_heavy",
+      quotaUsed: creditUsagePercent,
+      quotaTotal: LIVE_PERCENT_TOTAL,
+      resetAt: periodEnd,
+      resetCycle: "weekly",
+      unit: LIVE_PERCENT_UNIT,
+      note: "Grok CLI billing sync",
+      recordedAt: fetchedAt,
+    },
+  ];
+
+  const bot = pickBotProduct(products, creditUsagePercent);
+  let botUnavailable = true;
+  if (bot) {
+    botUnavailable = false;
+    pools.push({
+      poolHint: "grok_bot",
+      quotaUsed: bot.percent,
+      quotaTotal: LIVE_PERCENT_TOTAL,
+      resetAt: periodEnd,
+      resetCycle: "weekly",
+      unit: LIVE_PERCENT_UNIT,
+      note: `Grok CLI billing sync (${bot.name.trim() || "second meter"})`,
+      recordedAt: fetchedAt,
+    });
+  }
+
+  return {
+    ok: true,
+    code: "ok",
+    message: botUnavailable
+      ? "Grok Heavy mapped via CLI billing; Bot live sync unavailable — calibrate manually"
+      : "Grok CLI billing mapped",
+    pools,
+    resetAt: periodEnd,
+    botUnavailable,
+    parsedProducts: products,
+    billing: {
+      onDemandCapUsd: centsToUsd(onDemandCapCents) ?? 0,
+      onDemandUsedUsd: centsToUsd(onDemandUsedCents) ?? 0,
+      prepaidBalanceUsd: centsToUsd(prepaidBalanceCents),
+      periodStart,
+      periodEnd,
+      history,
+    },
+    historyPoints: historyPointsFromBilling(history),
+  };
+}
+
+export function mapGrokCliBillingResponse(status: number, bodyText: string): LiveProviderResult {
+  if (status === 401 || status === 403) {
+    return expiredNeedsBearer(`CLI billing HTTP ${status}`);
+  }
+  if (status < 200 || status >= 300) {
+    return {
+      ok: false,
+      code: "http",
+      message: `Grok CLI billing failed with HTTP ${status}`,
+      pools: [],
+    };
+  }
+  try {
+    return mapGrokCliBillingJson(JSON.parse(bodyText) as unknown);
+  } catch {
+    return { ok: false, code: "invalid", message: "Grok CLI billing response was not JSON", pools: [] };
+  }
 }

@@ -8,7 +8,12 @@ export {
   normalizeCursorSessionToken,
 } from "./cursorLive";
 export { grokAdapter } from "./grok";
-export { hexToBytes, mapGrokCreditsResponse, parseGrokCreditsPayload } from "./grokLive";
+export {
+  hexToBytes,
+  mapGrokCliBillingJson,
+  mapGrokCreditsResponse,
+  parseGrokCreditsPayload,
+} from "./grokLive";
 export { adapterSignature, hashSignature } from "./hash";
 export { fetchCursorUsage, fetchGrokCredits } from "./liveClient";
 export { applyLiveSnapshot } from "./liveSync";

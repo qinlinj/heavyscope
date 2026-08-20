@@ -39,6 +39,7 @@ import {
   SETTING_GROK_BOT_LIVE,
   SETTING_GROK_CONNECTED,
   SETTING_GROK_LAST_SYNCED_AT,
+  SETTING_GROK_BILLING_META,
   SETTING_GROK_PARSED_PRODUCTS,
   SETTING_GROK_SESSION_TOKEN,
   SETTING_GROK_SYNC_MESSAGE,
@@ -123,6 +124,7 @@ function writeGrokLiveMeta(store: HeavyScopeDB, result: LiveProviderResult): voi
     store.setSetting(SETTING_GROK_SYNC_MESSAGE, result.message);
     store.setSetting(SETTING_GROK_BOT_LIVE, result.botUnavailable ? "unavailable" : "ok");
     store.setSetting(SETTING_GROK_PARSED_PRODUCTS, JSON.stringify(result.parsedProducts ?? []));
+    store.setSetting(SETTING_GROK_BILLING_META, JSON.stringify(result.billing ?? null));
     writeSyncMeta(store, "ok", result.message);
     return;
   }
@@ -159,6 +161,8 @@ function liveApplyDeps(store: HeavyScopeDB) {
     insertUsageRecord: (poolId: string, amount: number, note: string | null, recordedAt?: string) => {
       store.insertUsageRecord(poolId, amount, note, "sync", recordedAt);
     },
+    hasUsageAt: (poolId: string, recordedAt: string) =>
+      store.listUsage(poolId).some((row) => row.recorded_at === recordedAt && row.source === "sync"),
   };
 }
 
@@ -492,12 +496,13 @@ function useDatabaseState(): DatabaseApi {
 
   useSync({
     ready,
-    enabled: settings[SETTING_SYNC_ENABLED] === "true",
+    enabled: settings[SETTING_SYNC_ENABLED] === "true" || cursorHasToken || grokHasToken,
     source: settings[SETTING_SYNC_SOURCE],
     intervalMin: parseSyncInterval(settings[SETTING_SYNC_INTERVAL_MIN]),
     cursorLive: cursorHasToken,
     grokLive: grokHasToken,
     cursorHasToken,
+    grokHasToken,
     hasSnapshot: Boolean(settings[SETTING_CURSOR_SNAPSHOT]?.trim()),
     applyLive: refreshLiveProviders,
     applySnapshot: applyStoredSnapshot,

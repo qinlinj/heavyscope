@@ -111,16 +111,21 @@ These endpoints are unofficial and may change.
 
 1. Log in at [grok.com](https://grok.com).
 2. Copy a grok.com session cookie (DevTools → Application → Cookies) and/or a Bearer token from the grok.com session / xAI OAuth flow.
-3. Paste one or both into Settings → Data sources → Grok live connect and click Connect.
+3. Paste one or both into Settings → Data sources → Grok live connect and click Connect. Prefer Bearer when you have one — cookie-only `GetGrokCreditsConfig` can fail with HTTP 200 + `grpc-status` 16 (`WKE=unauthenticated`). The interval keeps ticking; the Grok last-sync line shows the error.
 
 HeavyScope calls the same gRPC-web method as grok.com Settings → Usage:
 
 `POST https://grok.com/grok_api_v2.GrokBuildBilling/GetGrokCreditsConfig`
 
-- `preset-grok-heavy` = shared weekly SuperGrok Heavy pool from `credit_usage_percent` (0 if omitted). `quota_total=100`, unit `%`, `reset_cycle=weekly`, `reset_at` = billing period end.
-- `preset-grok-bot` is updated only when a Bot / Grok Bot / Agents / API-for-bot product segment is present. If it is not found, HeavyScope does **not** invent numbers. The Bot pool is marked “Live sync unavailable — calibrate manually”.
+If that RPC returns expired / gRPC 16 and a Bearer is saved, HeavyScope retries `GET https://cli-chat-proxy.grok.com/v1/billing?format=credits` (`Authorization` + `x-xai-token-auth: xai-grok-cli`). No extra OAuth dance.
 
-Same CORS rule as Cursor: desktop Tauri HTTP or `pnpm dev` proxy.
+- `preset-grok-heavy` = shared weekly SuperGrok Heavy pool from `credit_usage_percent` (0 if omitted). `quota_total=100`, unit `%`, `reset_cycle=weekly`, `reset_at` = billing period end.
+- `preset-grok-bot` is updated only when a Bot / Grok Bot / Agents / `PRODUCT_GROK_BOT` segment is present, or a single leftover non-Heavy percent. HeavyScope does **not** invent Bot numbers.
+- Settings also shows on-demand $ / prepaid / history diagnostics. History seeds heatmap/trend deltas only when a point is an honest Heavy percent — cents-only periods stay diagnostic.
+
+A saved Cursor token or Grok cookie/bearer is enough to join the auto-refresh interval immediately. A failed tick does not disable later ticks.
+
+Same CORS rule as Cursor: desktop Tauri HTTP or `pnpm dev` proxy (`/proxy/grok` and `/proxy/grok-cli`).
 
 ## Cursor snapshot format
 

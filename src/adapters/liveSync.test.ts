@@ -126,4 +126,56 @@ describe("applyLiveSnapshot", () => {
     expect(pools[0]?.quota_used).toBe(12);
     expect(usages).toEqual([]);
   });
+
+  it("seeds Heavy history percent deltas once and never writes cents as usage", () => {
+    const { deps, usages } = mockDeps([
+      {
+        id: "preset-grok-heavy",
+        name: "Grok Heavy",
+        quota_used: 0,
+        quota_total: 100,
+        reset_at: null,
+        reset_cycle: "weekly",
+        unit: "%",
+      },
+    ]);
+    const result: LiveProviderResult = {
+      ok: true,
+      code: "ok",
+      message: "ok",
+      pools: [
+        {
+          poolHint: "grok_heavy",
+          quotaUsed: 40,
+          quotaTotal: 100,
+          unit: "%",
+          note: "Grok live sync",
+          recordedAt: "2026-06-15T00:00:00.000Z",
+        },
+      ],
+      historyPoints: [
+        { poolHint: "grok_heavy", quotaUsed: 10, recordedAt: "2026-06-01T00:00:00.000Z", note: "Grok history seed" },
+        { poolHint: "grok_heavy", quotaUsed: 25, recordedAt: "2026-06-08T00:00:00.000Z", note: "Grok history seed" },
+      ],
+    };
+    const first = applyLiveSnapshot(result, deps);
+    expect(first.recordsAdded).toBe(3);
+    expect(usages.map((row) => ({ amount: row.amount, recordedAt: row.recordedAt }))).toEqual([
+      { amount: 10, recordedAt: "2026-06-01T00:00:00.000Z" },
+      { amount: 15, recordedAt: "2026-06-08T00:00:00.000Z" },
+      { amount: 15, recordedAt: "2026-06-15T00:00:00.000Z" },
+    ]);
+    expect(deps.getPool("preset-grok-heavy")?.quota_used).toBe(40);
+
+    const seen = new Set(usages.map((row) => row.recordedAt));
+    const second = applyLiveSnapshot(
+      result,
+      {
+        ...deps,
+        hasUsageAt: (_poolId, recordedAt) => seen.has(recordedAt),
+      },
+    );
+    expect(second.recordsAdded).toBe(0);
+    expect(usages).toHaveLength(3);
+  });
 });

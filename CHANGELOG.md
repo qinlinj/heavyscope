@@ -13,13 +13,15 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 - Unit-safe pie tiles (`pies`): percent-used pie for every pool, plus a remaining-share pie among comparable absolute units (`$` / token-like). If no shared absolute unit exists, pie B is remaining % of each pool. `sm` shows the percent pie only. Hidden on the default tray layout.
 - History source `demo` plus a default **Live + manual** filter. Demo-seeded rows are hidden from History and from default chart aggregations unless the user opts in.
 - Per-provider last synced + next tick on the Dashboard header and Settings. Interval control is 1 / 5 / 15 / 30 / 60 minutes (default 5).
-- Grok proto diagnostics: Settings shows parsed product names + percents from the last payload. Bot matching covers SuperGrok Bot, API for bots, x.com bots, and a second non-Heavy percent heuristic (never invents Bot usage).
+- Grok proto diagnostics: Settings shows parsed product names + percents from the last payload. Bot matching covers SuperGrok Bot, API for bots, x.com bots, `PRODUCT_GROK_BOT` / Agents, and a second non-Heavy percent heuristic (never invents Bot usage).
+- Grok billing walk of `GetGrokCreditsConfig` fields 2–6 (`on_demand_cap` / `on_demand_used`, billing window, `history`) plus extra Cent as prepaid. Cents-only history stays in Settings; Heavy % history points seed heatmap/trend deltas.
+- HTTP 200 + gRPC-web `grpc-status` 16 (headers or trailer) is treated as expired / needs Bearer. Cookie-only failures keep the interval running. Optional CLI billing JSON fallback when a Bearer is saved.
 
 ### Changed
 
 - Dashboard grid is 1 column below `md`, then a stable 4-column `repeat(4, minmax(0,1fr))`. Span meaning no longer changes at `lg`. Same-row tiles stretch to one height. Edit chrome overlays the card so occupancy does not change. Hover lift is on the card, not the grid item.
 - Compact (`sm` / 1/4) pool cards show name, used%, bar, remaining, reset countdown, and unit. Recent records and long advice stay on `md+`.
-- Auto-refresh membership is credential-based: a stored Cursor session token or Grok session/bearer is enough. A failed Grok tick is shown and does not drop later intervals.
+- Auto-refresh membership is credential-based: a stored Cursor session token or Grok session/bearer is enough, including when `sync_enabled` is still false after connect. Membership does not use `sync_source` or a `grokLive` connected flag. A failed Grok tick is shown and does not drop later intervals.
 - Trend chart plots live usage deltas (`+N` per day / week / month bucket) from `source=sync` records after each successful apply.
 - Heatmap default window is 26 weeks on large screens (12 when narrow, 10 compact tray). Intensity uses that day's amount when every contributing record shares one unit; mixed `$` and `%` stay on record count.
 - Demo seed writes `source=demo` and is labeled sample-only. Existing `Demo seed:` import rows migrate on open.

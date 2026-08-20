@@ -43,6 +43,26 @@ export default defineConfig({
           });
         },
       },
+      "/proxy/grok-cli": {
+        target: "https://cli-chat-proxy.grok.com",
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/proxy\/grok-cli/, ""),
+        configure: (proxy) => {
+          proxy.on("proxyReq", (proxyReq, req) => {
+            const cookie = headerValue(req.headers["x-heavyscope-cookie"]);
+            const authorization = headerValue(req.headers["x-heavyscope-authorization"]);
+            if (cookie) proxyReq.setHeader("Cookie", cookie);
+            if (authorization) proxyReq.setHeader("Authorization", authorization);
+            proxyReq.setHeader(
+              "User-Agent",
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            );
+            proxyReq.removeHeader("x-heavyscope-cookie");
+            proxyReq.removeHeader("x-heavyscope-authorization");
+          });
+        },
+      },
       "/proxy/grok": {
         target: "https://grok.com",
         changeOrigin: true,

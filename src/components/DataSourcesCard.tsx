@@ -16,6 +16,7 @@ import { isMacDesktop, readCursorSessionTokenFromApp } from "@/lib/desktop";
 import { formatDateTime } from "@/lib/format";
 import {
   nextSyncAt,
+  parseGrokBillingMeta,
   parseGrokParsedProducts,
   parseSyncInterval,
   parseSyncSource,
@@ -29,6 +30,7 @@ import {
   SETTING_GROK_BEARER_TOKEN,
   SETTING_GROK_BOT_LIVE,
   SETTING_GROK_CONNECTED,
+  SETTING_GROK_BILLING_META,
   SETTING_GROK_PARSED_PRODUCTS,
   SETTING_GROK_LAST_SYNCED_AT,
   SETTING_GROK_SESSION_TOKEN,
@@ -91,6 +93,7 @@ export function DataSourcesCard() {
   const grokHasToken = Boolean(
     settings[SETTING_GROK_SESSION_TOKEN]?.trim() || settings[SETTING_GROK_BEARER_TOKEN]?.trim(),
   );
+  const grokBilling = parseGrokBillingMeta(settings[SETTING_GROK_BILLING_META]);
   const showMacHelper = isMacDesktop();
 
   async function applyDraft() {
@@ -353,6 +356,22 @@ export function DataSourcesCard() {
               {parseGrokParsedProducts(settings[SETTING_GROK_PARSED_PRODUCTS])
                 .map((item) => `${item.name || t("live.unnamedProduct")} ${item.percent.toFixed(1)}%`)
                 .join(" · ")}
+            </p>
+          )}
+          {grokBilling && (
+            <p className="text-xs text-muted-foreground">
+              {t("live.grokOnDemand")}: ${grokBilling.onDemandUsedUsd.toFixed(2)} / $
+              {grokBilling.onDemandCapUsd.toFixed(2)}
+              {grokBilling.prepaidBalanceUsd != null
+                ? ` · ${t("live.grokPrepaid")}: $${grokBilling.prepaidBalanceUsd.toFixed(2)}`
+                : ""}
+              {grokBilling.history.length > 0
+                ? ` · ${t("live.grokHistoryMeta", {
+                    count: grokBilling.history.length,
+                    percents: grokBilling.history.filter((item) => item.percent != null).length,
+                    cents: grokBilling.history.filter((item) => item.percent == null).length,
+                  })}`
+                : ""}
             </p>
           )}
         </section>

@@ -24,6 +24,7 @@ export const SETTING_CURSOR_CONNECTED = "cursor_connected";
 export const SETTING_GROK_CONNECTED = "grok_connected";
 export const SETTING_GROK_BOT_LIVE = "grok_bot_live";
 export const SETTING_GROK_PARSED_PRODUCTS = "grok_parsed_products";
+export const SETTING_GROK_BILLING_META = "grok_billing_meta";
 
 export const SECRET_SETTING_KEYS = [
   SETTING_CURSOR_SESSION_TOKEN,
@@ -143,6 +144,47 @@ export function nextSyncAt(
 }
 
 export type GrokParsedProduct = { name: string; percent: number };
+
+export type GrokBillingMetaSetting = {
+  onDemandCapUsd: number;
+  onDemandUsedUsd: number;
+  prepaidBalanceUsd: number | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  history: Array<{
+    recordedAt?: string;
+    year?: number;
+    month?: number;
+    percent?: number;
+    onDemandUsedUsd?: number;
+    includedUsedUsd?: number;
+  }>;
+};
+
+export function parseGrokBillingMeta(raw: string | undefined): GrokBillingMetaSetting | null {
+  if (!raw?.trim()) return null;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return null;
+    const row = parsed as Partial<GrokBillingMetaSetting>;
+    const onDemandCapUsd = Number(row.onDemandCapUsd);
+    const onDemandUsedUsd = Number(row.onDemandUsedUsd);
+    if (!Number.isFinite(onDemandCapUsd) || !Number.isFinite(onDemandUsedUsd)) return null;
+    return {
+      onDemandCapUsd,
+      onDemandUsedUsd,
+      prepaidBalanceUsd:
+        row.prepaidBalanceUsd == null || !Number.isFinite(Number(row.prepaidBalanceUsd))
+          ? null
+          : Number(row.prepaidBalanceUsd),
+      periodStart: typeof row.periodStart === "string" ? row.periodStart : null,
+      periodEnd: typeof row.periodEnd === "string" ? row.periodEnd : null,
+      history: Array.isArray(row.history) ? row.history : [],
+    };
+  } catch {
+    return null;
+  }
+}
 
 export function parseGrokParsedProducts(raw: string | undefined): GrokParsedProduct[] {
   if (!raw?.trim()) return [];
