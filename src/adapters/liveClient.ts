@@ -3,6 +3,7 @@ import {
   grokCookieHeader,
   mapGrokCliBillingResponse,
   mapGrokCreditsResponse,
+  mergeGrokLiveResults,
   normalizeGrokBearer,
   type GrokAuth,
 } from "./grokLive";
@@ -93,9 +94,8 @@ export async function fetchGrokCredits(auth: GrokAuth): Promise<LiveProviderResu
     return { ok: false, code: response.code, message: response.message, pools: [] };
   }
   const mapped = mapGrokCreditsResponse(response.status, response.bodyBytes, response.headers);
-  if (mapped.ok || mapped.code !== "expired" || !bearer) return mapped;
+  if (!bearer) return mapped;
 
   const cli = await fetchGrokCliBilling(auth);
-  if (cli.ok) return cli;
-  return mapped;
+  return mergeGrokLiveResults(mapped, cli);
 }

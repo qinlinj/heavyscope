@@ -20,16 +20,29 @@ export function usageTone(
   return "ok";
 }
 
+function amountFractionDigits(value: number, unit: string): number {
+  if (!Number.isFinite(value)) return 0;
+  const integer = Number.isInteger(value) || Math.abs(value - Math.round(value)) < 1e-9;
+  if (integer) return 0;
+  const normalized = unit.trim().toLowerCase();
+  const isCount = /request|count/i.test(normalized);
+  if (isCount) return 0;
+  return 2;
+}
+
 export function formatAmount(value: number, unit: string): string {
+  const digits = amountFractionDigits(value, unit);
   if (unit === "USD") {
     return new Intl.NumberFormat(undefined, {
       style: "currency",
       currency: "USD",
-      maximumFractionDigits: 2,
+      minimumFractionDigits: digits === 0 ? 0 : undefined,
+      maximumFractionDigits: digits,
     }).format(value);
   }
   const formatted = new Intl.NumberFormat(undefined, {
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: digits,
   }).format(value);
   return `${formatted} ${unit}`;
 }

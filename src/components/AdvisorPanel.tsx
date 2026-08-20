@@ -54,7 +54,7 @@ export function AdvisorPanel({
 
   if (!tightest || !pool || pools.length === 0) {
     return (
-      <Card className="h-full min-h-0 overflow-hidden bg-card/90 ring-1 ring-foreground/10 backdrop-blur">
+      <Card className="h-full min-h-0 min-w-0 max-w-3xl overflow-hidden bg-card/90 ring-1 ring-foreground/10 backdrop-blur">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Gauge className="size-4" />
@@ -77,8 +77,8 @@ export function AdvisorPanel({
     : undefined;
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-2.5 overflow-hidden">
-      <Card className="min-h-0 overflow-hidden bg-card/90 ring-1 ring-foreground/10 backdrop-blur">
+    <div className="flex h-full min-w-0 max-w-3xl flex-col gap-2.5 overflow-hidden">
+      <Card className="min-h-0 min-w-0 overflow-hidden bg-card/90 ring-1 ring-foreground/10 backdrop-blur">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Gauge className="size-4" />
@@ -92,7 +92,7 @@ export function AdvisorPanel({
             <RiskBadge level={tightest.risk} />
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
+        <CardContent className="grid max-h-40 min-h-0 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3">
           <Metric
             label={t("pool.percent")}
             value={`${tightest.usagePercent.toFixed(0)}%`}
@@ -157,7 +157,7 @@ export function AdvisorPanel({
       )}
 
       {advices.length > 1 && (
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <ul className="grid max-h-28 gap-2 overflow-y-auto sm:grid-cols-2">
           {advices.map((item) => {
             const source = pools.find((poolItem) => poolItem.id === item.poolId);
             if (!source) return null;

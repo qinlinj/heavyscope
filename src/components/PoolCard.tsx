@@ -220,15 +220,15 @@ export function PoolCard({
       {showRecent && records.length > 0 && (
         <CardFooter className="flex-col items-stretch gap-2">
           <p className="text-xs text-muted-foreground">{t("pool.recent")}</p>
-          <ul className="space-y-1">
-            {records.slice(0, 3).map((record) => (
-              <li key={record.id} className="flex justify-between text-xs">
-                <span className="text-muted-foreground">
+          <ul className="max-h-24 space-y-1 overflow-y-auto pr-1">
+            {records.slice(0, 12).map((record) => (
+              <li key={record.id} className="flex justify-between gap-2 text-xs">
+                <span className="min-w-0 truncate text-muted-foreground">
                   {new Date(record.recorded_at).toLocaleString(i18n.language)}
                 </span>
-                <span className="tabular-nums">
+                <span className="shrink-0 tabular-nums">
                   {record.amount > 0 ? "+" : ""}
-                  {record.amount} {pool.unit}
+                  {formatAmount(record.amount, pool.unit)}
                 </span>
               </li>
             ))}

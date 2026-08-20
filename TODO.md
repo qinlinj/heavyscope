@@ -84,6 +84,17 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Version 0.10.0 (package.json + src-tauri)
 - [x] Tray feature-parity beyond shared grid/sync helpers (0.11.0)
 
+## 0.12.0 — web polish + Grok Bot productUsage
+
+- [x] CLI billing JSON is first-class when a Grok Bearer is saved (every tick, not only after proto expiry)
+- [x] `productUsage` `Api` / Bot / Agents → `preset-grok-bot`; Heavy from `creditUsagePercent` (GrokBuild is display-only, no double-count)
+- [x] GetGrokCreditsConfig field 7 `product_usage` walker; field 12 prepaid
+- [x] Heatmap squares via `squareCellPx` — cells never stretch
+- [x] Quota overview + Recent records scroll; pies degrade on `sm` / `md`
+- [x] Purple primary for light + dark; version 0.12.0
+- [ ] Verify Grok Bot auto-track on a real Bearer (`Api 11%` → Bot) without manual calibrate
+- [ ] Do not start macOS tray 1.5x / horizontal-scroll work here (next)
+
 ## 0.11.0 — tray live connect
 
 - [x] Compact `/tray` Settings pane (same keys as web Data sources)
@@ -104,7 +115,7 @@ GitHub: https://github.com/qinlinj/heavyscope
 
 ## Chart polish leftover
 
-- [x] Heatmap fills available card width (CSS 1fr week columns, square cells, aligned month labels)
+- [x] Heatmap cells stay perfect squares (`squareCellPx`); leftover card space is legend, not stretched cells
 - [x] Independent full-width advisor / heatmap / trend modules + HTML5 drag-and-drop reorder
 - [x] Theme: dark / light / system (`theme` setting + localStorage)
 - [x] Denser compact `/tray` (1–2 pools, Day/Week/Month, used% bars, one-line advisor, small heatmap)

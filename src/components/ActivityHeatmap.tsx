@@ -1,9 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import type { Pool, UsageRecord } from "@/db/schema";
 import { formatAmount } from "@/lib/format";
 import type { HeatmapCell } from "@/lib/heatmap";
-import { heatmapCellIntensity, heatmapGrid, heatmapLevel } from "@/lib/heatmap";
+import {
+  HEATMAP_CELL_GAP_PX,
+  heatmapCellIntensity,
+  heatmapGrid,
+  heatmapLevel,
+  squareCellPx,
+} from "@/lib/heatmap";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -14,7 +20,8 @@ type Props = {
 };
 
 const HEAT_LEVELS = [0, 1, 2, 3, 4] as const;
-const WEEK_COLUMNS = (weeks: number) => `repeat(${weeks}, minmax(0, 1fr))`;
+const WEEKDAY_COL_PX = 12;
+const MONTH_ROW_PX = 12;
 
 export function ActivityHeatmap({ records, pools, weeks, compact = false }: Props) {
   const { t, i18n } = useTranslation();
@@ -26,66 +33,85 @@ export function ActivityHeatmap({ records, pools, weeks, compact = false }: Prop
   const weekdays = useMemo(() => weekdayLabels(locale), [locale]);
   const months = useMemo(() => monthLabels(grid.cells, grid.weeks, locale), [grid, locale]);
   const today = useMemo(() => localTodayKey(), []);
-  const weekTemplate = WEEK_COLUMNS(grid.weeks);
   const maxValue = grid.intensityMetric === "amount" ? grid.maxAmount : grid.maxCount;
+  const { boxRef, width, height } = usePlotBox();
+  const cell = squareCellPx(Math.max(0, width - WEEKDAY_COL_PX), Math.max(0, height - MONTH_ROW_PX), grid.weeks);
+  const gap = HEATMAP_CELL_GAP_PX;
+  const gridW = cell > 0 ? grid.weeks * cell + (grid.weeks - 1) * gap : 0;
+  const gridH = cell > 0 ? 7 * cell + 6 * gap : 0;
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
-      <div className="grid min-h-0 w-full flex-1 grid-cols-[auto_minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-x-1">
-        <div aria-hidden="true" />
-        <div
-          className={cn(
-            "mb-1 grid w-full gap-[3px] text-[9px] leading-none text-muted-foreground",
-            compact && "mb-0.5",
-          )}
-          style={{ gridTemplateColumns: weekTemplate }}
-        >
-          {Array.from({ length: grid.weeks }, (_, weekIndex) => (
-            <span key={weekIndex} className="min-w-0 truncate">
-              {months.get(weekIndex) ?? ""}
-            </span>
-          ))}
-        </div>
-        <div className="grid h-full grid-rows-7 gap-[3px] text-[9px] leading-none text-muted-foreground">
-          {weekdays.map((label, weekday) => (
-            <span
-              key={label + weekday}
-              className={cn("flex w-3 items-center justify-end", weekday % 2 === 0 && "invisible")}
+      <div ref={boxRef} className="min-h-0 w-full flex-1">
+        <div className="flex h-full min-h-0 w-full justify-start">
+          <div
+            className="grid shrink-0 grid-cols-[auto_auto] grid-rows-[auto_auto] gap-x-1"
+            style={{ width: gridW + WEEKDAY_COL_PX + 4 }}
+          >
+            <div aria-hidden="true" />
+            <div
+              className={cn("mb-1 grid text-[9px] leading-none text-muted-foreground", compact && "mb-0.5")}
+              style={{
+                gridTemplateColumns: `repeat(${grid.weeks}, ${cell}px)`,
+                columnGap: gap,
+                width: gridW,
+              }}
             >
-              {label}
-            </span>
-          ))}
-        </div>
-        <div
-          className="grid h-full min-h-0 w-full grid-flow-col grid-rows-7 gap-[3px]"
-          style={{ gridTemplateColumns: weekTemplate }}
-        >
-          {grid.cells.map((cell) => {
-            const intensity = heatmapCellIntensity(cell, grid);
-            const level = heatmapLevel(intensity, maxValue);
-            const tooltip = heatmapTooltip(t, cell);
-            return (
-              <button
-                key={cell.date}
-                type="button"
-                className={cn(
-                  "min-h-0 min-w-0 rounded-[2px]",
-                  cell.date === today && "ring-1 ring-foreground/50",
-                )}
-                style={{
-                  backgroundColor: `var(--heat-${level})`,
-                  boxShadow: "inset 0 0 0 1px var(--heat-outline)",
-                }}
-                title={tooltip}
-                onMouseEnter={() => setTip(cell)}
-                onMouseLeave={() => setTip(null)}
-                onFocus={() => setTip(cell)}
-                onBlur={() => setTip(null)}
-              >
-                <span className="sr-only">{tooltip}</span>
-              </button>
-            );
-          })}
+              {Array.from({ length: grid.weeks }, (_, weekIndex) => (
+                <span key={weekIndex} className="min-w-0 truncate">
+                  {months.get(weekIndex) ?? ""}
+                </span>
+              ))}
+            </div>
+            <div
+              className="grid text-[9px] leading-none text-muted-foreground"
+              style={{ gridTemplateRows: `repeat(7, ${cell}px)`, rowGap: gap, height: gridH }}
+            >
+              {weekdays.map((label, weekday) => (
+                <span
+                  key={label + weekday}
+                  className={cn("flex w-3 items-center justify-end", weekday % 2 === 0 && "invisible")}
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+            <div
+              className="grid grid-flow-col grid-rows-7"
+              style={{
+                width: gridW,
+                height: gridH,
+                gridTemplateColumns: `repeat(${grid.weeks}, ${cell}px)`,
+                gap,
+              }}
+            >
+              {grid.cells.map((cellItem) => {
+                const intensity = heatmapCellIntensity(cellItem, grid);
+                const level = heatmapLevel(intensity, maxValue);
+                const tooltip = heatmapTooltip(t, cellItem);
+                return (
+                  <button
+                    key={cellItem.date}
+                    type="button"
+                    className={cn("rounded-[2px]", cellItem.date === today && "ring-1 ring-foreground/50")}
+                    style={{
+                      width: cell,
+                      height: cell,
+                      backgroundColor: `var(--heat-${level})`,
+                      boxShadow: "inset 0 0 0 1px var(--heat-outline)",
+                    }}
+                    title={tooltip}
+                    onMouseEnter={() => setTip(cellItem)}
+                    onMouseLeave={() => setTip(null)}
+                    onFocus={() => setTip(cellItem)}
+                    onBlur={() => setTip(null)}
+                  >
+                    <span className="sr-only">{tooltip}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
       <div
@@ -95,7 +121,15 @@ export function ActivityHeatmap({ records, pools, weeks, compact = false }: Prop
         )}
       >
         <span className="min-h-4 min-w-0 truncate tabular-nums">
-          {tip ? heatmapTooltip(t, tip) : t("charts.heatmapLegend")}
+          {tip
+            ? heatmapTooltip(t, tip)
+            : t("charts.heatmapPeriod", {
+                weeks: grid.weeks,
+                metric:
+                  grid.intensityMetric === "amount"
+                    ? t("charts.heatmapMetricAmount")
+                    : t("charts.heatmapMetricCount"),
+              })}
         </span>
         <span className="flex shrink-0 items-center gap-1">
           <span>{t("charts.less")}</span>
@@ -128,6 +162,28 @@ function heatmapTooltip(
     });
   }
   return t("charts.heatmapTooltip", { date: cell.date, total: cell.count });
+}
+
+function usePlotBox(): { boxRef: RefObject<HTMLDivElement | null>; width: number; height: number } {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState({ width: 0, height: 0 });
+  useEffect(() => {
+    const node = boxRef.current;
+    if (!node) return;
+    const apply = (width: number, height: number) => {
+      setBox((current) => (current.width === width && current.height === height ? current : { width, height }));
+    };
+    apply(node.clientWidth, node.clientHeight);
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      apply(entry.contentRect.width, entry.contentRect.height);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  return { boxRef, ...box };
 }
 
 function useHeatmapWeeks(compact: boolean): number {

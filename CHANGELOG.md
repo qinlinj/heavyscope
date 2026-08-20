@@ -6,6 +6,23 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-08-20
+
+### Added
+
+- First-class Grok CLI billing JSON on every tick when a Bearer is saved: `GET /v1/billing?format=credits` maps `productUsage` `Api` → Grok Bot automatically. Cookie-only users still use GetGrokCreditsConfig.
+- GetGrokCreditsConfig proto field 7 `product_usage` (ProductUsage name + percent). Field 12 is prepaid. Heavy stays on `creditUsagePercent` so GrokBuild 0 does not overwrite the shared Heavy meter.
+- Settings / tray parsed-product lines show the mapping (`Api 11% → Grok Bot`). If neither JSON nor proto has Bot/Api, Bot stays unavailable and names are shown without invented numbers.
+- Heatmap `squareCellPx(width, height, weeks)`: cells are perfect squares and do not stretch when the card is wide or short. Leftover space is for the legend + 26-week / intensity hint.
+
+### Changed
+
+- Quota overview copy is shorter. The title block is `max-w-xl`. Advisor metrics, used% bars, and Recent records scroll inside a fixed max height instead of growing the card.
+- Pies: `sm` is a pure pie with tooltip only; `md` uses a short outside legend; `lg` / `xl` keep remaining numbers. No colliding slice labels.
+- Amounts use 0 fraction digits for integers / request counts and at most 2 for % or $.
+- Purple primary works in light and dark. Theme dark / light / system is unchanged.
+- Version 0.12.0 (package.json + src-tauri). No Tauri behavior change. `optimizeDeps.include: ["sql.js"]` and `App::set_activation_policy` without `?` stay.
+
 ## [0.11.0] - 2026-08-20
 
 ### Added

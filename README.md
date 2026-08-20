@@ -4,13 +4,13 @@ Local-first multi-quota monitoring panel for SuperGrok Heavy and Cursor Ultra.
 
 HeavyScope helps you see how fast you are burning weekly or monthly quotas, when a pool will reset, and whether you should switch work to a pool with more headroom. The same React UI runs as a web app and inside a Tauri 2 desktop shell. Quota data stays on your machine. There is no HeavyScope cloud account.
 
-Current product version is **0.11.0**.
+Current product version is **0.12.0**.
 
 ## Features
 
 - **Dashboard + burn rate advisor** — four preset pools plus custom services, progress bars, remaining quota, reset countdown, and usage-tone colors. The advisor shows recommended daily pace, today used, waste / overspend risk, and cross-pool switch suggestions.
 - **Widget grid** — advisor, heatmap, trend, unit-safe pies, and every pool are independent cards. From `md` up the dashboard is a stable 4-column grid (`sm` = 1/4, `md` = 1/2, `lg` = full, optional `xl` = full + tall). Same-row tiles share height. Edit chrome overlays the card so neighbors never collide. An Edit / Done control reveals drag-to-reorder, size chips, and hide/restore. Normal mode stays clean (no grips or checkboxes). Layout is saved as `dashboard_layout` in the local settings table; old `chart_show_*` / `chart_module_order` prefs migrate automatically.
-- **Charts / history** — Daily Activity heatmap uses GitHub contribution greens (26 weeks on large screens). Intensity uses that day's usage amount when every record shares one unit; mixed $ and % stay on record count. The trend chart plots live deltas (`+N` per bucket), not a flat absolute. Two pies: used % (safe across pools) and remaining share among comparable absolute units. History defaults to live sync + manual and hides demo-seeded sample rows.
+- **Charts / history** — Daily Activity heatmap uses GitHub contribution greens (26 weeks on large screens). Cells are measured squares and do not stretch when the card is wide. Intensity uses that day's usage amount when every record shares one unit; mixed $ and % stay on record count. The trend chart plots live deltas (`+N` per bucket), not a flat absolute. Two pies: used % (safe across pools) and remaining share among comparable absolute units (`sm` hides labels). History defaults to live sync + manual and hides demo-seeded sample rows.
 - **Settings** — pool management (add / edit / delete), alert thresholds (warn / crit), language (EN / 中文), theme (dark / light / system; default dark), JSON backup export / copy / import, and optional demo usage seed.
 - **Live Cursor + Grok sync** — connect your own accounts in web Settings → Data sources **or** in the menu-bar `/tray` Settings pane. Saving a Cursor session token or Grok session/bearer puts that provider on the timer immediately (1 / 5 / 15 / 30 / 60 min, default 5). Dashboard, Settings, and `/tray` show last synced + next tick per provider. A failed Grok tick is shown and does not skip later ticks. Snapshot import stays as a Cursor fallback when no session token is stored.
 - **Cursor snapshot import** — paste a Cursor usage snapshot (JSON or CSV) in Settings → Data sources. Optional auto-sync re-applies the last import when live Cursor is not connected.
@@ -117,10 +117,10 @@ HeavyScope calls the same gRPC-web method as grok.com Settings → Usage:
 
 `POST https://grok.com/grok_api_v2.GrokBuildBilling/GetGrokCreditsConfig`
 
-If that RPC returns expired / gRPC 16 and a Bearer is saved, HeavyScope retries `GET https://cli-chat-proxy.grok.com/v1/billing?format=credits` (`Authorization` + `x-xai-token-auth: xai-grok-cli`). No extra OAuth dance.
+When a Bearer is saved, HeavyScope also calls `GET https://cli-chat-proxy.grok.com/v1/billing?format=credits` on **every** Grok tick (`Authorization` + `x-xai-token-auth: xai-grok-cli`), alongside GetGrokCreditsConfig. Cookie-only users still use the proto RPC. If the JSON has Bot/Api and the proto does not, JSON wins for Bot. No extra OAuth dance.
 
-- `preset-grok-heavy` = shared weekly SuperGrok Heavy pool from `credit_usage_percent` (0 if omitted). `quota_total=100`, unit `%`, `reset_cycle=weekly`, `reset_at` = billing period end.
-- `preset-grok-bot` is updated only when a Bot / Grok Bot / Agents / `PRODUCT_GROK_BOT` segment is present, or a single leftover non-Heavy percent. HeavyScope does **not** invent Bot numbers.
+- `preset-grok-heavy` = shared weekly SuperGrok Heavy pool from `credit_usage_percent` / `creditUsagePercent` (0 if omitted). `quota_total=100`, unit `%`, `reset_cycle=weekly`, `reset_at` = billing period end. `GrokBuild` / Build product rows are shown in Settings but do **not** overwrite that Heavy meter.
+- `preset-grok-bot` updates automatically from CLI `productUsage` `Api` (also Bot / Agents / SuperGrok Bot / `PRODUCT_GROK_BOT`), or from proto field 7 `product_usage` when that segment exists. HeavyScope does **not** invent Bot numbers when neither JSON nor proto has a Bot/Api row.
 - Settings also shows on-demand $ / prepaid / history diagnostics. History seeds heatmap/trend deltas only when a point is an honest Heavy percent — cents-only periods stay diagnostic.
 
 A saved Cursor token or Grok cookie/bearer is enough to join the auto-refresh interval immediately. A failed tick does not disable later ticks.

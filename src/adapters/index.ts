@@ -9,9 +9,12 @@ export {
 } from "./cursorLive";
 export { grokAdapter } from "./grok";
 export {
+  formatGrokProductLine,
+  grokProductTarget,
   hexToBytes,
   mapGrokCliBillingJson,
   mapGrokCreditsResponse,
+  mergeGrokLiveResults,
   parseGrokCreditsPayload,
 } from "./grokLive";
 export { adapterSignature, hashSignature } from "./hash";
