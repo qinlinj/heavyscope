@@ -4,7 +4,7 @@ Local-first multi-quota monitoring panel for SuperGrok Heavy and Cursor Ultra.
 
 HeavyScope helps you see how fast you are burning weekly or monthly quotas, when a pool will reset, and whether you should switch work to a pool with more headroom. The same React UI runs as a web app and inside a Tauri 2 desktop shell. Quota data stays on your machine. There is no HeavyScope cloud account.
 
-Current product version is **0.10.0**.
+Current product version is **0.11.0**.
 
 ## Features
 
@@ -12,11 +12,11 @@ Current product version is **0.10.0**.
 - **Widget grid** — advisor, heatmap, trend, unit-safe pies, and every pool are independent cards. From `md` up the dashboard is a stable 4-column grid (`sm` = 1/4, `md` = 1/2, `lg` = full, optional `xl` = full + tall). Same-row tiles share height. Edit chrome overlays the card so neighbors never collide. An Edit / Done control reveals drag-to-reorder, size chips, and hide/restore. Normal mode stays clean (no grips or checkboxes). Layout is saved as `dashboard_layout` in the local settings table; old `chart_show_*` / `chart_module_order` prefs migrate automatically.
 - **Charts / history** — Daily Activity heatmap uses GitHub contribution greens (26 weeks on large screens). Intensity uses that day's usage amount when every record shares one unit; mixed $ and % stay on record count. The trend chart plots live deltas (`+N` per bucket), not a flat absolute. Two pies: used % (safe across pools) and remaining share among comparable absolute units. History defaults to live sync + manual and hides demo-seeded sample rows.
 - **Settings** — pool management (add / edit / delete), alert thresholds (warn / crit), language (EN / 中文), theme (dark / light / system; default dark), JSON backup export / copy / import, and optional demo usage seed.
-- **Live Cursor + Grok sync** — connect your own accounts once in Settings → Data sources. Saving a Cursor session token or Grok session/bearer puts that provider on the timer immediately (1 / 5 / 15 / 30 / 60 min, default 5). Dashboard and Settings show last synced + next tick per provider. A failed Grok tick is shown and does not skip later ticks. Snapshot import stays as a Cursor fallback when no session token is stored.
+- **Live Cursor + Grok sync** — connect your own accounts in web Settings → Data sources **or** in the menu-bar `/tray` Settings pane. Saving a Cursor session token or Grok session/bearer puts that provider on the timer immediately (1 / 5 / 15 / 30 / 60 min, default 5). Dashboard, Settings, and `/tray` show last synced + next tick per provider. A failed Grok tick is shown and does not skip later ticks. Snapshot import stays as a Cursor fallback when no session token is stored.
 - **Cursor snapshot import** — paste a Cursor usage snapshot (JSON or CSV) in Settings → Data sources. Optional auto-sync re-applies the last import when live Cursor is not connected.
 - **JSON backup export / copy / import** — Settings → Local data downloads `heavyscope-backup.json`, copies the same payload to the clipboard, or accepts a file / paste (table dump, not a wasm / binary file). Merge is the default; replace-all is optional.
 - **Demo seed** — optional sample-only usage for the four preset pools (last 10 days, English notes). History and default charts hide these rows unless you opt in to the Demo filter. First load applies immediately; a later load asks for confirm because `demo_seeded=1`.
-- **Tauri 2 tray** — system tray / macOS menu-bar shell around the same web UI and sql.js database. On macOS the shell is an **Accessory** (no Dock icon); the popup anchors under the status item and loads a compact `/tray` view (2-column widget grid, own `tray_layout`, Edit / Done). Linux/Windows keep a normal tray window. Close hides to tray. Use Quit to exit. **Verify the menu-bar accessory on a real Mac** — see [docs/MACOS.md](docs/MACOS.md).
+- **Tauri 2 tray** — system tray / macOS menu-bar shell around the same web UI and sql.js database. On macOS the shell is an **Accessory** (no Dock icon); the popup stays **380×520** under the status item. `/tray` is a compact plugin: Refresh now, a Settings pane for tokens/interval, 1–2 expandable pool rows, last-sync lines, and optional tiny heatmap. Layout Edit / Done is secondary. Linux/Windows keep a normal tray window. Close hides to tray. Use Quit to exit. **Verify the menu-bar accessory on a real Mac** — see [docs/MACOS.md](docs/MACOS.md).
 - **In-app confirm dialogs** — delete pool, reset local database, demo re-apply, import, and import replace-all use in-app AlertDialogs with zh-CN / en titles and actions. Native `window.confirm` is not used.
 - **Cycle rollover** — when a pool `reset_at` is past, quota used resets to 0, the next weekly/monthly date is set, and a Cycle reset usage note is stored. History is not deleted.
 
@@ -91,7 +91,7 @@ Generate bundle icons from `src-tauri/app-icon.svg` with the Tauri icon command 
 1. Log in at [cursor.com](https://cursor.com).
 2. Open DevTools → Application → Cookies → `https://cursor.com`.
 3. Copy the **value** of `WorkosCursorSessionToken`.
-4. Paste it into Settings → Data sources → Cursor live connect (password field) and click Connect.
+4. Paste it into Settings → Data sources → Cursor live connect, or into the menu-bar `/tray` Settings pane, and click Connect.
 
 The cookie is often `user_01…%3A%3AeyJ…` (URL-encoded `::`). Raw `user_01…::eyJ…` is also accepted. HeavyScope stores it only in the local sql.js settings table and never writes it to usage notes or logs.
 
@@ -103,7 +103,7 @@ Live mapping (unofficial `GET https://cursor.com/api/usage-summary`, same two-po
 - `preset-cursor-other` = Other Models from `apiPercentUsed`. If that field is missing and on-demand has a numeric limit, on-demand % may be used. When on-demand is enabled with a numeric limit, the pool note can also show $ used/limit.
 - `reset_at` = `billingCycleEnd` for both pools. `reset_cycle` = monthly.
 
-Auto-refresh uses the existing `sync_enabled` / `sync_interval_min` / `sync_source` settings. Default interval is **5 minutes** (1–60). `sync_source` can be `cursor`, `grok`, or `both` so both live connectors can run on one ticker. Live values are **absolute**: `quota_used`, `quota_total`, and `reset_at` are written even when used goes down (cycle reset). A `source=sync` record is inserted only when used increased; a lower used number still updates the pool and does not write a negative usage bar. A 401 marks the connector expired and does not wipe pools. Refresh now is on the dashboard and in Settings.
+Auto-refresh uses the existing `sync_enabled` / `sync_interval_min` / `sync_source` settings. Default interval is **5 minutes** (1–60). `sync_source` can be `cursor`, `grok`, or `both` so both live connectors can run on one ticker. Live values are **absolute**: `quota_used`, `quota_total`, and `reset_at` are written even when used goes down (cycle reset). A `source=sync` record is inserted only when used increased; a lower used number still updates the pool and does not write a negative usage bar. A 401 marks the connector expired and does not wipe pools. Refresh now is on the dashboard, Settings, and the `/tray` header.
 
 These endpoints are unofficial and may change.
 
@@ -111,7 +111,7 @@ These endpoints are unofficial and may change.
 
 1. Log in at [grok.com](https://grok.com).
 2. Copy a grok.com session cookie (DevTools → Application → Cookies) and/or a Bearer token from the grok.com session / xAI OAuth flow.
-3. Paste one or both into Settings → Data sources → Grok live connect and click Connect. Prefer Bearer when you have one — cookie-only `GetGrokCreditsConfig` can fail with HTTP 200 + `grpc-status` 16 (`WKE=unauthenticated`). The interval keeps ticking; the Grok last-sync line shows the error.
+3. Paste one or both into Settings → Data sources → Grok live connect, or into the menu-bar `/tray` Settings pane, and click Connect. Prefer Bearer when you have one — cookie-only `GetGrokCreditsConfig` can fail with HTTP 200 + `grpc-status` 16 (`WKE=unauthenticated`). The interval keeps ticking; the Grok last-sync line shows the error.
 
 HeavyScope calls the same gRPC-web method as grok.com Settings → Usage:
 

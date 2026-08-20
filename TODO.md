@@ -82,7 +82,16 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Trend uses live deltas; heatmap 26 weeks + amount intensity when units match
 - [x] Unit-safe pies restored (used % + remaining share)
 - [x] Version 0.10.0 (package.json + src-tauri)
-- [ ] Tray feature-parity beyond shared grid/sync helpers (next)
+- [x] Tray feature-parity beyond shared grid/sync helpers (0.11.0)
+
+## 0.11.0 — tray live connect
+
+- [x] Compact `/tray` Settings pane (same keys as web Data sources)
+- [x] Refresh now + credential-based interval from the menu-bar popup
+- [x] Expand/collapse pool rows (1–2 tightest, one open at a time)
+- [x] Per-provider last sync / not connected / expired on the compact dashboard
+- [x] Version 0.11.0 (package.json + src-tauri)
+- [ ] Verify Settings pane + paste token + refresh + expand pool on a real Mac
 
 ## 0.9.0 — widget dashboard reshape
 
@@ -105,7 +114,7 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Optional heatmap filter by pool
 - [ ] Stacked trend Y-axis still sums raw amounts across mixed units; consider per-unit facets
 - [ ] Heatmap month-label collisions on very narrow cards
-- [ ] macOS tray feature-parity with the 0.10.0 web dashboard
+- [x] macOS tray feature-parity with the 0.10.0 web dashboard (0.11.0 connect + refresh + expand)
 
 ## Polish / leftover gaps (0.7.6)
 
@@ -142,7 +151,7 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Signed macOS menu-bar binary / codesign (needs a Mac and certificates)
 - [ ] Verify Accessory on a real Mac: no Dock icon, `LSUIElement`, template status item
 - [ ] Verify the 380×520 panel anchors under the status item (not screen center) and hides on click-outside / deactivate
-- [x] `/tray` shows the tightest 1–2 pools + advisor one-liner, Day/Week/Month, used% bars, optional small heatmap (en / zh-CN)
+- [x] `/tray` compact plugin: Settings pane, Refresh now, 1–2 expandable pools, last-sync lines, optional small heatmap (en / zh-CN)
 - [ ] Measure release `.app` / `.dmg` size on a Mac (`du -sh`; target < 50MB, ideally 20–30MB) — steps in docs/MACOS.md
 - [ ] Windows installer
 - [ ] GitHub Release asset upload (MCP has no create-release tool)

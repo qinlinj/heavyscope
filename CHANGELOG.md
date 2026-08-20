@@ -6,6 +6,19 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-20
+
+### Added
+
+- Compact `/tray` Settings pane (same 380×520 popup): Cursor `WorkosCursorSessionToken`, Grok session cookie / Bearer, interval 1 / 5 / 15 / 30 / 60, Refresh now, per-provider last sync + error, and a one-line Grok parsed-product toggle. Tokens use the same local settings keys as the web Data sources card.
+- Default tray dashboard is a TokenScope-style stack: Refresh now + Settings gear in the header, one-line advisor, 1–2 tightest visible pools as expandable rows, last-synced lines for Cursor and Grok, and a tiny heatmap only when nothing is expanded.
+- Click a pool row to expand used/total, advice, and the last 1–2 live deltas. Only one row is open at a time.
+
+### Changed
+
+- Edit / Done layout chrome stays, but is secondary to Settings. Normal mode has no grip / size / hide controls.
+- Version 0.11.0 (package.json + src-tauri). Accessory policy, 380×520 panel size, and `optimizeDeps.include: ["sql.js"]` are unchanged.
+
 ## [0.10.0] - 2026-08-20
 
 ### Added

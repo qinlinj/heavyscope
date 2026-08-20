@@ -324,6 +324,13 @@
     "lineOnPace": "{{pool}} is on pace at {{percent}}%.",
     "lineOverspend": "{{pool}} is overspending at {{percent}}%.",
     "lineWaste": "{{pool}} has unused quota at {{percent}}%.",
-    "hideHint": "Click outside or the menu-bar icon to hide."
+    "hideHint": "Click outside or the menu-bar icon to hide.",
+    "settingsHint": "Paste a Cursor or Grok token to connect. Tokens stay on this device.",
+    "settingsBack": "Back to quotas",
+    "moreOnWeb": "Pool CRUD, demo seed, and JSON backup stay on the web Settings page.",
+    "editLayout": "Layout",
+    "expandPool": "Show pool details",
+    "collapsePool": "Hide pool details",
+    "grokParsedToggle": "Parsed products"
   }
 }
