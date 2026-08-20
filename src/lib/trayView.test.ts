@@ -2,14 +2,20 @@ import { describe, expect, it, vi } from "vitest";
 import type { Pool, UsageRecord } from "@/db/schema";
 import type { PoolAdvice } from "@/lib/burnRate";
 import type { LayoutTile } from "@/lib/dashboardLayout";
+import { clampSquareCellPx, squareCellPx } from "@/lib/heatmap";
 import {
+  highlightedTrayPoolIds,
   parseTrayPane,
   recentPoolDeltas,
   runTrayRefresh,
   selectTrayDashboardPools,
   shouldShowTrayHeatmap,
   toggleExpandedPoolId,
+  trayHeatmapCellPx,
   trayProviderSync,
+  TRAY_HEATMAP_MAX_CELL_PX,
+  TRAY_HEATMAP_MIN_CELL_PX,
+  TRAY_HEATMAP_WEEKS,
   visiblePoolIds,
 } from "./trayView";
 
@@ -72,18 +78,36 @@ describe("toggleExpandedPoolId", () => {
 });
 
 describe("selectTrayDashboardPools", () => {
-  it("returns the 1–2 tightest visible pools and ignores hidden ones", () => {
+  it("returns every visible pool from tray_layout, including more than three", () => {
     const selected = selectTrayDashboardPools(
-      [pool("cool"), pool("hot"), pool("mid"), pool("hidden")],
-      [
-        advice({ poolId: "cool", usagePercent: 20, risk: "ok" }),
-        advice({ poolId: "hot", usagePercent: 91, risk: "overspend" }),
-        advice({ poolId: "mid", usagePercent: 70, risk: "ok" }),
-        advice({ poolId: "hidden", usagePercent: 99, risk: "overspend" }),
-      ],
-      ["cool", "hot", "mid"],
+      [pool("cool"), pool("hot"), pool("mid"), pool("fourth"), pool("hidden")],
+      ["cool", "hot", "mid", "fourth"],
     );
-    expect(selected.map((item) => item.id)).toEqual(["hot", "mid"]);
+    expect(selected.map((item) => item.id)).toEqual(["cool", "hot", "mid", "fourth"]);
+  });
+
+  it("keeps layout order, drops hidden and deleted pools, and picks up new ones", () => {
+    const selected = selectTrayDashboardPools(
+      [pool("new"), pool("kept"), pool("gone-from-layout")],
+      ["kept", "missing-deleted", "new"],
+    );
+    expect(selected.map((item) => item.id)).toEqual(["kept", "new"]);
+  });
+});
+
+describe("highlightedTrayPoolIds", () => {
+  it("marks only the tightest 1–2 visible pools", () => {
+    expect(
+      highlightedTrayPoolIds(
+        [
+          advice({ poolId: "cool", usagePercent: 20, risk: "ok" }),
+          advice({ poolId: "hot", usagePercent: 91, risk: "overspend" }),
+          advice({ poolId: "mid", usagePercent: 70, risk: "ok" }),
+          advice({ poolId: "hidden", usagePercent: 99, risk: "overspend" }),
+        ],
+        ["cool", "hot", "mid"],
+      ),
+    ).toEqual(["hot", "mid"]);
   });
 });
 
@@ -99,11 +123,10 @@ describe("visiblePoolIds", () => {
 });
 
 describe("shouldShowTrayHeatmap", () => {
-  it("hides the heatmap when a pool is expanded or Settings is open", () => {
+  it("shows the heatmap on the dashboard when the layout tile is visible", () => {
     expect(
       shouldShowTrayHeatmap({
         heatmapVisible: true,
-        expandedPoolId: null,
         pane: "dashboard",
         editing: false,
       }),
@@ -111,19 +134,32 @@ describe("shouldShowTrayHeatmap", () => {
     expect(
       shouldShowTrayHeatmap({
         heatmapVisible: true,
-        expandedPoolId: "hot",
-        pane: "dashboard",
+        pane: "settings",
         editing: false,
       }),
     ).toBe(false);
     expect(
       shouldShowTrayHeatmap({
         heatmapVisible: true,
-        expandedPoolId: null,
-        pane: "settings",
-        editing: false,
+        pane: "dashboard",
+        editing: true,
       }),
     ).toBe(false);
+  });
+});
+
+describe("trayHeatmapCellPx", () => {
+  it("uses squareCellPx and never stretches squares on a tall tray panel", () => {
+    const wide = trayHeatmapCellPx(800, 400, TRAY_HEATMAP_WEEKS);
+    expect(wide).toBe(
+      clampSquareCellPx(
+        squareCellPx(800, 400, TRAY_HEATMAP_WEEKS),
+        TRAY_HEATMAP_MIN_CELL_PX,
+        TRAY_HEATMAP_MAX_CELL_PX,
+      ),
+    );
+    expect(wide).toBe(TRAY_HEATMAP_MAX_CELL_PX);
+    expect(wide).toBeLessThan(squareCellPx(800, 400, TRAY_HEATMAP_WEEKS));
   });
 });
 

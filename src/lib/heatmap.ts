@@ -153,6 +153,18 @@ export function squareCellPx(width: number, height: number, weeks: number, gap =
   return Math.max(0, Math.floor(Math.min(innerW / cols, innerH / 7)));
 }
 
+/**
+ * Keep squares inside an optional min/max. Used by the compact tray so a
+ * tall panel cannot grow cells, and a narrow panel scrolls instead of
+ * shrinking below a readable square.
+ */
+export function clampSquareCellPx(cell: number, minPx?: number, maxPx?: number): number {
+  const min = minPx != null && minPx > 0 ? minPx : 0;
+  const max = maxPx != null && maxPx > 0 ? maxPx : Number.POSITIVE_INFINITY;
+  if (cell <= 0) return min > 0 ? Math.min(min, max) : 0;
+  return Math.min(max, Math.max(min, cell));
+}
+
 export function heatmapLevel(value: number, maxValue: number): 0 | 1 | 2 | 3 | 4 {
   if (value <= 0 || maxValue <= 0) return 0;
   const ratio = value / maxValue;

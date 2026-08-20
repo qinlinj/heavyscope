@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Pool, UsageRecord } from "@/db/schema";
-import { HEATMAP_GITHUB_COLORS, heatmapGrid, heatmapLevel, squareCellPx } from "@/lib/heatmap";
+import { HEATMAP_GITHUB_COLORS, clampSquareCellPx, heatmapGrid, heatmapLevel, squareCellPx } from "@/lib/heatmap";
 
 function record(poolId: string, amount: number, recordedAt: Date): UsageRecord {
   const iso = recordedAt.toISOString();
@@ -86,6 +86,15 @@ describe("squareCellPx", () => {
     expect(squareCellPx(260, 70, 26, 3)).toBe(7);
     expect(squareCellPx(0, 70, 26)).toBe(0);
     expect(squareCellPx(100, 20, 0)).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("clampSquareCellPx", () => {
+  it("caps tall/wide leftovers so squares never grow past max", () => {
+    expect(clampSquareCellPx(54, 8, 10)).toBe(10);
+    expect(clampSquareCellPx(5, 8, 10)).toBe(8);
+    expect(clampSquareCellPx(0, 8, 10)).toBe(8);
+    expect(clampSquareCellPx(12)).toBe(12);
   });
 });
 

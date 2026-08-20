@@ -2,6 +2,7 @@ import type { Pool, UsageRecord } from "@/db/schema";
 import { tightestAdvices, type PoolAdvice } from "@/lib/burnRate";
 import { chartRecords } from "@/lib/charts";
 import type { LayoutTile } from "@/lib/dashboardLayout";
+import { clampSquareCellPx, squareCellPx } from "@/lib/heatmap";
 import {
   hasCursorCredentials,
   hasGrokCredentials,
@@ -14,6 +15,11 @@ import {
 } from "@/lib/settings";
 
 export type TrayPane = "dashboard" | "settings";
+
+export const TRAY_HEATMAP_WEEKS = 10;
+export const TRAY_HEATMAP_MIN_CELL_PX = 8;
+export const TRAY_HEATMAP_MAX_CELL_PX = 10;
+export const TRAY_HIGHLIGHT_LIMIT = 2;
 
 export function parseTrayPane(value: string | null | undefined): TrayPane {
   return value === "settings" ? "settings" : "dashboard";
@@ -32,33 +38,62 @@ export function visiblePoolIds(tiles: readonly LayoutTile[]): string[] {
 }
 
 /**
- * Default tray dashboard: the 1–2 tightest visible pools.
- * Hidden layout tiles stay out of the compact list.
+ * Default tray dashboard: every visible pool tile from `tray_layout`, in
+ * layout order. No hard cap — Layout hide/show/resize is the source of
+ * truth. Hidden tiles stay out. Missing pool ids are dropped.
  */
 export function selectTrayDashboardPools(
   pools: readonly Pool[],
+  visibleIds: readonly string[],
+): Pool[] {
+  const byId = new Map(pools.map((pool) => [pool.id, pool]));
+  const seen = new Set<string>();
+  const selected: Pool[] = [];
+  for (const id of visibleIds) {
+    if (seen.has(id)) continue;
+    const pool = byId.get(id);
+    if (!pool) continue;
+    seen.add(id);
+    selected.push(pool);
+  }
+  return selected;
+}
+
+/** Tightest 1–2 visible pools, for collapsed-row highlight only. */
+export function highlightedTrayPoolIds(
   advices: readonly PoolAdvice[],
   visibleIds: readonly string[],
-  limit = 2,
-): Pool[] {
+  limit = TRAY_HIGHLIGHT_LIMIT,
+): string[] {
   const allowed = new Set(visibleIds);
-  const candidates = pools.filter((pool) => allowed.has(pool.id));
-  const ranked = tightestAdvices(
+  return tightestAdvices(
     advices.filter((item) => allowed.has(item.poolId)),
     limit,
-  );
-  return ranked
-    .map((item) => candidates.find((pool) => pool.id === item.poolId))
-    .filter((pool): pool is Pool => pool != null);
+  ).map((item) => item.poolId);
 }
 
 export function shouldShowTrayHeatmap(opts: {
   heatmapVisible: boolean;
-  expandedPoolId: string | null;
   pane: TrayPane;
   editing: boolean;
 }): boolean {
-  return opts.pane === "dashboard" && !opts.editing && opts.heatmapVisible && opts.expandedPoolId == null;
+  return opts.pane === "dashboard" && !opts.editing && opts.heatmapVisible;
+}
+
+/**
+ * Compact tray heatmap cell size: same `squareCellPx` as the web grid,
+ * then clamped so squares never stretch on a tall/wide panel.
+ */
+export function trayHeatmapCellPx(
+  width: number,
+  height: number,
+  weeks = TRAY_HEATMAP_WEEKS,
+): number {
+  return clampSquareCellPx(
+    squareCellPx(width, height, weeks),
+    TRAY_HEATMAP_MIN_CELL_PX,
+    TRAY_HEATMAP_MAX_CELL_PX,
+  );
 }
 
 export function recentPoolDeltas(records: readonly UsageRecord[], limit = 2): UsageRecord[] {

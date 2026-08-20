@@ -177,7 +177,7 @@ export function tightestAdvice(advices: PoolAdvice[]): PoolAdvice | null {
   return [...advices].sort(compareAdviceTightness)[0];
 }
 
-/** Tightest pools first, capped at `limit` (menu-bar /tray uses 1–2). */
+/** Tightest pools first, capped at `limit` (tray collapsed highlight uses 1–2). */
 export function tightestAdvices(advices: PoolAdvice[], limit = 2): PoolAdvice[] {
   return [...advices].sort(compareAdviceTightness).slice(0, Math.max(0, limit));
 }

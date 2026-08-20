@@ -107,7 +107,7 @@ export function defaultDashboardLayout(poolIds: string[]): DashboardLayout {
   };
 }
 
-/** Tight accessory: one-line advisor + small heatmap + first two pools. Trend hidden. */
+/** Accessory stack: one-line advisor + small heatmap + every pool. Trend / pies hidden. */
 export function defaultTrayLayout(poolIds: string[]): DashboardLayout {
   return {
     version: LAYOUT_VERSION,
@@ -116,7 +116,7 @@ export function defaultTrayLayout(poolIds: string[]): DashboardLayout {
       defaultSystemTile("heatmap", "tray"),
       defaultSystemTile("trend", "tray"),
       defaultSystemTile("pies", "tray"),
-      ...poolIds.map((poolId, index) => defaultPoolTile(poolId, index < 2)),
+      ...poolIds.map((poolId) => defaultPoolTile(poolId, true)),
     ],
   };
 }
@@ -221,19 +221,20 @@ export function pruneMissingPools(layout: DashboardLayout, poolIds: readonly str
   return { version: LAYOUT_VERSION, tiles };
 }
 
-/** Append missing pools (default md). Dashboard shows them; tray hides extras to stay compact. */
+/** Append missing pools at md, visible. Hidden tiles the user hid stay hidden. */
 export function ensureAllPools(
   layout: DashboardLayout,
   poolIds: readonly string[],
   surface: LayoutSurface = "dashboard",
 ): DashboardLayout {
+  void surface;
   const existing = new Set(
     layout.tiles.filter((tile) => tile.type === "pool" && tile.poolId).map((tile) => tile.poolId as string),
   );
   const extras: LayoutTile[] = [];
   for (const poolId of poolIds) {
     if (existing.has(poolId)) continue;
-    extras.push(defaultPoolTile(poolId, surface === "dashboard"));
+    extras.push(defaultPoolTile(poolId, true));
   }
   if (extras.length === 0) return layout;
   return { version: LAYOUT_VERSION, tiles: [...layout.tiles, ...extras] };

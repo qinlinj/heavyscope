@@ -126,13 +126,13 @@ export function TraySettings() {
   }
 
   return (
-    <div className="space-y-3">
-      <p className="text-[11px] leading-snug text-muted-foreground">{t("tray.settingsHint")}</p>
+    <div className="min-w-0 space-y-3 overflow-x-auto text-xs">
+      <p className="leading-snug text-muted-foreground">{t("tray.settingsHint")}</p>
 
       <section className="space-y-2 rounded-lg border border-foreground/10 p-2">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-[12px] font-medium">{t("live.cursorTitle")}</h3>
-          <p className="text-[10px] text-muted-foreground">
+          <h3 className="text-xs font-medium">{t("live.cursorTitle")}</h3>
+          <p className="text-xs text-muted-foreground">
             {connectorLabel(settings[SETTING_CURSOR_CONNECTED], cursorHasToken, t)}
           </p>
         </div>
@@ -163,7 +163,7 @@ export function TraySettings() {
             </Button>
           ) : null}
         </div>
-        <p className="text-[10px] leading-snug text-muted-foreground">
+        <p className="text-xs leading-snug text-muted-foreground">
           {t("live.lastSynced")}:{" "}
           {settings[SETTING_CURSOR_LAST_SYNCED_AT]
             ? formatDateTime(settings[SETTING_CURSOR_LAST_SYNCED_AT], i18n.language)
@@ -174,13 +174,13 @@ export function TraySettings() {
 
       <section className="space-y-2 rounded-lg border border-foreground/10 p-2">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-[12px] font-medium">{t("live.grokTitle")}</h3>
-          <p className="text-[10px] text-muted-foreground">
+          <h3 className="text-xs font-medium">{t("live.grokTitle")}</h3>
+          <p className="text-xs text-muted-foreground">
             {connectorLabel(settings[SETTING_GROK_CONNECTED], grokHasToken, t)}
           </p>
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="tray-grok-cookie" className="text-[11px]">
+          <Label htmlFor="tray-grok-cookie" className="text-xs">
             {t("live.grokCookie")}
           </Label>
           <Input
@@ -199,7 +199,7 @@ export function TraySettings() {
           />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="tray-grok-bearer" className="text-[11px]">
+          <Label htmlFor="tray-grok-bearer" className="text-xs">
             {t("live.grokBearer")}
           </Label>
           <Input
@@ -229,7 +229,7 @@ export function TraySettings() {
             {t("live.disconnect")}
           </Button>
         </div>
-        <p className="text-[10px] leading-snug text-muted-foreground">
+        <p className="text-xs leading-snug text-muted-foreground">
           {t("live.lastSynced")}:{" "}
           {settings[SETTING_GROK_LAST_SYNCED_AT]
             ? formatDateTime(settings[SETTING_GROK_LAST_SYNCED_AT], i18n.language)
@@ -240,13 +240,13 @@ export function TraySettings() {
           <div>
             <button
               type="button"
-              className="text-[10px] text-muted-foreground underline-offset-2 hover:underline"
+              className="text-xs text-muted-foreground underline-offset-2 hover:underline"
               onClick={() => setParsedOpen((current) => !current)}
             >
               {t("tray.grokParsedToggle")}
             </button>
             {parsedOpen ? (
-              <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">
+              <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
                 {parsedProducts
                   .map((item) =>
                     formatGrokProductLine(item, {
@@ -264,7 +264,7 @@ export function TraySettings() {
 
       <section className="space-y-2 rounded-lg border border-foreground/10 p-2">
         <div className="grid gap-1.5">
-          <Label className="text-[11px]">{t("settings.syncInterval")}</Label>
+          <Label className="text-xs">{t("settings.syncInterval")}</Label>
           <Select
             value={interval}
             onValueChange={(value) => writeTrayInterval(setSetting, value)}
@@ -282,7 +282,7 @@ export function TraySettings() {
             </SelectContent>
           </Select>
         </div>
-        <label className="flex items-center gap-2 text-[11px]">
+        <label className="flex items-center gap-2 text-xs">
           <input
             type="checkbox"
             checked={enabled}
@@ -302,9 +302,9 @@ export function TraySettings() {
         </Button>
       </section>
 
-      {flash ? <p className="text-[10px] text-foreground/80">{flash}</p> : null}
+      {flash ? <p className="text-xs text-foreground/80">{flash}</p> : null}
 
-      <p className="text-[10px] leading-snug text-muted-foreground">{t("tray.moreOnWeb")}</p>
+      <p className="text-xs leading-snug text-muted-foreground">{t("tray.moreOnWeb")}</p>
     </div>
   );
 }

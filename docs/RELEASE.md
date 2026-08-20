@@ -2,6 +2,13 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.13.0
+
+- macOS `/tray` product polish: every Layout-visible pool appears in the default list (scroll; no 1–2 cap). Tightest 1–2 stay highlighted. Hidden tiles stay hidden.
+- Heatmap cells stay square via `squareCellPx` (8–10px on the tray). Horizontal overflow scroll for heatmap and Settings fields.
+- Menu-bar popup ~380×780. Settings pane still connects Cursor / Grok with the same keys, including Grok `Api → Grok Bot`. Accessory policy unchanged.
+- Version 0.13.0.
+
 ## v0.12.0
 
 - Web polish: Grok Bot auto-tracks from CLI billing `productUsage: Api` when a Bearer is saved. Heatmap cells stay square. Quota overview and Recent records scroll. Pies drop labels when compact.

@@ -323,7 +323,7 @@
     "reserved": "Coming soon"
   },
   "tray": {
-    "subtitle": "Tightest pools this cycle",
+    "subtitle": "Visible pools this cycle",
     "empty": "No pools yet. Add one in the web app.",
     "lineOnPace": "{{pool}} is on pace at {{percent}}%.",
     "lineOverspend": "{{pool}} is overspending at {{percent}}%.",
@@ -335,6 +335,9 @@
     "editLayout": "Layout",
     "expandPool": "Show pool details",
     "collapsePool": "Hide pool details",
-    "grokParsedToggle": "Parsed products"
+    "grokParsedToggle": "Parsed products",
+    "tightest": "Tightest",
+    "scrollPrev": "Scroll left",
+    "scrollNext": "Scroll right"
   }
 }

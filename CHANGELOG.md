@@ -6,6 +6,24 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-08-20
+
+### Fixed
+
+- Tray default dashboard no longer hard-caps at 1–2 pools. `selectTrayDashboardPools` lists **every visible pool tile** from `tray_layout` (layout order, scroll if needed). Hidden tiles stay hidden. New pools appear; deleted pools drop. Collapsed rows still highlight the tightest 1–2.
+- Compact tray heatmap uses the same `squareCellPx` helper as the 0.12.0 web grid, then clamps to 8–10px squares. Cells never stretch to fill the taller panel. 10-week grid with horizontal overflow scroll + optional prev/next.
+
+### Added
+
+- Horizontal overflow strips (wheel / shift-wheel and prev/next) for heatmap and Settings fields that are wider than the panel.
+
+### Changed
+
+- macOS menu-bar popup is about 1.5× taller: **380×780** (max 420×820). Width stays a plugin-sized strip. Linux/Windows 980×720 window is unchanged. Accessory policy and `App::set_activation_policy` without `?` stay.
+- Default `/tray` stack: advisor one-liner, scrollable pool rows (one expanded at a time), last-sync lines, optional square heatmap. Settings gear is still a second pane in the same window. Layout Edit remains secondary but its visibility is honored on the default dashboard.
+- Unified tray type scale (`text-sm` titles / `text-xs` body) matching the web. Purple primary, dark / light / system unchanged.
+- Version 0.13.0 (package.json + src-tauri). `optimizeDeps.include: ["sql.js"]` stays. Tokens stay local; backups still redact them.
+
 ## [0.12.0] - 2026-08-20
 
 ### Added
