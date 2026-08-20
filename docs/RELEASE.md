@@ -2,6 +2,18 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.11.0
+
+- Compact `/tray` is a menu-bar plugin, not a shrunk website: Refresh now, Settings gear, 1–2 expandable pool rows, last-sync lines, optional tiny heatmap.
+- Tray Settings pane (same 380×520 popup) connects Cursor / Grok with the same local keys and interval as the web Data sources card. Saving a token starts the timer immediately.
+- Layout Edit / Done stays secondary. Accessory policy, 380×520 size, and `optimizeDeps.include: ["sql.js"]` are unchanged.
+- Version 0.11.0.
+
+## v0.10.0
+
+- Usable web dashboard: stable 4-column widget grid, live + manual charts, credential-based auto-refresh, Grok parsed-product diagnostics.
+- Version 0.10.0. Tray feature-parity landed in 0.11.0.
+
 ## v0.9.0
 
 - Widget dashboard: advisor, heatmap, trend, and every pool are independent cards. Edit / Done mode reorders, resizes (`sm` / `md` / `lg` / `xl`), and hides cards. Layout persists as `dashboard_layout`; old chart prefs migrate.

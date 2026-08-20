@@ -49,6 +49,8 @@ https://github.com/qinlinj/heavyscope
 - 0.7.6 polish — in-app AlertDialogs instead of window.confirm (done)
 - 0.8.0 — live Cursor + Grok usage sync (done)
 - 0.9.0 — widget dashboard + tray edit mode (done)
+- 0.10.0 — usable web dashboard (done)
+- 0.11.0 — tray Settings + live sync + expand rows (done)
 
 ## Commits
 
