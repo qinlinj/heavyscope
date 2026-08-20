@@ -141,6 +141,17 @@ function centsToUsd(cents: number | null): number | null {
   return cents / 100;
 }
 
+function looksLikeTimestamp(message: Uint8Array): boolean {
+  const fields = iterFields(message);
+  if (!fields || fields.length === 0) return false;
+  let seconds = 0;
+  for (const field of fields) {
+    if (field.number > 2) return false;
+    if (field.number === 1 && field.wire === 0 && typeof field.value === "number") seconds = field.value;
+  }
+  return seconds >= 1_000_000_000;
+}
+
 function parseBillingCycle(message: Uint8Array): { year: number; month: number } | null {
   const fields = iterFields(message);
   if (!fields) return null;
@@ -223,10 +234,12 @@ function parsePeriodUsage(message: Uint8Array): GrokHistoryPoint {
       point.recordedAt = `${cycle.year}-${String(cycle.month).padStart(2, "0")}-01T00:00:00.000Z`;
       continue;
     }
-    const stamp = parseTimestamp(field.value);
-    if (stamp) {
-      point.recordedAt = stamp;
-      continue;
+    if (looksLikeTimestamp(field.value)) {
+      const stamp = parseTimestamp(field.value);
+      if (stamp) {
+        point.recordedAt = stamp;
+        continue;
+      }
     }
     const cents = parseCent(field.value);
     if (cents == null) {
