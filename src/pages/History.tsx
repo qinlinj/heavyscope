@@ -70,7 +70,7 @@ export function History() {
           </Select>
         </FilterField>
         <FilterField label={t("history.source")}>
-          <Select value={source} onValueChange={setSource}>
+          <Select value={source} onValueChange={(value) => setSource(value as HistorySourceFilter)}>
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>

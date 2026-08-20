@@ -29,10 +29,11 @@ describe("packSpans", () => {
     expect(packed.map((item) => item.leftoverAfter)).toEqual([3, 1, 0, 2, 0]);
   });
 
-  it("places two md tiles on one row and wraps a following lg", () => {
+  it("places two md tiles on one row; a following lg starts the next row", () => {
     const packed = packSpans([2, 2, 4], 4);
     expect(packed[0]).toMatchObject({ wrapped: false, leftoverAfter: 2 });
     expect(packed[1]).toMatchObject({ wrapped: false, leftoverAfter: 0 });
-    expect(packed[2]).toMatchObject({ wrapped: true, leftoverAfter: 0 });
+    expect(packed[2]).toMatchObject({ wrapped: false, leftoverAfter: 0 });
+    expect(packSpans([2, 4], 4)[1]).toMatchObject({ wrapped: true, leftoverAfter: 0 });
   });
 });

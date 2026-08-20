@@ -27,7 +27,7 @@ const TOOLTIP_STYLE = {
   color: "var(--popover-foreground)",
 };
 
-export function PiesPanel({ pools, compact: _compact = false, size = "lg" }: Props) {
+export function PiesPanel({ pools, compact = false, size = "lg" }: Props) {
   const { t } = useTranslation();
   const used = useMemo(
     () => usedPercentPies(pools, (pool) => displayPoolName(pool, t)).filter((slice) => slice.value > 0),

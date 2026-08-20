@@ -23,8 +23,12 @@ export function leftoverAfterPlace(
 ): { leftover: number; wrapped: boolean } {
   const safeColumns = Math.max(1, columns);
   const safeSpan = Math.min(Math.max(1, span), safeColumns);
-  if (tileFitsInRow(leftover, safeSpan)) {
-    return { leftover: leftover - safeSpan, wrapped: false };
+  const available = leftover <= 0 ? safeColumns : leftover;
+  if (safeSpan <= available) {
+    return {
+      leftover: available - safeSpan,
+      wrapped: leftover > 0 && safeSpan > leftover,
+    };
   }
   return { leftover: safeColumns - safeSpan, wrapped: true };
 }
