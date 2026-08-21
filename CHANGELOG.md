@@ -6,6 +6,16 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-08-21
+
+### Changed
+
+- Web Dashboard Usage/trend hover formats money at 2 decimal places and percent at most 2dp (no raw float tails such as `21.473078`). Stored amounts are unchanged.
+- Web Daily Activity heatmap fills the panel width: week columns follow available width (GitHub contribution-graph logic, not a hardcoded 10-week / 10-month strip). Cells stay 1:1 squares. Month labels sit on the first week of that month and stay readable (no ellipsis into a thin bar). Leftover space goes to legend / stats.
+- Dashboard pies drop the Recharts outer white sector stroke (dark-mode halo). Light mode has no white halo either.
+- PoolCard Recent shows only the latest 2 rows in a fixed-height box (empty / one / two items do not grow or shrink the list). Older rows stay on History.
+- Version 0.25.0 (package.json + src-tauri + README + docs/RELEASE.md). Adapters, liveHttp, SAND, Tray.tsx, trayView, TrayPoolRow, and menubar chrome are unchanged.
+
 ## [0.24.0] - 2026-08-21
 
 ### Added

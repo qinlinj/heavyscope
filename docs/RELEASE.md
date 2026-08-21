@@ -2,6 +2,12 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.25.0
+
+- Web Dashboard polish only. Trend hover: USD 2dp, percent ≤2dp (no raw float tails). Heatmap week count follows panel width; square cells; readable first-week-of-month labels; leftover space is legend / stats. Dashboard pies have no outer white stroke. Recent Records shows the latest 2 rows at a fixed height.
+- Adapters, live HTTP / SAND, and tray / menubar chrome are unchanged.
+- Version 0.25.0.
+
 ## v0.24.0
 
 - Cursor Grok Bot weekly pool from `POST /api/dashboard/get-sand-usage-status`. After Refresh, `preset-grok-bot` shows live used% + reset (`nextResetTimestampUtc`). Models + Other stay populated.

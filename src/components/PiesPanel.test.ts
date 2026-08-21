@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { pieChartHeight, pieLegendMode, pieMinOuterRadius, pieOuterRadiusPx, pieShowsRemaining } from "@/components/PiesPanel";
+import {
+  DASHBOARD_PIE_SECTOR_STROKE,
+  pieChartHeight,
+  pieLegendMode,
+  pieMinOuterRadius,
+  pieOuterRadiusPx,
+  pieShowsRemaining,
+} from "@/components/PiesPanel";
 
 describe("pie layout", () => {
   it("shows the remaining pie only on lg/xl", () => {
@@ -28,5 +35,9 @@ describe("pie layout", () => {
   it("sizes the chart box to fit the minimum disk", () => {
     expect(pieChartHeight("sm")).toBeGreaterThanOrEqual(pieMinOuterRadius("sm") * 2);
     expect(pieChartHeight("md")).toBeGreaterThanOrEqual(pieMinOuterRadius("md") * 2);
+  });
+
+  it("removes the Recharts white sector stroke on dashboard pies", () => {
+    expect(DASHBOARD_PIE_SECTOR_STROKE).toBe("none");
   });
 });

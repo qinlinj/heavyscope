@@ -8,6 +8,8 @@ import {
   heatmapDayTotal,
   heatmapGrid,
   heatmapLevel,
+  heatmapMonthLabels,
+  heatmapWeekOffsetPx,
   squareCellPx,
   weeksFromWidth,
 } from "@/lib/heatmap";
@@ -165,6 +167,43 @@ describe("fitWebHeatmap", () => {
 describe("weeksFromWidth", () => {
   it("fits more weeks on a wider card at the same cell size", () => {
     expect(weeksFromWidth(400, 11)).toBeGreaterThan(weeksFromWidth(180, 11));
+  });
+
+  it("treats columns as weeks, not months — a dashboard card is not 10 weeks", () => {
+    const wide = fitWebHeatmap(720, "lg");
+    const mid = fitWebHeatmap(400, "lg");
+    expect(wide.weeks).toBeGreaterThan(10);
+    expect(mid.weeks).toBeGreaterThan(10);
+    expect(wide.weeks).toBeGreaterThanOrEqual(mid.weeks);
+    expect(wide.weeks).toBeLessThanOrEqual(26);
+  });
+});
+
+describe("heatmapMonthLabels", () => {
+  it("labels only the first week of each month", () => {
+    const now = new Date(2026, 7, 19, 15, 0, 0);
+    const grid = heatmapGrid([], 8, now);
+    const labels = heatmapMonthLabels(grid.cells, grid.weeks, "en-US");
+    expect(labels.size).toBeGreaterThanOrEqual(2);
+    const labeled = [...labels.keys()].sort((a, b) => a - b);
+    for (const weekIndex of labeled) {
+      const sunday = grid.cells.find((cell) => cell.weekIndex === weekIndex && cell.weekday === 0);
+      const prev = grid.cells.find((cell) => cell.weekIndex === weekIndex - 1 && cell.weekday === 0);
+      if (weekIndex === 0) continue;
+      expect(prev?.date.slice(0, 7)).not.toBe(sunday?.date.slice(0, 7));
+    }
+    for (let weekIndex = 0; weekIndex < grid.weeks; weekIndex += 1) {
+      if (labels.has(weekIndex)) continue;
+      const sunday = grid.cells.find((cell) => cell.weekIndex === weekIndex && cell.weekday === 0);
+      const prev = grid.cells.find((cell) => cell.weekIndex === weekIndex - 1 && cell.weekday === 0);
+      expect(sunday?.date.slice(0, 7)).toBe(prev?.date.slice(0, 7));
+    }
+    expect([...labels.values()].every((label) => label.length >= 3)).toBe(true);
+  });
+
+  it("places a month label at the start of that week column, not a 10-month strip", () => {
+    expect(heatmapWeekOffsetPx(0, 13, 3)).toBe(0);
+    expect(heatmapWeekOffsetPx(2, 13, 3)).toBe(32);
   });
 });
 

@@ -207,7 +207,8 @@ export function heatmapDayTotal(cell: Pick<HeatmapCell, "count" | "pools">): Hea
 /** Gap between GitHub-style heatmap cells (px). */
 export const HEATMAP_CELL_GAP_PX = 3;
 export const HEATMAP_WEEKDAY_COL_PX = 12;
-export const HEATMAP_MONTH_ROW_PX = 12;
+/** Month-label row. Labels sit on the first week of a month and may overflow into later columns. */
+export const HEATMAP_MONTH_ROW_PX = 14;
 export const HEATMAP_WEB_MIN_CELL_PX = 11;
 export const HEATMAP_MAX_WEEKS = 26;
 
@@ -347,4 +348,34 @@ export function heatmapLevel(value: number, maxValue: number): 0 | 1 | 2 | 3 | 4
   if (ratio <= 0.5) return 2;
   if (ratio <= 0.75) return 3;
   return 4;
+}
+
+/**
+ * Month label on the first Sunday-aligned week of that month (GitHub-style).
+ * Intermediate weeks are unlabeled so the short name can stay readable.
+ */
+export function heatmapMonthLabels(
+  cells: readonly Pick<HeatmapCell, "date" | "weekIndex" | "weekday">[],
+  weeks: number,
+  locale: string,
+): Map<number, string> {
+  const labels = new Map<number, string>();
+  for (let weekIndex = 0; weekIndex < weeks; weekIndex += 1) {
+    const sunday = cells.find((cell) => cell.weekIndex === weekIndex && cell.weekday === 0);
+    if (!sunday) continue;
+    const prev = cells.find((cell) => cell.weekIndex === weekIndex - 1 && cell.weekday === 0);
+    if (weekIndex === 0 || prev?.date.slice(0, 7) !== sunday.date.slice(0, 7)) {
+      const [year, month] = sunday.date.split("-").map(Number);
+      labels.set(
+        weekIndex,
+        new Date(year ?? 0, (month ?? 1) - 1, 1).toLocaleDateString(locale, { month: "short" }),
+      );
+    }
+  }
+  return labels;
+}
+
+/** Pixel offset of a week column inside the 7×N square grid (no weekday gutter). */
+export function heatmapWeekOffsetPx(weekIndex: number, cellPx: number, gap = HEATMAP_CELL_GAP_PX): number {
+  return Math.max(0, weekIndex) * (cellPx + gap);
 }

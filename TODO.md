@@ -107,6 +107,16 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Persist Day / Week / Month scale (currently component state only)
 - [ ] Optional heatmap filter by pool
 
+## 0.25.0 — web Dashboard polish
+
+- [x] Usage/trend hover: USD 2dp, percent ≤2dp (no raw float tail)
+- [x] Heatmap fills panel width; square cells; first-week-of-month labels stay readable; leftover is legend / stats
+- [x] Dashboard pies: no outer white stroke in dark mode
+- [x] Recent Records: latest 2 rows, fixed height for 0/1/2
+- [x] Version 0.25.0 (package.json + src-tauri + README + docs/RELEASE.md)
+- [ ] Persist Day / Week / Month scale (currently component state only)
+- [ ] Optional heatmap filter by pool
+
 ## 0.24.0 — Cursor Grok Bot weekly pool from SAND
 
 - [x] `POST /api/dashboard/get-sand-usage-status` (`{}`) alongside usage-summary + get-current-period-usage + aggregations

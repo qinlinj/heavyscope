@@ -20,14 +20,47 @@ export function usageTone(
   return "ok";
 }
 
+function normalizeUnitKey(unit: string): string {
+  return unit.trim().toLowerCase();
+}
+
+function isMoneyUnit(unit: string): boolean {
+  const normalized = normalizeUnitKey(unit);
+  return normalized === "usd" || normalized === "$";
+}
+
+function isPercentUnit(unit: string): boolean {
+  const normalized = normalizeUnitKey(unit);
+  return normalized === "%" || normalized === "percent" || normalized === "pct";
+}
+
 function amountFractionDigits(value: number, unit: string): number {
   if (!Number.isFinite(value)) return 0;
   const integer = Number.isInteger(value) || Math.abs(value - Math.round(value)) < 1e-9;
   if (integer) return 0;
-  const normalized = unit.trim().toLowerCase();
-  const isCount = /request|count/i.test(normalized);
+  const isCount = /request|count/i.test(normalizeUnitKey(unit));
   if (isCount) return 0;
   return 2;
+}
+
+/** At most `maxDp` places, trailing zeros stripped (21.40 → 21.4, 21.00 → 21). */
+export function formatAtMostDecimals(value: number, maxDp: number): string {
+  if (!Number.isFinite(value)) return "0";
+  const factor = 10 ** Math.max(0, maxDp);
+  const rounded = Math.round(value * factor) / factor;
+  return String(rounded);
+}
+
+/**
+ * Dashboard Usage/trend hover. Does not change stored amounts.
+ * USD/$ always 2 decimal places; percent at most 2dp; never a raw float tail.
+ */
+export function formatTrendHoverValue(value: number, unit = ""): string {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "+0";
+  if (isMoneyUnit(unit)) return `+${n.toFixed(2)}`;
+  if (isPercentUnit(unit)) return `+${formatAtMostDecimals(n, 2)}`;
+  return `+${formatAtMostDecimals(n, 2)}`;
 }
 
 export function formatAmount(value: number, unit: string): string {
