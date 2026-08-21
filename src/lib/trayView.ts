@@ -107,7 +107,7 @@ export function shouldShowTrayHeatmap(opts: {
  */
 export function fitTrayHeatmap(
   width: number,
-  fallbackWidth = MACOS_TRAY_PANEL.width,
+  fallbackWidth: number = MACOS_TRAY_PANEL.width,
 ): { weeks: number; cell: number } {
   const usableWidth = width > 0 ? width : fallbackWidth;
   const weeks = Math.min(TRAY_HEATMAP_WEEKS, weeksFromWidth(usableWidth, TRAY_HEATMAP_MIN_CELL_PX));
