@@ -107,15 +107,16 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Persist Day / Week / Month scale (currently component state only)
 - [ ] Optional heatmap filter by pool
 
-## 0.27.0 — Other period USD + tray used% / colors
+## 0.27.0 — Other = apiPercentUsed + tray used% / colors
 
-- [x] Other is period `totalSpend` / `limit` USD (default $400); disabled onDemand $0 cannot clobber; `apiPercentUsed` is not Other
-- [x] Web + tray show `$used / $limit` + Cursor period / spending; `$0 / $400` is honest zero, not a dollar-line “0%”
-- [x] Live apply rewrites leftover Other `unit=%` / total 100 to USD
+- [x] Other Models is `planUsage.apiPercentUsed` (JS `apiTitle` / `apiPercentage`); live 0% used; source Included in Ultra / Other Models
+- [x] `planUsage.totalSpend` / `limit` ($145.99 / $400) is included / Auto — never written to `preset-cursor-other`
+- [x] Disabled `onDemand.used=0` is On-Demand, not used Other
+- [x] Live apply rewrites leftover Other USD to `0` / `100` / `%`
 - [x] Progress fill = original preset `pool.color`; tone on used% text + RiskBadge only; indicator width = used%
 - [x] Tray: delete Day/Week/Month; hero used% + All selector; compact Advisor strip; daily heatmap drag-zoom (min 2 weeks); no hover popup
 - [x] Version 0.27.0 (package.json + src-tauri + README + docs/RELEASE.md)
-- [ ] Verify Accessory + drag-zoom heatmap + Other $132.83 on a real Mac
+- [ ] Verify Accessory + drag-zoom heatmap + Other 0% used on a real Mac
 
 ## 0.26.0 — macOS menubar /tray polish
 

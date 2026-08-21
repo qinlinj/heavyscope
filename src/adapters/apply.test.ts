@@ -231,14 +231,14 @@ describe("applyAbsoluteUsage", () => {
     expect(pools[0]?.quota_used).not.toBe(21);
   });
 
-  it("rewrites leftover Other unit=% / total=100 to period USD $132.83 / $400", () => {
+  it("rewrites leftover Other USD $145.99 / $400 to apiPercentUsed 0% / 100", () => {
     const { deps, pools } = absoluteDeps([
       pool({
         id: "preset-cursor-other",
         name: "Cursor Other Models Pool",
-        quota_used: 0,
-        quota_total: 100,
-        unit: "%",
+        quota_used: 145.99,
+        quota_total: 400,
+        unit: "USD",
         reset_cycle: "monthly",
       }),
     ]);
@@ -246,18 +246,20 @@ describe("applyAbsoluteUsage", () => {
       [
         {
           poolHint: "cursor_other",
-          quotaUsed: 132.83,
-          quotaTotal: 400,
+          quotaUsed: 0,
+          quotaTotal: 100,
           resetCycle: "monthly",
-          unit: "USD",
-          note: "Cursor period / spending $132.83 / $400.00",
+          unit: "%",
+          note: "Included in Ultra / Other Models",
         },
       ],
       deps,
     );
-    expect(pools[0]?.quota_used).toBe(132.83);
-    expect(pools[0]?.quota_total).toBe(400);
-    expect(pools[0]?.unit).toBe("USD");
+    expect(pools[0]?.quota_used).toBe(0);
+    expect(pools[0]?.quota_total).toBe(100);
+    expect(pools[0]?.unit).toBe("%");
+    expect(pools[0]?.quota_used).not.toBe(145.99);
+    expect(pools[0]?.quota_total).not.toBe(400);
   });
 
   it("writes the lower used number after a cycle reset without a usage record", () => {

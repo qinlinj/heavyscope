@@ -88,7 +88,9 @@ export function TrayPoolRow({
               <span className="min-w-0 truncate">
                 {usd
                   ? `${usd.dollarLine}${sourceLabel ? ` · ${sourceLabel}` : ""}`
-                  : `${t("pool.remaining")} ${formatAmount(facts.remaining, facts.unit)}`}
+                  : sourceLabel
+                    ? sourceLabel
+                    : `${t("pool.remaining")} ${formatAmount(facts.remaining, facts.unit)}`}
               </span>
               <span className="shrink-0 tabular-nums">{formatCountdown(facts.resetAt, i18n.language)}</span>
             </div>

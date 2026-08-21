@@ -108,6 +108,11 @@ export function PoolCard({
                 <p className="truncate text-muted-foreground">{sourceLabel ?? t("pool.used")}</p>
                 <p className="truncate text-right font-medium tabular-nums">{usd.dollarLine}</p>
               </>
+            ) : sourceLabel ? (
+              <>
+                <p className="truncate text-muted-foreground">{sourceLabel}</p>
+                <p className="truncate text-right font-medium tabular-nums">{`${view.percent.toFixed(0)}%`}</p>
+              </>
             ) : null}
             <p className="truncate text-muted-foreground">{t("pool.remaining")}</p>
             <p className="truncate text-right font-medium tabular-nums">

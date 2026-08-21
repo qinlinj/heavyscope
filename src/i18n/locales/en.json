@@ -98,7 +98,7 @@
     "recent": "Recent records",
     "recentEmpty": "Increments appear after you connect.",
     "awaitingConnect": "Not connected",
-    "sourceCursorPeriod": "Cursor period / spending"
+    "sourceCursorPeriod": "Included in Ultra / Other Models"
   },
   "presets": {
     "preset-grok-heavy": "Grok Heavy Weekly Shared Pool",

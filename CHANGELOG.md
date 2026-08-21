@@ -10,7 +10,9 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Fixed
 
-- Cursor Other is period USD only. Live `get-current-period-usage` `planUsage.totalSpend` / `limit` (cents) maps as dollars — **`$132.83 / $400`** (remaining `$267.17`; used/total ≈ 33%, the displayMessage “used 33% of included usage”, not `apiPercentUsed`). usage-summary `plan.used/limit` 13283/40000 may fill the same included meter. A disabled `onDemand.used=0` no longer overwrites that spend. `apiPercentUsed=0` is named/API, not Other. Models is `autoPercentUsed` 6.6415%. Honest `$0 / $400` only when `period.totalSpend` is truly 0. Leftover Other `unit=%` / `quota_total=100` is rewritten to USD on live apply.
+- Cursor Other Models is **`planUsage.apiPercentUsed`** (spending JS `1govohjdzqjzr.js`: `nV.apiTitle="Other Models"`; `DT.apiPercentage = e.apiPercentUsed??0`; second `DI` bar `{Math.round}% used`). Live **0% used** (unit `%`, total 100). Source label **Included in Ultra / Other Models**. `$400` is included cap copy (`get-plan-info.planInfo.includedAmountCents/100`), not used. `apiSpend` is omitted live — do not invent it.
+- `planUsage.totalSpend` / `limit` (live **$145.99 / $400**, displayMessage “You've used 36% of your included usage”) is the overall included / Auto pool. Spending dual-bar JS **never reads totalSpend**. It is **not** Other. Disabled `onDemand.used=0` is On-Demand, not used Other.
+- Models stay `autoPercentUsed` (live 7.2995 → ~7% used). Grok Bot stays SAND `usagePercent` only (live 36.327845 → ~36% weekly). Leftover Other USD `$145.99 / $400` is rewritten to `0` / `100` / `%` on live apply.
 - Progress bars use each preset’s original accent again (Heavy `#38bdf8`, Bot `#a78bfa`, Models `#34d399`, Other `#fbbf24`). Risk / usage tone stays on the right-side used% text and RiskBadge. Indicator width is used%; the empty track remainder stays visible.
 
 ### Changed

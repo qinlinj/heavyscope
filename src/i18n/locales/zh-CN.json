@@ -98,7 +98,7 @@
     "recent": "最近记录",
     "recentEmpty": "连接后才会出现增量记录。",
     "awaitingConnect": "待连接",
-    "sourceCursorPeriod": "Cursor 周期 / 账单"
+    "sourceCursorPeriod": "包含于 Ultra / Other Models"
   },
   "presets": {
     "preset-grok-heavy": "Grok Heavy 每周共享池",

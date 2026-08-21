@@ -48,8 +48,8 @@ export type OtherUsdView = {
 };
 
 /**
- * Honest Other Models dollars from stored quota. Null when the pool is not USD
- * (a leftover % seed must be rewritten by live apply before this applies).
+ * Leftover USD snapshots only. Live Other is apiPercentUsed as `%` / 100;
+ * that path returns null so the card shows 0% used, not invented dollars.
  */
 export function otherUsdView(
   pool: Pick<Pool, "unit" | "quota_used" | "quota_total">,
