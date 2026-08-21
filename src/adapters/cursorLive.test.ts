@@ -162,6 +162,29 @@ describe("mergeCursorSpendingSources", () => {
     expect(bot?.quotaTotal).toBeUndefined();
   });
 
+  it("keeps Composer / Cursor Grok / grok-4 / Heavy out of grok_bot even with used+limit", () => {
+    const result = mergeCursorSpendingSources({
+      period: SAMPLE_PERIOD,
+      aggregations: {
+        aggregations: [
+          { modelIntent: "composer-2", used: 20, limit: 50 },
+          { modelIntent: "cursor-grok", model: "Cursor Grok", used: 9, limit: 30 },
+          { modelIntent: "grok-4-fast", used: 4, limit: 10 },
+          { modelIntent: "SuperGrok Heavy", used: 70, limit: 100 },
+        ],
+      },
+    });
+    expect(result.ok).toBe(true);
+    expect(result.botUnavailable).toBe(true);
+    expect(result.pools.find((pool) => pool.poolHint === "grok_bot")).toBeUndefined();
+    expect(result.pools.find((pool) => pool.poolHint === "cursor_models")).toMatchObject({
+      quotaUsed: 42.5,
+      quotaTotal: 100,
+      unit: "%",
+    });
+    expect(result.pools.some((pool) => pool.quotaUsed === 20 || pool.quotaUsed === 9)).toBe(false);
+  });
+
   it("omits grok_bot and invents no number when the Grok Bot row is missing", () => {
     const result = mergeCursorSpendingSources({
       period: SAMPLE_PERIOD,
@@ -257,9 +280,13 @@ describe("isCursorGrokBotSku", () => {
 
   it("excludes Composer, Cursor Grok chat models, and Heavy", () => {
     expect(isCursorGrokBotSku("composer-1")).toBe(false);
+    expect(isCursorGrokBotSku("composer-2")).toBe(false);
     expect(isCursorGrokBotSku("cursor-grok")).toBe(false);
     expect(isCursorGrokBotSku("cursor-grok-4")).toBe(false);
+    expect(isCursorGrokBotSku("Cursor Grok")).toBe(false);
     expect(isCursorGrokBotSku("grok-4")).toBe(false);
+    expect(isCursorGrokBotSku("Grok 4")).toBe(false);
+    expect(isCursorGrokBotSku("grok-4-fast")).toBe(false);
     expect(isCursorGrokBotSku("grok-3-mini")).toBe(false);
     expect(isCursorGrokBotSku("grok-2")).toBe(false);
     expect(isCursorGrokBotSku("SuperGrok Heavy")).toBe(false);
