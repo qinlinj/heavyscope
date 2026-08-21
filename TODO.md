@@ -107,6 +107,15 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Persist Day / Week / Month scale (currently component state only)
 - [ ] Optional heatmap filter by pool
 
+## 0.22.0 — honest tray copy
+
+- [x] `shouldShowTrayConnectBanner` is neither-token only (`!cursor && !grok`). Cursor-only hides the blocking banner; Heavy row CTA is enough
+- [x] zh-CN + en `tray.subtitleConnect` tell the user to go to Settings and paste a Cursor token — no “four pools” / 四个额度池
+- [x] zh-CN + en `tray.empty`: open Layout and restore hidden pools (no web app)
+- [x] Vitest for banner cases + tray copy contract
+- [x] Version 0.22.0 (package.json + src-tauri + README + docs/RELEASE.md)
+- [ ] Verify Accessory paste-token copy on a real Mac
+
 ## 0.21.0 — complete macOS menubar /tray migration
 
 - [x] `/tray` daily loop: Settings pane (Cursor + Grok tokens, interval, Refresh now) + one-step Go to Settings CTA on unsynced / not-connected sources

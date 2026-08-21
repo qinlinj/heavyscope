@@ -61,6 +61,7 @@ https://github.com/qinlinj/heavyscope
 - 0.19.0 — production web same-origin live proxy + honest advisor / not-connected display
 - 0.20.0 — first-run Settings jump, Refresh-primary toolbar, Recent empty state
 - 0.21.0 — complete macOS menubar /tray daily-loop migration
+- 0.22.0 — honest tray connect / empty copy (no four-pools nag)
 
 ## Commits
 

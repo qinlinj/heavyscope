@@ -2,6 +2,12 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.22.0
+
+- `/tray` first-run banner: go to Settings and paste a Cursor token. Shown only when neither token is pasted. Cursor-only no longer nags about four pools; Heavy uses the existing per-row Go to Settings CTA.
+- `/tray` empty state: open Layout and restore hidden pools (no “web app”).
+- Version 0.22.0.
+
 ## v0.21.0
 
 - Complete `/tray` daily loop in the browser and the macOS menu-bar popover: Settings (tokens, interval, Refresh now), Go to Settings CTA on unsynced pools, one advisor sentence, expandable rows (used/total, remaining, reset, 1–2 increments; one open at a time).
