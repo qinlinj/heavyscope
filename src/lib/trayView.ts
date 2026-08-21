@@ -2,7 +2,14 @@ import type { Pool, UsageRecord } from "@/db/schema";
 import { tightestAdvices, type PoolAdvice } from "@/lib/burnRate";
 import { chartRecords } from "@/lib/charts";
 import type { LayoutTile } from "@/lib/dashboardLayout";
-import { clampSquareCellPx, squareCellPx } from "@/lib/heatmap";
+import {
+  HEATMAP_CELL_GAP_PX,
+  HEATMAP_WEEKDAY_COL_PX,
+  clampSquareCellPx,
+  squareCellPx,
+  weeksFromWidth,
+} from "@/lib/heatmap";
+import { compactPoolView } from "@/lib/poolView";
 import {
   hasCursorCredentials,
   hasGrokCredentials,
@@ -20,6 +27,20 @@ export const TRAY_HEATMAP_WEEKS = 10;
 export const TRAY_HEATMAP_MIN_CELL_PX = 8;
 export const TRAY_HEATMAP_MAX_CELL_PX = 10;
 export const TRAY_HIGHLIGHT_LIMIT = 2;
+
+/** macOS Accessory popover. Must match `apply_macos_accessory_window` in src-tauri. */
+export const MACOS_TRAY_PANEL = {
+  width: 380,
+  height: 780,
+  maxWidth: 420,
+  maxHeight: 820,
+} as const;
+
+/** Linux/Windows tray window only. Never use these numbers on macOS. */
+export const LINUX_DESKTOP_WINDOW = {
+  width: 980,
+  height: 720,
+} as const;
 
 export function parseTrayPane(value: string | null | undefined): TrayPane {
   return value === "settings" ? "settings" : "dashboard";
@@ -81,6 +102,24 @@ export function shouldShowTrayHeatmap(opts: {
 }
 
 /**
+ * Compact tray heatmap: week count from available width, cells 8–10px
+ * squares. Cap at 10 weeks so a 380px strip never becomes a 10-month grid.
+ */
+export function fitTrayHeatmap(
+  width: number,
+  fallbackWidth = MACOS_TRAY_PANEL.width,
+): { weeks: number; cell: number } {
+  const usableWidth = width > 0 ? width : fallbackWidth;
+  const weeks = Math.min(TRAY_HEATMAP_WEEKS, weeksFromWidth(usableWidth, TRAY_HEATMAP_MIN_CELL_PX));
+  const plotW = Math.max(0, usableWidth - HEATMAP_WEEKDAY_COL_PX);
+  const raw = Math.floor(
+    (plotW - Math.max(0, weeks - 1) * HEATMAP_CELL_GAP_PX) / Math.max(1, weeks),
+  );
+  const cell = clampSquareCellPx(raw, TRAY_HEATMAP_MIN_CELL_PX, TRAY_HEATMAP_MAX_CELL_PX);
+  return { weeks: Math.max(1, weeks), cell: cell > 0 ? cell : TRAY_HEATMAP_MIN_CELL_PX };
+}
+
+/**
  * Compact tray heatmap cell size: same `squareCellPx` as the web grid,
  * then clamped so squares never stretch on a tall/wide panel.
  */
@@ -89,11 +128,51 @@ export function trayHeatmapCellPx(
   height: number,
   weeks = TRAY_HEATMAP_WEEKS,
 ): number {
+  const fittedWeeks = width > 0 ? fitTrayHeatmap(width).weeks : weeks;
   return clampSquareCellPx(
-    squareCellPx(width, height, weeks),
+    squareCellPx(width, height, fittedWeeks),
     TRAY_HEATMAP_MIN_CELL_PX,
     TRAY_HEATMAP_MAX_CELL_PX,
   );
+}
+
+/** Unsynced row or a missing source — one-step next action is tray Settings. */
+export function shouldShowTraySettingsCta(unsynced: boolean): boolean {
+  return unsynced;
+}
+
+/** Banner when Cursor and/or Grok still need a token. */
+export function shouldShowTrayConnectBanner(opts: {
+  cursorConfigured: boolean;
+  grokConfigured: boolean;
+}): boolean {
+  return !opts.cursorConfigured || !opts.grokConfigured;
+}
+
+export type TrayExpandFacts = {
+  used: number;
+  total: number;
+  remaining: number;
+  resetAt: string | null;
+  unit: string;
+  increments: UsageRecord[];
+};
+
+/** Facts an expanded tray row must show: used/total, remaining, reset, 1–2 deltas. */
+export function trayExpandFacts(
+  pool: Pick<Pool, "name" | "unit" | "quota_used" | "quota_total" | "reset_at">,
+  records: readonly UsageRecord[],
+  limit = 2,
+): TrayExpandFacts {
+  const view = compactPoolView(pool);
+  return {
+    used: view.used,
+    total: view.total,
+    remaining: view.remaining,
+    resetAt: view.resetAt,
+    unit: view.unit,
+    increments: recentPoolDeltas(records, limit),
+  };
 }
 
 export function recentPoolDeltas(records: readonly UsageRecord[], limit = 2): UsageRecord[] {

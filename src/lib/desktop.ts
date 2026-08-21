@@ -1,5 +1,9 @@
 import type { Pool } from "@/db/schema";
 import { usagePercent } from "@/lib/format";
+import { LINUX_DESKTOP_WINDOW, MACOS_TRAY_PANEL } from "@/lib/trayView";
+
+/** Re-export so Rust/TS panel sizes stay one source of truth in TS. */
+export { LINUX_DESKTOP_WINDOW, MACOS_TRAY_PANEL };
 
 export type DesktopShellMode = "accessory" | "window" | "web";
 

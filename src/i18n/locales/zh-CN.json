@@ -328,6 +328,9 @@
   },
   "tray": {
     "subtitle": "本周期可见额度池",
+    "subtitleConnect": "前往设置粘贴令牌，然后立即刷新四个额度池。",
+    "goToSettings": "前往设置",
+    "connectHint": "此额度池尚未连接。前往设置粘贴令牌后即可刷新。",
     "empty": "还没有额度池。请在网页应用中添加。",
     "lineOnPace": "{{pool}} 节奏正常，使用率 {{percent}}%。",
     "lineOverspend": "{{pool}} 消耗过快，使用率 {{percent}}%。",

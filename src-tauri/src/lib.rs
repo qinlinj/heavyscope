@@ -16,6 +16,15 @@ const TRAY_ID: &str = "main";
 const PANEL_GAP: f64 = 6.0;
 #[cfg(target_os = "macos")]
 const BLUR_HIDE_GRACE_MS: u128 = 280;
+/// Accessory popover. Do not use the Linux 980×720 window size on macOS.
+#[cfg(target_os = "macos")]
+const MACOS_PANEL_WIDTH: f64 = 380.0;
+#[cfg(target_os = "macos")]
+const MACOS_PANEL_HEIGHT: f64 = 780.0;
+#[cfg(target_os = "macos")]
+const MACOS_PANEL_MAX_WIDTH: f64 = 420.0;
+#[cfg(target_os = "macos")]
+const MACOS_PANEL_MAX_HEIGHT: f64 = 820.0;
 
 struct TrayState {
     #[cfg(target_os = "macos")]
@@ -176,9 +185,12 @@ fn apply_macos_accessory_window(app: &mut tauri::App) {
         let _ = window.set_skip_taskbar(true);
         let _ = window.set_always_on_top(true);
         let _ = window.set_shadow(true);
-        let _ = window.set_size(tauri::LogicalSize::new(380.0, 780.0));
-        let _ = window.set_min_size(Some(tauri::LogicalSize::new(380.0, 780.0)));
-        let _ = window.set_max_size(Some(tauri::LogicalSize::new(420.0, 820.0)));
+        let _ = window.set_size(tauri::LogicalSize::new(MACOS_PANEL_WIDTH, MACOS_PANEL_HEIGHT));
+        let _ = window.set_min_size(Some(tauri::LogicalSize::new(MACOS_PANEL_WIDTH, MACOS_PANEL_HEIGHT)));
+        let _ = window.set_max_size(Some(tauri::LogicalSize::new(
+            MACOS_PANEL_MAX_WIDTH,
+            MACOS_PANEL_MAX_HEIGHT,
+        )));
     }
 }
 

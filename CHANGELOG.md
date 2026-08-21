@@ -6,6 +6,24 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-08-21
+
+### Added
+
+- Complete `/tray` daily loop: in-popover Settings (Cursor token, Grok token, refresh interval, Refresh now) plus a one-step **Go to Settings** CTA when a source is not connected. Unsynced rows no longer sit empty with no next action.
+- Expanded pool rows show used/total, remaining, reset, and 1–2 increment records (or the Recent empty line). Only one row is open at a time.
+- `fitTrayHeatmap` derives week count from available width (8–10px squares, cap 10 weeks). Narrow `/tray` never paints a 10-month strip.
+- TS + Rust encode the macOS Accessory panel as **380×780** (max 420×820) separately from the Linux 980×720 window. `ActivationPolicy::Accessory` is unchanged.
+
+### Changed
+
+- Version 0.21.0 (package.json + src-tauri + README + docs/RELEASE.md). Cursor Spending three-pool mapping and the production `/proxy/*` path are unchanged. Web dashboard layout, drag, heatmap, and pies are unchanged except the compact tray heatmap now uses `fitTrayHeatmap` when no tile `size` is passed.
+- Browser `/tray` is a 380px-wide daily-loop strip so the web Demo does not become a shrunken 4-column dashboard.
+
+### UNVERIFIED on device
+
+- macOS Accessory: no Dock icon, click tray icon toggles, click outside closes, panel anchors under the status item at ~380×780. This environment cannot run a Mac `.app`.
+
 ## [0.20.0] - 2026-08-21
 
 ### Added

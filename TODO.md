@@ -107,6 +107,18 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Persist Day / Week / Month scale (currently component state only)
 - [ ] Optional heatmap filter by pool
 
+## 0.21.0 — complete macOS menubar /tray migration
+
+- [x] `/tray` daily loop: Settings pane (Cursor + Grok tokens, interval, Refresh now) + one-step Go to Settings CTA on unsynced / not-connected sources
+- [x] Cursor-only Refresh now + interval still use existing 0.14.0 / 0.19.0 Spending mapping and same-origin `/proxy/*` (`runTrayRefresh` → `refreshLiveProviders()`, no new mapper)
+- [x] Default view: one advisor sentence + visible pool rows (scroll). Expand shows used/total, remaining, reset, 1–2 increments; one row at a time
+- [x] Square heatmap optional; `fitTrayHeatmap` weeks from width, 8–10px, never a 10-month strip
+- [x] Panel 380×780 encoded in Rust (`MACOS_PANEL_*`) + TS (`MACOS_TRAY_PANEL`); Linux 980×720 stays off macOS. Accessory + click-outside UNVERIFIED on device
+- [x] Unsynced = 待连接 / Not connected; reuse `advisePool` unconnected, `isUnsyncedPreset`, `hasSuccessfulApply`
+- [x] Vitest for tray expand, Settings CTA, `fitTrayHeatmap`, panel-size constants
+- [x] Version 0.21.0 (package.json + src-tauri + README + docs/RELEASE.md)
+- [ ] Verify Accessory + 380×780 + paste-token daily loop on a real Mac
+
 ## 0.20.0 — first-run Settings jump + Refresh-primary toolbar
 
 - [x] Disconnected Cursor: dashboard subtitle is an explicit next step (paste WorkosCursorSessionToken, then refresh Models / Other / Grok Bot) with an Open Settings link
@@ -209,7 +221,7 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Heatmap cells stay perfect squares (`squareCellPx`); leftover card space is legend, not stretched cells
 - [x] Independent full-width advisor / heatmap / trend modules + HTML5 drag-and-drop reorder
 - [x] Theme: dark / light / system (`theme` setting + localStorage)
-- [x] Compact `/tray` (0.13.0: all visible pools scroll, square heatmap, ~380×780)
+- [x] Compact `/tray` (0.21.0: daily loop — Settings CTA, expand facts, width-fit heatmap, 380×780)
 - [x] iPhone-widget card system with edit mode, resize, reorder, hide/restore (0.9.0)
 - [x] Amount-normalized heatmap intensity when all records share one unit (0.10.0)
 - [ ] Persist Day / Week / Month scale (currently component state only)
@@ -253,7 +265,7 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Signed macOS menu-bar binary / codesign (needs a Mac and certificates)
 - [ ] Verify Accessory on a real Mac: no Dock icon, `LSUIElement`, template status item
 - [ ] Verify the ~380×780 panel anchors under the status item (not screen center) and hides on click-outside / deactivate
-- [x] `/tray` compact plugin: Settings pane, Refresh now, all visible expandable pools, last-sync lines, optional square heatmap (en / zh-CN)
+- [x] `/tray` compact plugin: Settings pane, Refresh now, Go to Settings CTA, all visible expandable pools (used/total/remaining/reset/1–2 increments), last-sync lines, optional square heatmap (en / zh-CN)
 - [ ] Measure release `.app` / `.dmg` size on a Mac (`du -sh`; target < 50MB, ideally 20–30MB) — steps in docs/MACOS.md
 - [ ] Windows installer
 - [ ] GitHub Release asset upload (MCP has no create-release tool)

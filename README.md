@@ -4,7 +4,7 @@ Local-first multi-quota monitoring panel for SuperGrok Heavy and Cursor Ultra.
 
 HeavyScope helps you see how fast you are burning weekly or monthly quotas, when a pool will reset, and whether you should switch work to a pool with more headroom. The same React UI runs as a web app and inside a Tauri 2 desktop shell. Quota data stays on your machine. There is no HeavyScope cloud account.
 
-Current product version is **0.20.0**.
+Current product version is **0.21.0**.
 
 ## Features
 
@@ -15,7 +15,7 @@ Current product version is **0.20.0**.
 - **Live Cursor + Grok sync** — connect your own accounts in web Settings → Data sources **or** in the menu-bar `/tray` Settings pane. Saving a Cursor session token or Grok session/bearer puts that provider on the timer immediately (1 / 5 / 15 / 30 / 60 min, default 5). Dashboard, Settings, and `/tray` show last synced + next tick per provider. A failed Grok tick is shown and does not skip later ticks. Snapshot import stays as a Cursor fallback when no session token is stored.
 - **Cursor snapshot import** — paste a Cursor usage snapshot (JSON or CSV) in Settings → Data sources. Optional auto-sync re-applies the last import when live Cursor is not connected.
 - **JSON backup export / copy / import** — Settings → Local data downloads `heavyscope-backup.json`, copies the same payload to the clipboard, or accepts a file / paste (table dump, not a wasm / binary file). Merge is the default; replace-all is optional.
-- **Tauri 2 tray** — system tray / macOS menu-bar shell around the same web UI and sql.js database. On macOS the shell is an **Accessory** (no Dock icon); the popup is **~380×780** under the status item. `/tray` is a compact plugin: Refresh now, a Settings pane for tokens/interval, **all Layout-visible pool rows** (scroll; tightest 1–2 highlighted), last-sync lines, and an optional square heatmap (`squareCellPx`, never stretched). Layout Edit / Done is secondary. Linux/Windows keep a normal tray window. Close hides to tray. Use Quit to exit. **Verify the menu-bar accessory on a real Mac** — see [docs/MACOS.md](docs/MACOS.md).
+- **Tauri 2 tray** — system tray / macOS menu-bar shell around the same web UI and sql.js database. On macOS the shell is an **Accessory** (no Dock icon); the popup is **~380×780** under the status item. `/tray` is the daily loop: in-popover Settings (Cursor + Grok tokens, interval, Refresh now), a one-step **Go to Settings** CTA on unsynced pools, one advisor sentence, expandable pool rows (used/total, remaining, reset, 1–2 increments; one open at a time), last-sync lines, and an optional square heatmap whose week count comes from width (`fitTrayHeatmap`, 8–10px, never a 10-month strip). Browser `/tray` can finish that loop without a Mac. Layout Edit / Done stays secondary. Linux/Windows keep a 980×720 tray window. Close hides to tray. Use Quit to exit. **Verify the menu-bar accessory on a real Mac** — see [docs/MACOS.md](docs/MACOS.md). UNVERIFIED on device.
 - **In-app confirm dialogs** — delete pool, reset local database, import, and import replace-all use in-app AlertDialogs with zh-CN / en titles and actions. Native `window.confirm` is not used.
 - **Cycle rollover** — when a pool `reset_at` is past, quota used resets to 0, the next weekly/monthly date is set, and a Cycle reset usage note is stored. History is not deleted.
 
