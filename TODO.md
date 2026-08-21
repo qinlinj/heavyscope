@@ -95,6 +95,18 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Verify Grok Bot auto-track on a real Bearer (`Api 11%` → Bot) without manual calibrate
 - [x] Do not start macOS tray 1.5x / horizontal-scroll work here (moved to 0.13.0)
 
+## 0.15.0 — web Daily Activity heatmap + pie polish
+
+- [x] Heatmap first paint never uses 0px cells (fallback / last-good box)
+- [x] Squares + equal row height; leftover is padding or horizontal scroll
+- [x] `sm` weeks from width; month labels only on the first week of a month
+- [x] Hover lists every pool that day + unit-safe same-day total
+- [x] Hover tips portal out of ChartCard / WidgetTile overflow and flip at edges
+- [x] Pies: `sm`/`md` used pie only; `md` no remaining pie; opaque escaping tooltip
+- [x] Version 0.15.0 (package.json + src-tauri)
+- [ ] Persist Day / Week / Month scale (currently component state only)
+- [ ] Optional heatmap filter by pool
+
 ## 0.14.0 — Cursor Spending live sync
 
 - [x] `POST /api/dashboard/get-current-period-usage` + aggregations/events + usage-summary fallback
@@ -147,7 +159,7 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Persist Day / Week / Month scale (currently component state only)
 - [ ] Optional heatmap filter by pool
 - [ ] Stacked trend Y-axis still sums raw amounts across mixed units; consider per-unit facets
-- [ ] Heatmap month-label collisions on very narrow cards
+- [x] Heatmap month-label collisions on very narrow cards (0.15.0: hide month row when cell < 12px)
 - [x] macOS tray feature-parity with the 0.10.0 web dashboard (0.11.0 connect + refresh + expand)
 
 ## Polish / leftover gaps (0.7.6)

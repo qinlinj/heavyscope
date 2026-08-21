@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { Pool, UsageRecord } from "@/db/schema";
-import { HEATMAP_GITHUB_COLORS, clampSquareCellPx, heatmapGrid, heatmapLevel, squareCellPx } from "@/lib/heatmap";
+import {
+  HEATMAP_GITHUB_COLORS,
+  clampSquareCellPx,
+  fitWebHeatmap,
+  flipTooltipPosition,
+  heatmapDayTotal,
+  heatmapGrid,
+  heatmapLevel,
+  squareCellPx,
+  weeksFromWidth,
+} from "@/lib/heatmap";
 
 function record(poolId: string, amount: number, recordedAt: Date): UsageRecord {
   const iso = recordedAt.toISOString();
@@ -66,6 +76,52 @@ describe("heatmapGrid", () => {
     expect(aug18).toMatchObject({ count: 2, amount: 8, unit: "%" });
     expect(grid.maxAmount).toBe(8);
   });
+
+  it("lists every pool that has usage that day", () => {
+    const records = [
+      record("heavy", 5, new Date(2026, 7, 18, 9, 0, 0)),
+      record("bot", 2, new Date(2026, 7, 18, 10, 0, 0)),
+      record("models", 11, new Date(2026, 7, 18, 11, 0, 0)),
+      record("other", 7.5, new Date(2026, 7, 18, 12, 0, 0)),
+    ];
+    const grid = heatmapGrid(records, 4, now, [
+      pool("heavy", "%"),
+      pool("bot", "%"),
+      pool("models", "%"),
+      pool("other", "USD"),
+    ]);
+    const aug18 = grid.cells.find((cell) => cell.date === "2026-08-18");
+    expect(aug18?.pools).toHaveLength(4);
+    expect(aug18?.pools.map((item) => item.poolId)).toEqual(["heavy", "bot", "models", "other"]);
+    expect(aug18?.pools.map((item) => item.unit)).toEqual(["%", "%", "%", "USD"]);
+    expect(aug18?.pools.map((item) => item.amount)).toEqual([5, 2, 11, 7.5]);
+  });
+});
+
+describe("heatmapDayTotal", () => {
+  it("sums amounts only when every pool that day shares one unit", () => {
+    expect(
+      heatmapDayTotal({
+        count: 2,
+        pools: [
+          { poolId: "heavy", amount: 5, unit: "%" },
+          { poolId: "bot", amount: 3, unit: "%" },
+        ],
+      }),
+    ).toEqual({ kind: "amount", amount: 8, unit: "%" });
+  });
+
+  it("does not add $ and % into one number", () => {
+    expect(
+      heatmapDayTotal({
+        count: 3,
+        pools: [
+          { poolId: "other", amount: 40, unit: "USD" },
+          { poolId: "heavy", amount: 12, unit: "%" },
+        ],
+      }),
+    ).toEqual({ kind: "count", count: 3 });
+  });
 });
 
 describe("HEATMAP_GITHUB_COLORS", () => {
@@ -86,6 +142,49 @@ describe("squareCellPx", () => {
     expect(squareCellPx(260, 70, 26, 3)).toBe(7);
     expect(squareCellPx(0, 70, 26)).toBe(0);
     expect(squareCellPx(100, 20, 0)).toBeGreaterThanOrEqual(0);
+  });
+
+  it("never returns 0 when a fallback box exists", () => {
+    expect(squareCellPx(0, 0, 26, 3, { width: 280, height: 140 })).toBeGreaterThan(0);
+    expect(squareCellPx(0, 70, 12, 3, { width: 200, height: 80 })).toBeGreaterThan(0);
+    expect(squareCellPx(0, 0, 10, 3, { width: 1, height: 1 })).toBeGreaterThan(0);
+  });
+});
+
+describe("fitWebHeatmap", () => {
+  it("derives sm weeks from width and never emits a 0px cell", () => {
+    const wide = fitWebHeatmap(0, "sm");
+    expect(wide.cell).toBeGreaterThan(0);
+    expect(wide.weeks).toBeGreaterThanOrEqual(1);
+    const narrow = fitWebHeatmap(160, "sm");
+    expect(narrow.cell).toBeGreaterThanOrEqual(11);
+    expect(narrow.weeks).toBeLessThan(wide.weeks);
+  });
+});
+
+describe("weeksFromWidth", () => {
+  it("fits more weeks on a wider card at the same cell size", () => {
+    expect(weeksFromWidth(400, 11)).toBeGreaterThan(weeksFromWidth(180, 11));
+  });
+});
+
+describe("flipTooltipPosition", () => {
+  it("prefers top when the tip fits above the anchor", () => {
+    const pos = flipTooltipPosition(
+      { x: 200, y: 200, width: 12, height: 12 },
+      { width: 160, height: 80 },
+      { width: 800, height: 600 },
+    );
+    expect(pos.placement).toBe("top");
+  });
+
+  it("flips to bottom near the top edge", () => {
+    const pos = flipTooltipPosition(
+      { x: 200, y: 4, width: 12, height: 12 },
+      { width: 160, height: 80 },
+      { width: 800, height: 600 },
+    );
+    expect(pos.placement).toBe("bottom");
   });
 });
 
