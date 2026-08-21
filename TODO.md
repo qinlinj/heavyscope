@@ -115,7 +115,7 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Progress fill = original preset `pool.color`; tone on used% text + RiskBadge only; indicator width = used%
 - [x] Tray: delete Day/Week/Month; hero used% + All selector; compact Advisor strip; daily heatmap drag-zoom (min 2 weeks); no hover popup
 - [x] Version 0.27.0 (package.json + src-tauri + README + docs/RELEASE.md)
-- [ ] Verify Accessory + drag-zoom heatmap + Other $126.58 on a real Mac
+- [ ] Verify Accessory + drag-zoom heatmap + Other $132.83 on a real Mac
 
 ## 0.26.0 — macOS menubar /tray polish
 

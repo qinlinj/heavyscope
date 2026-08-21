@@ -43,13 +43,13 @@ describe("formatSignedAmount", () => {
 });
 
 describe("otherUsdView", () => {
-  it("maps period $126.58 / $400 as a dollar line, not 0%", () => {
-    const view = otherUsdView({ unit: "USD", quota_used: 126.58, quota_total: 400 });
-    expect(view?.dollarLine).toMatch(/126\.58/);
+  it("maps period $132.83 / $400 as a dollar line, not 0%", () => {
+    const view = otherUsdView({ unit: "USD", quota_used: 132.83, quota_total: 400 });
+    expect(view?.dollarLine).toMatch(/132\.83/);
     expect(view?.dollarLine).toMatch(/400/);
     expect(view?.dollarLine).not.toMatch(/%/);
-    expect(view?.remaining).toBeCloseTo(273.42, 5);
-    expect(view?.usedPercent).toBeCloseTo(31.645, 3);
+    expect(view?.remaining).toBeCloseTo(267.17, 5);
+    expect(view?.usedPercent).toBeCloseTo(33.2075, 4);
   });
 
   it("shows $0 / $400 when spend is truly 0, not “0%” as the dollar line", () => {
@@ -67,10 +67,10 @@ describe("otherUsdView", () => {
 
 describe("progressIndicatorStyle", () => {
   it("uses used% width and the original pool accent, not a full bar", () => {
-    const other = progressIndicatorStyle(PRESET_POOL_COLORS["preset-cursor-other"], 31.645);
+    const other = progressIndicatorStyle(PRESET_POOL_COLORS["preset-cursor-other"], 33.2075);
     expect(other.backgroundColor).toBe("#fbbf24");
-    expect(other.width).toBe(`${progressFillPercent(31.645)}%`);
-    expect(progressFillPercent(31.645)).toBeLessThan(100);
+    expect(other.width).toBe(`${progressFillPercent(33.2075)}%`);
+    expect(progressFillPercent(33.2075)).toBeLessThan(100);
     expect(progressFillPercent(21)).not.toBe(100);
     expect(progressIndicatorStyle(PRESET_POOL_COLORS["preset-grok-heavy"], 12).backgroundColor).toBe(
       "#38bdf8",

@@ -37,6 +37,42 @@ const SAMPLE_SUMMARY = {
   },
 };
 
+/**
+ * Live re-hit 2026-08-21 (desensitized). Period + usage-summary both 200.
+ * Other included spend is 13283 / 40000 cents = $132.83 / $400.
+ * displayMessage “used 33% of included usage” is used/total of that $ pool
+ * (≈33.21%), not apiPercentUsed. Billing window PT 2026-08-16 17:52 →
+ * 2026-09-16 17:52. membership ultra. onDemand disabled used=0.
+ */
+const LIVE_PERIOD = {
+  billingCycleStart: "2026-08-17T00:52:00.000Z",
+  billingCycleEnd: "2026-09-17T00:52:00.000Z",
+  membershipType: "ultra",
+  planUsage: {
+    autoPercentUsed: 6.6415,
+    apiPercentUsed: 0,
+    totalSpend: 13283,
+    limit: 40000,
+    used: 0,
+    displayMessage: "used 33% of included usage",
+  },
+};
+
+const LIVE_SUMMARY = {
+  billingCycleStart: "2026-08-17T00:52:00.000Z",
+  billingCycleEnd: "2026-09-17T00:52:00.000Z",
+  membershipType: "ultra",
+  individualUsage: {
+    plan: {
+      autoPercentUsed: 6.6415,
+      apiPercentUsed: 0,
+      used: 13283,
+      limit: 40000,
+    },
+    onDemand: { enabled: false, used: 0, limit: null },
+  },
+};
+
 const SAMPLE_PERIOD = {
   billingCycleStart: 1752883200000,
   billingCycleEnd: 1755561600000,
@@ -144,6 +180,21 @@ describe("mapCursorUsageSummary", () => {
     expect(other?.quotaTotal).not.toBe(100);
   });
 
+  it("maps summary plan.used/limit 13283/40000 as Other $132.83 and ignores disabled onDemand", () => {
+    const result = mapCursorUsageSummary(LIVE_SUMMARY);
+    const models = result.pools.find((pool) => pool.poolHint === "cursor_models");
+    const other = result.pools.find((pool) => pool.poolHint === "cursor_other");
+    expect(models?.quotaUsed).toBe(6.6415);
+    expect(other).toMatchObject({
+      quotaUsed: 132.83,
+      quotaTotal: 400,
+      unit: "USD",
+    });
+    expect(other?.quotaUsed).not.toBe(0);
+    expect(other?.note).toMatch(/Cursor period/i);
+    expect((132.83 / 400) * 100).toBeCloseTo(33.2075, 4);
+  });
+
   it("ignores disabled onDemand.used=0 so it cannot become Other 0%", () => {
     const result = mapCursorUsageSummary({
       individualUsage: {
@@ -242,31 +293,16 @@ describe("mergeCursorSpendingSources", () => {
     expect(result.pools.some((pool) => pool.quotaUsed === 999 || pool.quotaUsed === 9.99)).toBe(false);
   });
 
-  it("maps period Other as $126.58 / $400 and ignores disabled onDemand.used=0", () => {
+  it("maps live period $132.83 / $400 and ignores disabled onDemand.used=0", () => {
     const result = mergeCursorSpendingSources({
-      period: {
-        planUsage: {
-          autoPercentUsed: 21.4,
-          apiPercentUsed: 0,
-          totalSpend: 12658,
-          limit: 40000,
-          used: 0,
-        },
-        individualUsage: {
-          plan: { autoPercentUsed: 21.4, apiPercentUsed: 0, used: 0 },
-          onDemand: { enabled: false, used: 0, limit: 40000 },
-        },
-      },
-      summary: {
-        individualUsage: {
-          plan: { autoPercentUsed: 21.4, apiPercentUsed: 0 },
-          onDemand: { enabled: false, used: 0, limit: 40000 },
-        },
-      },
+      period: LIVE_PERIOD,
+      summary: LIVE_SUMMARY,
     });
+    const models = result.pools.find((pool) => pool.poolHint === "cursor_models");
     const other = result.pools.find((pool) => pool.poolHint === "cursor_other");
+    expect(models?.quotaUsed).toBe(6.6415);
     expect(other).toMatchObject({
-      quotaUsed: 126.58,
+      quotaUsed: 132.83,
       quotaTotal: 400,
       unit: "USD",
     });
@@ -280,15 +316,15 @@ describe("mergeCursorSpendingSources", () => {
     const result = mergeCursorSpendingSources({
       period: {
         planUsage: {
-          autoPercentUsed: 10,
+          autoPercentUsed: 6.6415,
           apiPercentUsed: 0,
-          totalSpend: 12658,
+          totalSpend: 13283,
           limit: 40000,
         },
       },
     });
     const other = result.pools.find((pool) => pool.poolHint === "cursor_other");
-    expect(other?.quotaUsed).toBe(126.58);
+    expect(other?.quotaUsed).toBe(132.83);
     expect(other?.quotaUsed).not.toBe(0);
     expect(other?.quotaTotal).toBe(400);
     expect(other?.unit).toBe("USD");

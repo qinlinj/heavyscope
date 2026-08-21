@@ -10,7 +10,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ### Fixed
 
-- Cursor Other is period USD only. Live `get-current-period-usage` `planUsage.totalSpend` / `limit` (cents) maps as dollars — example `$126.58 / $400` (remaining `$273.42`). A disabled `onDemand.used=0` no longer overwrites that spend. `apiPercentUsed=0` is not Other. Honest `$0 / $400` only when `period.totalSpend` is truly 0. Leftover Other `unit=%` / `quota_total=100` is rewritten to USD on live apply.
+- Cursor Other is period USD only. Live `get-current-period-usage` `planUsage.totalSpend` / `limit` (cents) maps as dollars — **`$132.83 / $400`** (remaining `$267.17`; used/total ≈ 33%, the displayMessage “used 33% of included usage”, not `apiPercentUsed`). usage-summary `plan.used/limit` 13283/40000 may fill the same included meter. A disabled `onDemand.used=0` no longer overwrites that spend. `apiPercentUsed=0` is named/API, not Other. Models is `autoPercentUsed` 6.6415%. Honest `$0 / $400` only when `period.totalSpend` is truly 0. Leftover Other `unit=%` / `quota_total=100` is rewritten to USD on live apply.
 - Progress bars use each preset’s original accent again (Heavy `#38bdf8`, Bot `#a78bfa`, Models `#34d399`, Other `#fbbf24`). Risk / usage tone stays on the right-side used% text and RiskBadge. Indicator width is used%; the empty track remainder stays visible.
 
 ### Changed

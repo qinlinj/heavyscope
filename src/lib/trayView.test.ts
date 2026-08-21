@@ -329,18 +329,18 @@ describe("trayHeroUsedPercent", () => {
   const pools = [
     { id: "preset-grok-heavy", quota_total: 100, quota_used: 0 },
     { id: "preset-cursor-models", quota_total: 100, quota_used: 91 },
-    { id: "preset-cursor-other", quota_total: 400, quota_used: 126.58 },
+    { id: "preset-cursor-other", quota_total: 400, quota_used: 132.83 },
   ];
   const advices = [
     advice({ poolId: "preset-grok-heavy", risk: "unconnected", remaining: 100, usagePercent: 0 }),
     advice({ poolId: "preset-cursor-models", risk: "overspend", remaining: 9, usagePercent: 91 }),
-    advice({ poolId: "preset-cursor-other", risk: "ok", remaining: 273.42, usagePercent: 31.645 }),
+    advice({ poolId: "preset-cursor-other", risk: "ok", remaining: 267.17, usagePercent: 33.2075 }),
   ];
 
   it("uses used% of the tightest connected pool for All", () => {
     const hero = trayHeroUsedPercent("all", advices, pools);
     expect(hero).toEqual({ poolId: "preset-cursor-models", usedPercent: 91, mode: "all" });
-    expect(hero?.usedPercent).not.toBe(91 + 31.645);
+    expect(hero?.usedPercent).not.toBe(91 + 33.2075);
   });
 
   it("does not invent or sum mixed $ and % into one hero number", () => {
@@ -352,10 +352,10 @@ describe("trayHeroUsedPercent", () => {
     const other = trayHeroUsedPercent("preset-cursor-other", advices, pools);
     expect(other).toEqual({
       poolId: "preset-cursor-other",
-      usedPercent: 31.645,
+      usedPercent: 33.2075,
       mode: "pool",
     });
-    expect(other?.usedPercent).not.toBe(91 + 31.645);
+    expect(other?.usedPercent).not.toBe(91 + 33.2075);
   });
 
   it("draws no hero when used% is unknown", () => {

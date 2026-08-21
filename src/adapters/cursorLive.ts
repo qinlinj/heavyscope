@@ -357,19 +357,34 @@ function periodPlanHasTotalSpend(period: unknown): boolean {
   return plan != null && asFiniteNumber(plan.totalSpend) != null;
 }
 
-/**
- * Other is period USD only. Read planUsage.totalSpend / limit (cents).
- * Never treat plan.used or apiPercentUsed as Other — a 0 `used` must not
- * clobber a real totalSpend.
- */
-function otherUsdFromPlan(plan: Record<string, unknown> | null): { used: number; total: number } | null {
+function otherUsdFromCents(
+  spendCents: number,
+  limitCents: number | null,
+): { used: number; total: number } {
+  const total = limitCents != null && limitCents > 0 ? centsToUsdAmount(limitCents) : CURSOR_OTHER_DEFAULT_USD;
+  return { used: centsToUsdAmount(spendCents), total };
+}
+
+/** Period Other: planUsage.totalSpend / limit only. Never plan.used or apiPercentUsed. */
+function otherUsdFromPeriodSpend(plan: Record<string, unknown> | null): { used: number; total: number } | null {
   if (!plan) return null;
   const spendCents = asFiniteNumber(plan.totalSpend);
   if (spendCents == null) return null;
+  return otherUsdFromCents(spendCents, asFiniteNumber(plan.limit));
+}
+
+/**
+ * usage-summary Other: plan.used/limit cents (same included meter as period
+ * totalSpend). Never apiPercentUsed. A lone 0 used without a limit is not Other.
+ */
+function otherUsdFromSummaryPlan(plan: Record<string, unknown> | null): { used: number; total: number } | null {
+  if (!plan) return null;
+  const fromSpend = otherUsdFromPeriodSpend(plan);
+  if (fromSpend) return fromSpend;
+  const usedCents = asFiniteNumber(plan.used);
   const limitCents = asFiniteNumber(plan.limit);
-  const total =
-    limitCents != null && limitCents > 0 ? centsToUsdAmount(limitCents) : CURSOR_OTHER_DEFAULT_USD;
-  return { used: centsToUsdAmount(spendCents), total };
+  if (usedCents == null || limitCents == null || limitCents <= 0) return null;
+  return otherUsdFromCents(usedCents, limitCents);
 }
 
 function otherUsdFromOnDemand(onDemand: unknown): { used: number; total: number } | null {
@@ -439,7 +454,8 @@ function otherUsdPool(
 
 /**
  * usage-summary fallback: Models % from autoPercentUsed.
- * Other is USD from on-demand cents when present — never apiPercentUsed as 0–100%.
+ * Other is included plan.used/limit cents (same meter as period totalSpend),
+ * then enabled on-demand only. Never apiPercentUsed. Never disabled onDemand.
  */
 export function mapCursorUsageSummary(input: unknown): LiveProviderResult {
   if (!isRecord(input)) {
@@ -452,7 +468,8 @@ export function mapCursorUsageSummary(input: unknown): LiveProviderResult {
   const onDemand = individual?.onDemand;
 
   const autoPercent = autoPercentFrom(root, plan);
-  const other = otherUsdFromOnDemand(onDemand);
+  const fromPlan = otherUsdFromSummaryPlan(plan);
+  const other = fromPlan ?? otherUsdFromOnDemand(onDemand);
 
   if (autoPercent == null && other == null) {
     return {
@@ -471,11 +488,14 @@ export function mapCursorUsageSummary(input: unknown): LiveProviderResult {
     pools.push(modelsPool(autoPercent, resetAt, fetchedAt));
   }
   if (other) {
-    const usedCents = onDemandCents(onDemand);
-    const extra =
-      usedCents && usedCents.limit != null
-        ? `On-demand ${centsToUsdLabel(usedCents.used)} / ${centsToUsdLabel(usedCents.limit)}`
-        : `On-demand ${centsToUsdLabel(other.used * 100)} / $${other.total.toFixed(2)}`;
+    const extra = fromPlan
+      ? `Cursor period / spending $${other.used.toFixed(2)} / $${other.total.toFixed(2)}`
+      : (() => {
+          const usedCents = onDemandCents(onDemand);
+          return usedCents && usedCents.limit != null
+            ? `On-demand ${centsToUsdLabel(usedCents.used)} / ${centsToUsdLabel(usedCents.limit)}`
+            : `On-demand ${centsToUsdLabel(other.used * 100)} / $${other.total.toFixed(2)}`;
+        })();
     pools.push(otherUsdPool(other.used, other.total, resetAt, fetchedAt, extra));
   }
 
@@ -502,7 +522,7 @@ export function mapCursorPeriodUsage(
   const resetAt = asIso(root?.billingCycleEnd);
 
   const autoPercent = autoPercentFrom(root, plan);
-  const other = otherUsdFromPlan(plan);
+  const other = otherUsdFromPeriodSpend(plan);
 
   return {
     models: autoPercent != null ? modelsPool(autoPercent, resetAt, recordedAt) : null,
@@ -561,9 +581,10 @@ export function mapCursorSandUsage(
 
 /**
  * Merge current-period-usage + aggregations/events + usage-summary + SAND.
- * Other is period USD only: planUsage.totalSpend / limit. A disabled
- * onDemand.used=0 must never overwrite that. usage-summary is a Models %
- * fallback and an Other fallback only when period totalSpend is absent.
+ * Other is period USD: planUsage.totalSpend / limit. usage-summary
+ * plan.used/limit cents may fill the same included meter when they match.
+ * A disabled onDemand.used=0 must never overwrite that. apiPercentUsed is
+ * never Other. usage-summary is also a Models % fallback.
  * Grok Bot prefers SAND weekly %; SKU rows are fallback only. Never invent counts.
  */
 export function mergeCursorSpendingSources(sources: CursorSpendingSources): LiveProviderResult {

@@ -231,7 +231,7 @@ describe("applyAbsoluteUsage", () => {
     expect(pools[0]?.quota_used).not.toBe(21);
   });
 
-  it("rewrites leftover Other unit=% / total=100 to period USD $126.58 / $400", () => {
+  it("rewrites leftover Other unit=% / total=100 to period USD $132.83 / $400", () => {
     const { deps, pools } = absoluteDeps([
       pool({
         id: "preset-cursor-other",
@@ -246,16 +246,16 @@ describe("applyAbsoluteUsage", () => {
       [
         {
           poolHint: "cursor_other",
-          quotaUsed: 126.58,
+          quotaUsed: 132.83,
           quotaTotal: 400,
           resetCycle: "monthly",
           unit: "USD",
-          note: "Cursor period / spending $126.58 / $400.00",
+          note: "Cursor period / spending $132.83 / $400.00",
         },
       ],
       deps,
     );
-    expect(pools[0]?.quota_used).toBe(126.58);
+    expect(pools[0]?.quota_used).toBe(132.83);
     expect(pools[0]?.quota_total).toBe(400);
     expect(pools[0]?.unit).toBe("USD");
   });
