@@ -2,6 +2,13 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.24.0
+
+- Cursor Grok Bot weekly pool from `POST /api/dashboard/get-sand-usage-status`. After Refresh, `preset-grok-bot` shows live used% + reset (`nextResetTimestampUtc`). Models + Other stay populated.
+- Units are percent. No invented used/remaining/limit credit counts. HTTP 405 on SAND is `http`, not expired. A SAND 401 marks Bot unavailable only.
+- `cursor-grok-4.6-high-fast` is still Cursor Grok chat, not Bot. grok.com `GROK_CHAT` 12% is not Bot.
+- Version 0.24.0.
+
 ## v0.23.0
 
 - Live Cursor refresh no longer treats `POST /api/dashboard/get-filtered-usage-events` HTTP 401 `Team ID is required` as a dead session. Period + usage-summary already map Models % and Other $400; that 401 is skipped and the merge continues (`botUnavailable` when no grok-bot SKU).

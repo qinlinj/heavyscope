@@ -6,6 +6,25 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-08-21
+
+### Added
+
+- Live Cursor refresh maps `POST /api/dashboard/get-sand-usage-status` (`{}` body, same Spending cookie/Origin/Referer) onto `preset-grok-bot`. `usagePercent` is weekly used%; remaining% is `clamp(100 - usagePercent, 0, 100)`; `reset_at` prefers `nextResetTimestampUtc`. Display unit is `%`. A 100% basis (`used=usagePercent`, `total=100`) is percent-of-pool only — no invented used/remaining/limit credit counts. `hasAvailableUsage` / `hasNonZeroIncludedLimit` are availability flags, not quota amounts.
+- `finishCursorLiveRefresh` / `fetchCursorUsage` call SAND alongside usage-summary + current-period-usage. Models + Other stay populated when SAND is missing.
+
+### Fixed
+
+- GET / HTTP 405 on the SAND path is `http` (Method not allowed), never session expired. Cursor `Team ID is required` stays `http` (same as 0.23.0). A real SAND 401 marks Bot unavailable and does not wipe Models / Other.
+
+### Honest / not claimed
+
+- grok.com `GetGrokCreditsConfig` `GROK_CHAT` 12% (or any `product_usage` enum) is not Grok Bot. `isCursorGrokBotSku` still rejects `cursor-grok-*` (including `cursor-grok-4.6-high-fast`, which is Cursor Grok chat). Conservative SKU rows remain fallback only. Sister SAND calls (`get-sand-access-status`, `get-sand-trial-claim-status`) are optional and unused; `start-sand-trial` is never called.
+
+### Changed
+
+- Version 0.24.0 (package.json + src-tauri + README + docs/RELEASE.md). Heatmap / pies / trend / Recent / tray chrome / window 380×780, proxy geometry, applyAbsoluteUsage rules, and backup redact are unchanged.
+
 ## [0.23.0] - 2026-08-21
 
 ### Fixed

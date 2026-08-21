@@ -338,6 +338,16 @@ export function isHeavyProductName(name: string): boolean {
  * remaining-style meter that is not Heavy, map that leftover segment to Bot.
  * Never invent a Bot number when only Heavy exists.
  */
+function isGrokChatProductName(name: string): boolean {
+  const compact = name.trim().toLowerCase().replace(/[_\s]+/g, "-");
+  return (
+    compact === "grok-chat" ||
+    compact === "product-grok-chat" ||
+    compact === "product-usage" ||
+    compact === "product-usage-enum"
+  );
+}
+
 export function pickBotProduct(
   products: ProductSegment[],
   heavyPercent: number,
@@ -347,6 +357,7 @@ export function pickBotProduct(
 
     const leftover = products.filter((item) => {
     if (isHeavyProductName(item.name)) return false;
+    if (isGrokChatProductName(item.name)) return false;
     if (item.name.trim() && /heavy|grok[\s_-]*build|^build$/i.test(item.name) && !isBotProductName(item.name)) {
       return false;
     }

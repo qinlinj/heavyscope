@@ -5,8 +5,10 @@ import {
   finishCursorLiveRefresh,
   mapCursorGrokBotFromRows,
   mapCursorHttpStatus,
+  mapCursorSandUsage,
   parseCursorJsonBody,
   resolveCursorBillingWindow,
+  sandUsageRequestBody,
   type CursorJsonParse,
 } from "./cursorLive";
 import {
@@ -23,6 +25,7 @@ import {
   CURSOR_FILTERED_USAGE_PATH,
   CURSOR_ORIGIN,
   CURSOR_PERIOD_USAGE_PATH,
+  CURSOR_SAND_USAGE_PATH,
   CURSOR_SPENDING_REFERER,
   CURSOR_USAGE_PATH,
   GRPC_WEB_EMPTY_BODY,
@@ -66,7 +69,7 @@ export async function fetchCursorUsage(token: string): Promise<LiveProviderResul
     return { ok: false, code: "invalid", message: "Cursor session token is empty", pools: [] };
   }
 
-  const [periodRes, summaryRes] = await Promise.all([
+  const [periodRes, summaryRes, sandRes] = await Promise.all([
     liveFetch({
       provider: "cursor",
       method: "POST",
@@ -80,12 +83,20 @@ export async function fetchCursorUsage(token: string): Promise<LiveProviderResul
       path: CURSOR_USAGE_PATH,
       headers: cursorHeaders(cookie, false),
     }),
+    liveFetch({
+      provider: "cursor",
+      method: "POST",
+      path: CURSOR_SAND_USAGE_PATH,
+      headers: cursorHeaders(cookie, true),
+      body: sandUsageRequestBody(),
+    }),
   ]);
 
   const periodParsed = jsonOrError(periodRes, "Cursor current-period-usage");
   if (!("value" in periodParsed) && periodParsed.code === "expired") return periodParsed;
   const summaryParsed = jsonOrError(summaryRes, "Cursor usage-summary");
   if (!("value" in summaryParsed) && summaryParsed.code === "expired") return summaryParsed;
+  const sandParsed = jsonOrError(sandRes, "Cursor sand-usage-status");
 
   const period = "value" in periodParsed ? periodParsed.value : undefined;
   const summary = "value" in summaryParsed ? summaryParsed.value : undefined;
@@ -102,8 +113,14 @@ export async function fetchCursorUsage(token: string): Promise<LiveProviderResul
   if (!("value" in aggParsed) && aggParsed.code === "expired") return aggParsed;
   const aggregations = "value" in aggParsed ? aggParsed.value : undefined;
 
+  const sandValue = "value" in sandParsed ? sandParsed.value : undefined;
+  const sandBot = sandValue != null ? mapCursorSandUsage(sandValue) : null;
+
   let eventsParsed: CursorJsonParse | undefined;
-  if (!mapCursorGrokBotFromRows(aggregations, window.resetAt, new Date().toISOString())) {
+  if (
+    !sandBot &&
+    !mapCursorGrokBotFromRows(aggregations, window.resetAt, new Date().toISOString())
+  ) {
     const eventsRes = await liveFetch({
       provider: "cursor",
       method: "POST",
@@ -114,7 +131,13 @@ export async function fetchCursorUsage(token: string): Promise<LiveProviderResul
     eventsParsed = jsonOrError(eventsRes, "Cursor filtered-usage-events");
   }
 
-  const merged = finishCursorLiveRefresh({ period, summary, aggregations, eventsParsed });
+  const merged = finishCursorLiveRefresh({
+    period,
+    summary,
+    aggregations,
+    eventsParsed,
+    sandParsed,
+  });
   if (merged.ok) return merged;
 
   if (!("value" in periodParsed) && periodParsed.code !== "invalid") return periodParsed;

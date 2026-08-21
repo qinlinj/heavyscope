@@ -8,11 +8,15 @@ import {
   mapCursorAggregatedResponse,
   mapCursorHttpStatus,
   mapCursorPeriodResponse,
+  mapCursorSandResponse,
+  mapCursorSandUsage,
   mapCursorUsageResponse,
   mapCursorUsageSummary,
   mergeCursorSpendingSources,
   normalizeCursorSessionToken,
   parseCursorJsonBody,
+  sandRemainingPercent,
+  sandUsageRequestBody,
 } from "./cursorLive";
 
 const SAMPLE_SUMMARY = {
@@ -45,6 +49,25 @@ const SAMPLE_PERIOD = {
     bonusSpend: 250,
     limit: 40000,
   },
+};
+
+/** Live get-sand-usage-status fixture (2026-08-21 PT). No used/remaining/limit on the wire. */
+const SAMPLE_SAND = {
+  usagePercent: 21.473078,
+  currentPeriodStart: "2026-08-17T01:40:00.748Z",
+  nextResetTimestampUtc: "2026-08-24T01:40:00.748Z",
+  hasAvailableUsage: true,
+  hasNonZeroIncludedLimit: true,
+};
+
+const LIVE_LIKE_AGGREGATIONS_NO_BOT = {
+  aggregations: [
+    { modelIntent: "sand-default" },
+    { modelIntent: "cursor-grok-4.6-high-fast" },
+    { modelIntent: "claude-opus-5-low" },
+    { modelIntent: "sand-automation" },
+    { modelIntent: "gemini-2.5-flash" },
+  ],
 };
 
 const SAMPLE_AGGREGATIONS = {
@@ -269,6 +292,51 @@ describe("mergeCursorSpendingSources", () => {
     });
     expect(result.pools.find((pool) => pool.poolHint === "grok_bot")?.quotaUsed).toBe(1.1);
   });
+
+  it("maps SAND weekly % onto Grok Bot and keeps Models + Other", () => {
+    const result = mergeCursorSpendingSources({
+      period: SAMPLE_PERIOD,
+      aggregations: LIVE_LIKE_AGGREGATIONS_NO_BOT,
+      sand: SAMPLE_SAND,
+    });
+    expect(result.ok).toBe(true);
+    expect(result.botUnavailable).toBe(false);
+    expect(result.pools.find((pool) => pool.poolHint === "cursor_models")).toMatchObject({
+      quotaUsed: 42.5,
+      quotaTotal: 100,
+      unit: "%",
+    });
+    expect(result.pools.find((pool) => pool.poolHint === "cursor_other")).toMatchObject({
+      quotaUsed: 12.5,
+      quotaTotal: 400,
+      unit: "USD",
+    });
+    const bot = result.pools.find((pool) => pool.poolHint === "grok_bot");
+    expect(bot).toMatchObject({
+      quotaUsed: 21.473078,
+      quotaTotal: 100,
+      unit: "%",
+      resetCycle: "weekly",
+      resetAt: "2026-08-24T01:40:00.748Z",
+    });
+    expect(sandRemainingPercent(bot!.quotaUsed)).toBeCloseTo(78.526922, 5);
+  });
+
+  it("prefers SAND weekly % over a grok-bot SKU dollar row", () => {
+    const result = mergeCursorSpendingSources({
+      period: SAMPLE_PERIOD,
+      aggregations: SAMPLE_AGGREGATIONS,
+      sand: SAMPLE_SAND,
+    });
+    const bot = result.pools.find((pool) => pool.poolHint === "grok_bot");
+    expect(bot).toMatchObject({
+      quotaUsed: 21.473078,
+      quotaTotal: 100,
+      unit: "%",
+    });
+    expect(bot?.quotaUsed).not.toBe(3.3);
+    expect(bot?.unit).not.toBe("USD");
+  });
 });
 
 describe("isCursorGrokBotSku", () => {
@@ -288,6 +356,8 @@ describe("isCursorGrokBotSku", () => {
     expect(isCursorGrokBotSku("cursor-grok")).toBe(false);
     expect(isCursorGrokBotSku("cursor-grok-4")).toBe(false);
     expect(isCursorGrokBotSku("cursor-grok-4.6-high-fast")).toBe(false);
+    expect(isCursorGrokBotSku("cursor-grok-4.6-high")).toBe(false);
+    expect(isCursorGrokBotSku("cursor-grok-*")).toBe(false);
     expect(isCursorGrokBotSku("Cursor Grok")).toBe(false);
     expect(isCursorGrokBotSku("grok-4")).toBe(false);
     expect(isCursorGrokBotSku("Grok 4")).toBe(false);
@@ -373,16 +443,6 @@ const TEAM_ID_REQUIRED_BODY = JSON.stringify({
   },
 });
 
-const LIVE_LIKE_AGGREGATIONS_NO_BOT = {
-  aggregations: [
-    { modelIntent: "sand-default" },
-    { modelIntent: "cursor-grok-4.6-high-fast" },
-    { modelIntent: "claude-opus-5-low" },
-    { modelIntent: "sand-automation" },
-    { modelIntent: "gemini-2.5-flash" },
-  ],
-};
-
 describe("mapCursorHttpStatus / isCursorSessionExpired", () => {
   it("does not treat 401 Team ID is required as expired", () => {
     expect(isCursorSessionExpired(401, TEAM_ID_REQUIRED_BODY)).toBe(false);
@@ -465,5 +525,132 @@ describe("finishCursorLiveRefresh", () => {
     const result = finishCursorLiveRefresh({ eventsParsed });
     expect(result.ok).toBe(false);
     expect(result.code).toBe("expired");
+  });
+
+  it("maps GET/HTTP 405 on sand as http, not expired, and still applies Models + Other", () => {
+    const body = JSON.stringify({ error: "Method not allowed" });
+    expect(isCursorSessionExpired(405, body)).toBe(false);
+    expect(mapCursorHttpStatus(405, "Cursor sand-usage-status", body)?.code).toBe("http");
+    expect(mapCursorSandResponse(405, body).code).toBe("http");
+    expect(mapCursorSandResponse(405, body).code).not.toBe("expired");
+    expect(mapCursorSandResponse(401, TEAM_ID_REQUIRED_BODY).code).toBe("http");
+
+    const sandParsed = parseCursorJsonBody(405, body, "Cursor sand-usage-status");
+    expect("value" in sandParsed).toBe(false);
+    if (!("value" in sandParsed)) expect(sandParsed.code).toBe("http");
+
+    const result = finishCursorLiveRefresh({
+      period: SAMPLE_PERIOD,
+      aggregations: LIVE_LIKE_AGGREGATIONS_NO_BOT,
+      sandParsed,
+    });
+    expect(result.ok).toBe(true);
+    expect(result.code).not.toBe("expired");
+    expect(result.botUnavailable).toBe(true);
+    expect(result.pools.find((pool) => pool.poolHint === "cursor_models")).toMatchObject({
+      quotaUsed: 42.5,
+      quotaTotal: 100,
+      unit: "%",
+    });
+    expect(result.pools.find((pool) => pool.poolHint === "cursor_other")).toMatchObject({
+      quotaUsed: 12.5,
+      quotaTotal: 400,
+      unit: "USD",
+    });
+    expect(result.pools.find((pool) => pool.poolHint === "grok_bot")).toBeUndefined();
+  });
+
+  it("marks Bot unavailable on real SAND 401 and does not wipe Models + Other", () => {
+    const sandParsed = parseCursorJsonBody(401, "", "Cursor sand-usage-status");
+    expect("value" in sandParsed).toBe(false);
+    if (!("value" in sandParsed)) expect(sandParsed.code).toBe("expired");
+
+    const result = finishCursorLiveRefresh({
+      period: SAMPLE_PERIOD,
+      aggregations: LIVE_LIKE_AGGREGATIONS_NO_BOT,
+      sandParsed,
+    });
+    expect(result.ok).toBe(true);
+    expect(result.code).not.toBe("expired");
+    expect(result.botUnavailable).toBe(true);
+    expect(result.pools.map((pool) => pool.poolHint)).toEqual(["cursor_models", "cursor_other"]);
+    expect(result.pools.find((pool) => pool.poolHint === "grok_bot")).toBeUndefined();
+  });
+
+  it("applies SAND Bot % when period Models + Other already parsed", () => {
+    const sandParsed = parseCursorJsonBody(200, JSON.stringify(SAMPLE_SAND), "Cursor sand-usage-status");
+    const result = finishCursorLiveRefresh({
+      period: SAMPLE_PERIOD,
+      aggregations: LIVE_LIKE_AGGREGATIONS_NO_BOT,
+      sandParsed,
+    });
+    expect(result.ok).toBe(true);
+    expect(result.botUnavailable).toBe(false);
+    expect(result.pools.find((pool) => pool.poolHint === "grok_bot")).toMatchObject({
+      quotaUsed: 21.473078,
+      quotaTotal: 100,
+      unit: "%",
+      resetAt: "2026-08-24T01:40:00.748Z",
+    });
+  });
+});
+
+describe("mapCursorSandUsage", () => {
+  it("parses the live JSON to used%, remaining%, and nextResetTimestampUtc", () => {
+    expect(sandUsageRequestBody()).toBe("{}");
+    const mapped = mapCursorSandUsage(SAMPLE_SAND, "2026-08-21T18:00:00.000Z");
+    expect(mapped).toMatchObject({
+      poolHint: "grok_bot",
+      quotaUsed: 21.473078,
+      quotaTotal: 100,
+      unit: "%",
+      resetCycle: "weekly",
+      resetAt: "2026-08-24T01:40:00.748Z",
+      recordedAt: "2026-08-21T18:00:00.000Z",
+    });
+    expect(sandRemainingPercent(21.473078)).toBeCloseTo(78.526922, 5);
+    expect(sandRemainingPercent(110)).toBe(0);
+    expect(sandRemainingPercent(-5)).toBe(100);
+  });
+
+  it("does not invent used/remaining/limit counts when those keys are absent", () => {
+    expect(SAMPLE_SAND).not.toHaveProperty("used");
+    expect(SAMPLE_SAND).not.toHaveProperty("remaining");
+    expect(SAMPLE_SAND).not.toHaveProperty("limit");
+    expect(SAMPLE_SAND).not.toHaveProperty("includedLimitZero");
+    const mapped = mapCursorSandUsage(SAMPLE_SAND);
+    expect(mapped?.quotaUsed).toBe(21.473078);
+    expect(mapped?.quotaTotal).toBe(100);
+    expect(mapped?.unit).toBe("%");
+    expect(mapped).not.toHaveProperty("used");
+    expect(mapped).not.toHaveProperty("remaining");
+    expect(mapped).not.toHaveProperty("limit");
+  });
+
+  it("ignores stuffed used/remaining/limit integers and availability flags as amounts", () => {
+    const polluted = mapCursorSandUsage({
+      ...SAMPLE_SAND,
+      used: 999,
+      remaining: 1,
+      limit: 50,
+      includedLimitZero: false,
+      availableBankedResetCount: 3,
+      hasAvailableUsage: true,
+      hasNonZeroIncludedLimit: true,
+    });
+    expect(polluted?.quotaUsed).toBe(21.473078);
+    expect(polluted?.quotaTotal).toBe(100);
+    expect(polluted?.quotaUsed).not.toBe(999);
+    expect(polluted?.quotaTotal).not.toBe(50);
+    expect(mapCursorSandUsage({ hasAvailableUsage: true, hasNonZeroIncludedLimit: true })).toBeNull();
+  });
+
+  it("prefers nextResetTimestampUtc and falls back to currentPeriodStart", () => {
+    expect(
+      mapCursorSandUsage({
+        usagePercent: 10,
+        currentPeriodStart: "2026-08-17T01:40:00.748Z",
+      })?.resetAt,
+    ).toBe("2026-08-17T01:40:00.748Z");
   });
 });

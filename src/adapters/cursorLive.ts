@@ -33,6 +33,8 @@ export type CursorSpendingSources = {
   aggregations?: unknown;
   events?: unknown;
   summary?: unknown;
+  /** POST /api/dashboard/get-sand-usage-status weekly Grok Bot percent. */
+  sand?: unknown;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -500,11 +502,51 @@ export function mapCursorPeriodUsage(
   };
 }
 
+/** Remaining % of a SAND weekly pool. Never an absolute credit/request count. */
+export function sandRemainingPercent(usagePercent: number): number {
+  return Math.min(100, Math.max(0, 100 - usagePercent));
+}
+
+function grokBotPercentPool(
+  usagePercent: number,
+  resetAt: string | null,
+  recordedAt: string,
+): LivePoolUpdate {
+  return {
+    poolHint: "grok_bot",
+    quotaUsed: usagePercent,
+    quotaTotal: LIVE_PERCENT_TOTAL,
+    resetAt,
+    resetCycle: "weekly",
+    unit: LIVE_PERCENT_UNIT,
+    note: "Cursor SAND weekly sync (Grok Bot)",
+    recordedAt,
+  };
+}
+
 /**
- * Merge current-period-usage + aggregations/events + usage-summary.
+ * Map get-sand-usage-status onto the Grok Bot weekly pool.
+ * usagePercent is used%; remaining% = clamp(100 - usagePercent, 0, 100).
+ * 100% basis is percent-of-pool only — never fake used/remaining/limit counts.
+ * hasAvailableUsage / hasNonZeroIncludedLimit are flags, not quota amounts.
+ */
+export function mapCursorSandUsage(
+  input: unknown,
+  recordedAt = new Date().toISOString(),
+): LivePoolUpdate | null {
+  const root = unwrapCursorPayload(input);
+  if (!root) return null;
+  const usagePercent = asFiniteNumber(root.usagePercent);
+  if (usagePercent == null) return null;
+  const resetAt = asIso(root.nextResetTimestampUtc) ?? asIso(root.currentPeriodStart);
+  return grokBotPercentPool(usagePercent, resetAt, recordedAt);
+}
+
+/**
+ * Merge current-period-usage + aggregations/events + usage-summary + SAND.
  * Spending Other (USD) wins over the old usage-summary Other-% mapping.
  * usage-summary is only a Models % fallback when period autoPercent is missing.
- * Grok Bot is omitted unless a conservative SKU row exists — never invented.
+ * Grok Bot prefers SAND weekly %; SKU rows are fallback only. Never invent counts.
  */
 export function mergeCursorSpendingSources(sources: CursorSpendingSources): LiveProviderResult {
   const recordedAt = new Date().toISOString();
@@ -514,7 +556,9 @@ export function mergeCursorSpendingSources(sources: CursorSpendingSources): Live
     sources.summary != null && isRecord(sources.summary) ? mapCursorUsageSummary(sources.summary) : null;
 
   const resetAt = period?.resetAt ?? window.resetAt ?? summary?.resetAt ?? null;
+  const sandBot = sources.sand != null ? mapCursorSandUsage(sources.sand, recordedAt) : null;
   const grok =
+    sandBot ??
     mapCursorGrokBotFromRows(sources.aggregations, resetAt, recordedAt) ??
     mapCursorGrokBotFromRows(sources.events, resetAt, recordedAt);
 
@@ -615,15 +659,17 @@ export function mapCursorHttpStatus(
 export type CursorJsonParse = { ok: true; value: unknown } | LiveProviderResult;
 
 /**
- * Finish a Cursor live refresh after optional filtered-usage-events.
+ * Finish a Cursor live refresh after optional filtered-usage-events / SAND.
  * When period / summary / aggregations already parsed, a 401/403/405 on
- * events must not abort the merge — skip events and keep Models + Other.
+ * events or SAND must not abort the merge — skip that payload and keep
+ * Models + Other. Real SAND 401 only marks Bot unavailable.
  */
 export function finishCursorLiveRefresh(args: {
   period?: unknown;
   summary?: unknown;
   aggregations?: unknown;
   eventsParsed?: CursorJsonParse;
+  sandParsed?: CursorJsonParse;
 }): LiveProviderResult {
   const hasPrior =
     args.period !== undefined || args.summary !== undefined || args.aggregations !== undefined;
@@ -631,8 +677,16 @@ export function finishCursorLiveRefresh(args: {
   if (args.eventsParsed) {
     if ("value" in args.eventsParsed) {
       events = args.eventsParsed.value;
-    } else if (!hasPrior && args.eventsParsed.code === "expired") {
+    } else if (!hasPrior && args.eventsParsed.code === "expired" && args.sandParsed == null) {
       return args.eventsParsed;
+    }
+  }
+  let sand: unknown;
+  if (args.sandParsed) {
+    if ("value" in args.sandParsed) {
+      sand = args.sandParsed.value;
+    } else if (!hasPrior && events === undefined) {
+      return args.sandParsed;
     }
   }
   return mergeCursorSpendingSources({
@@ -640,6 +694,7 @@ export function finishCursorLiveRefresh(args: {
     aggregations: args.aggregations,
     events,
     summary: args.summary,
+    sand,
   });
 }
 
@@ -677,6 +732,16 @@ export function mapCursorAggregatedResponse(status: number, body: string): LiveP
   const parsed = parseCursorJsonBody(status, body, "Cursor aggregated-usage-events");
   if (!("value" in parsed)) return parsed;
   return mergeCursorSpendingSources({ aggregations: parsed.value });
+}
+
+export function mapCursorSandResponse(status: number, body: string): LiveProviderResult {
+  const parsed = parseCursorJsonBody(status, body, "Cursor sand-usage-status");
+  if (!("value" in parsed)) return parsed;
+  return mergeCursorSpendingSources({ sand: parsed.value });
+}
+
+export function sandUsageRequestBody(): string {
+  return "{}";
 }
 
 export function aggregatedUsageRequestBody(startMs: number, endMs: number): string {

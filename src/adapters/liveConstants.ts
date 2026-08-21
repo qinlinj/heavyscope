@@ -7,6 +7,8 @@ export const CURSOR_USAGE_PATH = "/api/usage-summary";
 export const CURSOR_PERIOD_USAGE_PATH = "/api/dashboard/get-current-period-usage";
 export const CURSOR_AGGREGATED_USAGE_PATH = "/api/dashboard/get-aggregated-usage-events";
 export const CURSOR_FILTERED_USAGE_PATH = "/api/dashboard/get-filtered-usage-events";
+/** Cursor SAND weekly Grok Bot pool. POST + `{}`; GET is HTTP 405. */
+export const CURSOR_SAND_USAGE_PATH = "/api/dashboard/get-sand-usage-status";
 export const CURSOR_ORIGIN = "https://cursor.com";
 export const CURSOR_SPENDING_REFERER = "https://cursor.com/dashboard/spending";
 export const CURSOR_PROXY_PREFIX = "/proxy/cursor";
