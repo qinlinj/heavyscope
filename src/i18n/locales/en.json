@@ -97,7 +97,8 @@
     "custom": "Custom",
     "recent": "Recent records",
     "recentEmpty": "Increments appear after you connect.",
-    "awaitingConnect": "Not connected"
+    "awaitingConnect": "Not connected",
+    "sourceCursorPeriod": "Cursor period / spending"
   },
   "presets": {
     "preset-grok-heavy": "Grok Heavy Weekly Shared Pool",
@@ -345,6 +346,9 @@
     "grokParsedToggle": "Parsed products",
     "tightest": "Tightest",
     "scrollPrev": "Scroll left",
-    "scrollNext": "Scroll right"
+    "scrollNext": "Scroll right",
+    "heroAll": "All",
+    "heroAllLabel": "All · {{pool}}",
+    "heroSelect": "Hero pool"
   }
 }

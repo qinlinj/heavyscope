@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { OverflowStrip } from "@/components/OverflowStrip";
@@ -23,7 +23,13 @@ import {
   heatmapWeekOffsetPx,
   squareCellPx,
 } from "@/lib/heatmap";
-import { fitTrayHeatmap, trayHeatFill, trayHeatmapWeeksForScale, TRAY_HEATMAP_WEEKS } from "@/lib/trayView";
+import {
+  clampTrayHeatmapZoomWeeks,
+  fitTrayHeatmap,
+  trayHeatFill,
+  trayHeatmapWeeksFromDrag,
+  TRAY_HEATMAP_WEEKS,
+} from "@/lib/trayView";
 import { displayPoolName } from "@/lib/poolName";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +43,7 @@ type Props = {
   size?: TileSize;
   minCellPx?: number;
   maxCellPx?: number;
-  /** ChartsPanel Day/Week/Month increment window. Compact / tray only. */
+  /** Ignored on the tray compact path. Web Usage still owns Day/Week/Month. */
   scale?: ChartScale;
 };
 
@@ -60,7 +66,7 @@ export function ActivityHeatmap({
   size,
   minCellPx,
   maxCellPx,
-  scale,
+  scale: _scale,
 }: Props) {
   const { t, i18n } = useTranslation();
   const fallback = useMemo(() => heatmapFallbackBox(size ?? (compact ? "sm" : "lg")), [size, compact]);
@@ -68,10 +74,13 @@ export function ActivityHeatmap({
   const webFit = size ? fitWebHeatmap(width, size, fallback.width) : null;
   const trayFit = compact && !size ? fitTrayHeatmap(width, fallback.width) : null;
   const autoWeeks = useHeatmapWeeks(compact);
+  const [zoomWeeks, setZoomWeeks] = useState<number | null>(null);
+  const fittedTrayWeeks = trayFit?.weeks ?? autoWeeks;
   const trayWeeks = trayFit
-    ? trayHeatmapWeeksForScale(scale ?? "day", trayFit.weeks)
+    ? clampTrayHeatmapZoomWeeks(zoomWeeks ?? fittedTrayWeeks, fittedTrayWeeks)
     : null;
   const resolvedWeeks = webFit?.weeks ?? trayWeeks ?? weeks ?? autoWeeks;
+  void _scale;
   const grid = useMemo(() => heatmapGrid(records, resolvedWeeks, new Date(), pools), [records, resolvedWeeks, pools]);
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const [tip, setTip] = useState<{ cell: HeatmapCell; anchor: DOMRect } | null>(null);
@@ -220,22 +229,21 @@ export function ActivityHeatmap({
       className={cn("flex w-full", compact ? "flex-col" : "h-full min-h-0 flex-col")}
     >
       {compact ? (
-        <>
-          <div ref={boxRef} className="w-full min-w-0">
-            <CompactTrayPlot
-              gridWeeks={grid.weeks}
-              cells={grid.cells}
-              months={months}
-              weekdays={weekdays}
-              today={today}
-              maxValue={maxValue}
-              intensity={(cellItem) => heatmapCellIntensity(cellItem, grid)}
-              t={t}
-              onTip={(next) => setTip(next)}
-            />
-          </div>
-          {stats}
-        </>
+        <div ref={boxRef} className="w-full min-w-0">
+          <CompactTrayPlot
+            gridWeeks={grid.weeks}
+            cells={grid.cells}
+            months={months}
+            weekdays={weekdays}
+            today={today}
+            maxValue={maxValue}
+            intensity={(cellItem) => heatmapCellIntensity(cellItem, grid)}
+            t={t}
+            fittedWeeks={fittedTrayWeeks}
+            zoomWeeks={trayWeeks ?? fittedTrayWeeks}
+            onZoomWeeks={setZoomWeeks}
+          />
+        </div>
       ) : (
         <div
           ref={boxRef}
@@ -247,7 +255,7 @@ export function ActivityHeatmap({
           {stats}
         </div>
       )}
-      {tip ? <HeatmapHoverTip cell={tip.cell} anchor={tip.anchor} pools={pools ?? []} /> : null}
+      {!compact && tip ? <HeatmapHoverTip cell={tip.cell} anchor={tip.anchor} pools={pools ?? []} /> : null}
     </div>
   );
 }
@@ -261,7 +269,9 @@ function CompactTrayPlot({
   maxValue,
   intensity,
   t,
-  onTip,
+  fittedWeeks,
+  zoomWeeks,
+  onZoomWeeks,
 }: {
   gridWeeks: number;
   cells: HeatmapCell[];
@@ -271,24 +281,57 @@ function CompactTrayPlot({
   maxValue: number;
   intensity: (cell: HeatmapCell) => number;
   t: (key: string, opts?: Record<string, unknown>) => string;
-  onTip: (next: { cell: HeatmapCell; anchor: DOMRect } | null) => void;
+  fittedWeeks: number;
+  zoomWeeks: number;
+  onZoomWeeks: (weeks: number | null) => void;
 }) {
   const gap = HEATMAP_CELL_GAP_PX;
+  const drag = useRef<{ x: number; weeks: number } | null>(null);
+  const [hoverDate, setHoverDate] = useState<string | null>(null);
+
+  function onPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    drag.current = { x: event.clientX, weeks: zoomWeeks };
+  }
+
+  function onPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!drag.current) return;
+    const next = trayHeatmapWeeksFromDrag(
+      drag.current.weeks,
+      event.clientX - drag.current.x,
+      event.currentTarget.clientWidth,
+      fittedWeeks,
+    );
+    onZoomWeeks(next);
+  }
+
+  function onPointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    drag.current = null;
+  }
+
   return (
     <div
-      className="grid w-full min-w-0"
+      className="grid w-full min-w-0 touch-pan-y select-none"
       style={{
         gridTemplateColumns: `${HEATMAP_WEEKDAY_COL_PX}px repeat(${gridWeeks}, minmax(0, 1fr))`,
         gridTemplateRows: `${HEATMAP_MONTH_ROW_PX}px repeat(7, auto)`,
         columnGap: gap,
         rowGap: gap,
       }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      onDoubleClick={() => onZoomWeeks(null)}
     >
       <div aria-hidden="true" style={{ gridColumn: 1, gridRow: 1 }} />
       {Array.from({ length: gridWeeks }, (_, weekIndex) => (
         <span
           key={`month-${weekIndex}`}
-          className="overflow-visible text-[10px] leading-none whitespace-nowrap text-muted-foreground"
+          className="overflow-visible text-[8.5px] leading-none whitespace-nowrap text-muted-foreground"
           style={{ gridColumn: weekIndex + 2, gridRow: 1 }}
         >
           {months.get(weekIndex) ?? ""}
@@ -298,7 +341,7 @@ function CompactTrayPlot({
         <span
           key={`dow-${label}-${weekday}`}
           className={cn(
-            "flex items-center justify-end text-[9px] leading-none text-muted-foreground",
+            "flex items-center justify-end text-[8.5px] leading-none text-muted-foreground",
             weekday % 2 === 0 && "invisible",
           )}
           style={{ gridColumn: 1, gridRow: weekday + 2 }}
@@ -308,11 +351,16 @@ function CompactTrayPlot({
       ))}
       {cells.map((cellItem) => {
         const level = heatmapLevel(intensity(cellItem), maxValue);
+        const hovered = hoverDate === cellItem.date;
         return (
           <button
             key={cellItem.date}
             type="button"
-            className={cn("w-full rounded-[2px] aspect-square", cellItem.date === today && "ring-1 ring-foreground/50")}
+            className={cn(
+              "w-full rounded-[2px] aspect-square",
+              cellItem.date === today && "ring-1 ring-foreground/50",
+              hovered && "opacity-80 ring-1 ring-foreground/70",
+            )}
             style={{
               gridColumn: cellItem.weekIndex + 2,
               gridRow: cellItem.weekday + 2,
@@ -320,10 +368,10 @@ function CompactTrayPlot({
               aspectRatio: "1 / 1",
               backgroundColor: trayHeatFill(level),
             }}
-            onMouseEnter={(event) => onTip({ cell: cellItem, anchor: event.currentTarget.getBoundingClientRect() })}
-            onMouseLeave={() => onTip(null)}
-            onFocus={(event) => onTip({ cell: cellItem, anchor: event.currentTarget.getBoundingClientRect() })}
-            onBlur={() => onTip(null)}
+            onMouseEnter={() => setHoverDate(cellItem.date)}
+            onMouseLeave={() => setHoverDate(null)}
+            onFocus={() => setHoverDate(cellItem.date)}
+            onBlur={() => setHoverDate(null)}
           >
             <span className="sr-only">{heatmapAria(t, cellItem)}</span>
           </button>

@@ -7,6 +7,7 @@ import {
   formatAmount,
   formatCountdown,
   formatSignedAmount,
+  otherUsdView,
   usagePercent,
   usageTone,
 } from "@/lib/format";
@@ -44,9 +45,11 @@ export function TrayPoolRow({
   const percent = usagePercent(pool);
   const tone = usageTone(percent, warnPercent, critPercent);
   const showCta = shouldShowTraySettingsCta(unsynced);
+  const usd = otherUsdView(pool);
+  const sourceLabel = pool.id === "preset-cursor-other" ? t("pool.sourceCursorPeriod") : null;
 
   return (
-    <div className="w-full border-b border-foreground/10 px-0.5 py-1.5 text-left text-xs last:border-b-0">
+    <div className="w-full border-b border-foreground/10 px-0 py-1.5 text-left last:border-b-0">
       <button
         type="button"
         aria-expanded={expanded}
@@ -57,14 +60,14 @@ export function TrayPoolRow({
         <div className="flex items-center justify-between gap-2">
           <span className="flex min-w-0 items-center gap-1.5">
             <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: pool.color }} />
-            <span className="truncate text-xs font-medium">{displayPoolName(pool, t)}</span>
+            <span className="truncate text-[11px] font-medium">{displayPoolName(pool, t)}</span>
             {highlighted ? (
-              <span className="shrink-0 text-[11px] font-medium text-muted-foreground">{t("tray.tightest")}</span>
+              <span className="shrink-0 text-[10px] font-normal text-muted-foreground">{t("tray.tightest")}</span>
             ) : null}
           </span>
           <span
             className={cn(
-              "shrink-0 text-xs font-semibold tabular-nums",
+              "shrink-0 text-[11px] font-semibold tabular-nums",
               unsynced && "text-muted-foreground",
               !unsynced && tone === "ok" && "text-emerald-600 dark:text-emerald-400",
               !unsynced && tone === "warn" && "text-amber-600 dark:text-amber-400",
@@ -78,16 +81,14 @@ export function TrayPoolRow({
           <>
             <Progress
               value={percent}
-              className={cn(
-                "mt-1.5 h-1 bg-foreground/10",
-                tone === "ok" && "[&_[data-slot=progress-indicator]]:bg-emerald-500",
-                tone === "warn" && "[&_[data-slot=progress-indicator]]:bg-amber-500",
-                tone === "crit" && "[&_[data-slot=progress-indicator]]:bg-red-500",
-              )}
+              indicatorColor={pool.color}
+              className="mt-1 h-1 w-full rounded-[2px] bg-foreground/10"
             />
-            <div className="mt-1 flex items-center justify-between gap-2 text-[11px] leading-tight text-muted-foreground">
-              <span className="truncate">
-                {t("pool.remaining")} {formatAmount(facts.remaining, facts.unit)}
+            <div className="mt-1 flex items-center justify-between gap-2 text-[10px] leading-[14px] font-normal text-muted-foreground">
+              <span className="min-w-0 truncate">
+                {usd
+                  ? `${usd.dollarLine}${sourceLabel ? ` · ${sourceLabel}` : ""}`
+                  : `${t("pool.remaining")} ${formatAmount(facts.remaining, facts.unit)}`}
               </span>
               <span className="shrink-0 tabular-nums">{formatCountdown(facts.resetAt, i18n.language)}</span>
             </div>
@@ -97,25 +98,28 @@ export function TrayPoolRow({
 
       {showCta && onOpenSettings ? (
         <div className="mt-1">
-          <Button type="button" size="xs" variant="ghost" className="h-6 px-1.5" onClick={onOpenSettings}>
+          <Button type="button" size="xs" variant="ghost" className="h-6 px-1.5 hover:bg-transparent" onClick={onOpenSettings}>
             {t("tray.goToSettings")}
           </Button>
         </div>
       ) : null}
 
       {expanded ? (
-        <div className="mt-1.5 space-y-1 border-t border-foreground/10 pt-1.5 text-[11px]">
+        <div className="mt-1.5 space-y-1 border-t border-foreground/10 pt-1.5 text-[10px] leading-[14px]">
           <p className="tabular-nums text-foreground">
             {unsynced
               ? t("pool.awaitingConnect")
-              : `${formatAmount(facts.used, facts.unit)} / ${formatAmount(facts.total, facts.unit)}`}
+              : usd
+                ? usd.dollarLine
+                : `${formatAmount(facts.used, facts.unit)} / ${formatAmount(facts.total, facts.unit)}`}
           </p>
+          {sourceLabel && !unsynced ? <p className="text-muted-foreground">{sourceLabel}</p> : null}
           {unsynced ? null : (
             <>
               <p className="text-muted-foreground">
                 {t("pool.remaining")}{" "}
                 <span className="font-medium text-foreground tabular-nums">
-                  {formatAmount(facts.remaining, facts.unit)}
+                  {usd ? usd.remainingLine : formatAmount(facts.remaining, facts.unit)}
                 </span>
               </p>
               <p className="text-muted-foreground">

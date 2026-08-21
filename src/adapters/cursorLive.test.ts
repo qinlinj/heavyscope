@@ -144,6 +144,17 @@ describe("mapCursorUsageSummary", () => {
     expect(other?.quotaTotal).not.toBe(100);
   });
 
+  it("ignores disabled onDemand.used=0 so it cannot become Other 0%", () => {
+    const result = mapCursorUsageSummary({
+      individualUsage: {
+        plan: { autoPercentUsed: 10, apiPercentUsed: 0 },
+        onDemand: { enabled: false, used: 0, limit: 40000 },
+      },
+    });
+    expect(result.pools.find((pool) => pool.poolHint === "cursor_other")).toBeUndefined();
+    expect(result.pools.map((pool) => pool.poolHint)).toEqual(["cursor_models"]);
+  });
+
   it("omits Other when only apiPercentUsed is present", () => {
     const result = mapCursorUsageSummary({
       individualUsage: { plan: { autoPercentUsed: 10, apiPercentUsed: 18 } },
@@ -229,6 +240,77 @@ describe("mergeCursorSpendingSources", () => {
     expect(result.pools.map((pool) => pool.poolHint)).toEqual(["cursor_models", "cursor_other"]);
     expect(result.pools.find((pool) => pool.poolHint === "grok_bot")).toBeUndefined();
     expect(result.pools.some((pool) => pool.quotaUsed === 999 || pool.quotaUsed === 9.99)).toBe(false);
+  });
+
+  it("maps period Other as $126.58 / $400 and ignores disabled onDemand.used=0", () => {
+    const result = mergeCursorSpendingSources({
+      period: {
+        planUsage: {
+          autoPercentUsed: 21.4,
+          apiPercentUsed: 0,
+          totalSpend: 12658,
+          limit: 40000,
+          used: 0,
+        },
+        individualUsage: {
+          plan: { autoPercentUsed: 21.4, apiPercentUsed: 0, used: 0 },
+          onDemand: { enabled: false, used: 0, limit: 40000 },
+        },
+      },
+      summary: {
+        individualUsage: {
+          plan: { autoPercentUsed: 21.4, apiPercentUsed: 0 },
+          onDemand: { enabled: false, used: 0, limit: 40000 },
+        },
+      },
+    });
+    const other = result.pools.find((pool) => pool.poolHint === "cursor_other");
+    expect(other).toMatchObject({
+      quotaUsed: 126.58,
+      quotaTotal: 400,
+      unit: "USD",
+    });
+    expect(other?.quotaUsed).not.toBe(0);
+    expect(other?.quotaTotal).not.toBe(100);
+    expect(other?.unit).not.toBe("%");
+    expect(other?.note).toMatch(/Cursor period/i);
+  });
+
+  it("does not map apiPercentUsed=0 as Other 0%", () => {
+    const result = mergeCursorSpendingSources({
+      period: {
+        planUsage: {
+          autoPercentUsed: 10,
+          apiPercentUsed: 0,
+          totalSpend: 12658,
+          limit: 40000,
+        },
+      },
+    });
+    const other = result.pools.find((pool) => pool.poolHint === "cursor_other");
+    expect(other?.quotaUsed).toBe(126.58);
+    expect(other?.quotaUsed).not.toBe(0);
+    expect(other?.quotaTotal).toBe(400);
+    expect(other?.unit).toBe("USD");
+  });
+
+  it("shows honest $0 / $400 when period totalSpend is truly 0", () => {
+    const result = mergeCursorSpendingSources({
+      period: {
+        planUsage: { autoPercentUsed: 1, apiPercentUsed: 0, totalSpend: 0, limit: 40000 },
+      },
+      summary: {
+        individualUsage: {
+          plan: { autoPercentUsed: 1, apiPercentUsed: 0 },
+          onDemand: { enabled: false, used: 0, limit: 40000 },
+        },
+      },
+    });
+    expect(result.pools.find((pool) => pool.poolHint === "cursor_other")).toMatchObject({
+      quotaUsed: 0,
+      quotaTotal: 400,
+      unit: "USD",
+    });
   });
 
   it("uses planUsage.limit as Other total when present, else 400 USD", () => {

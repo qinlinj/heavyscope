@@ -164,9 +164,16 @@ export function cursorCookieHeader(token: string): string {
   return `WorkosCursorSessionToken=${value}`;
 }
 
+function isOnDemandEnabled(onDemand: unknown): boolean {
+  const rec = recordFrom(onDemand);
+  if (!rec) return false;
+  return rec.enabled === true;
+}
+
 function onDemandCents(onDemand: unknown): { used: number; limit: number | null } | null {
   const rec = recordFrom(onDemand);
   if (!rec) return null;
+  if (!isOnDemandEnabled(rec)) return null;
   const used = asFiniteNumber(rec.used);
   if (used == null) return null;
   return { used, limit: asFiniteNumber(rec.limit) };
@@ -344,9 +351,20 @@ function autoPercentFrom(root: Record<string, unknown> | null, plan: Record<stri
   return null;
 }
 
+function periodPlanHasTotalSpend(period: unknown): boolean {
+  const root = unwrapCursorPayload(period);
+  const plan = planUsageRecord(root);
+  return plan != null && asFiniteNumber(plan.totalSpend) != null;
+}
+
+/**
+ * Other is period USD only. Read planUsage.totalSpend / limit (cents).
+ * Never treat plan.used or apiPercentUsed as Other — a 0 `used` must not
+ * clobber a real totalSpend.
+ */
 function otherUsdFromPlan(plan: Record<string, unknown> | null): { used: number; total: number } | null {
   if (!plan) return null;
-  const spendCents = asFiniteNumber(plan.totalSpend ?? plan.used);
+  const spendCents = asFiniteNumber(plan.totalSpend);
   if (spendCents == null) return null;
   const limitCents = asFiniteNumber(plan.limit);
   const total =
@@ -481,11 +499,10 @@ export function mapCursorPeriodUsage(
 ): { models: LivePoolUpdate | null; other: LivePoolUpdate | null; resetAt: string | null } {
   const root = unwrapCursorPayload(input);
   const plan = planUsageRecord(root);
-  const individual = root ? recordFrom(root.individualUsage) : null;
   const resetAt = asIso(root?.billingCycleEnd);
 
   const autoPercent = autoPercentFrom(root, plan);
-  const other = otherUsdFromPlan(plan) ?? otherUsdFromOnDemand(individual?.onDemand);
+  const other = otherUsdFromPlan(plan);
 
   return {
     models: autoPercent != null ? modelsPool(autoPercent, resetAt, recordedAt) : null,
@@ -495,7 +512,7 @@ export function mapCursorPeriodUsage(
           other.total,
           resetAt,
           recordedAt,
-          `Spend $${other.used.toFixed(2)} / $${other.total.toFixed(2)}`,
+          `Cursor period / spending $${other.used.toFixed(2)} / $${other.total.toFixed(2)}`,
         )
       : null,
     resetAt,
@@ -544,8 +561,9 @@ export function mapCursorSandUsage(
 
 /**
  * Merge current-period-usage + aggregations/events + usage-summary + SAND.
- * Spending Other (USD) wins over the old usage-summary Other-% mapping.
- * usage-summary is only a Models % fallback when period autoPercent is missing.
+ * Other is period USD only: planUsage.totalSpend / limit. A disabled
+ * onDemand.used=0 must never overwrite that. usage-summary is a Models %
+ * fallback and an Other fallback only when period totalSpend is absent.
  * Grok Bot prefers SAND weekly %; SKU rows are fallback only. Never invent counts.
  */
 export function mergeCursorSpendingSources(sources: CursorSpendingSources): LiveProviderResult {
@@ -566,10 +584,10 @@ export function mergeCursorSpendingSources(sources: CursorSpendingSources): Live
     period?.models ??
     summary?.pools.find((pool) => pool.poolHint === "cursor_models") ??
     null;
-  const other =
-    period?.other ??
-    summary?.pools.find((pool) => pool.poolHint === "cursor_other") ??
-    null;
+  const summaryOther = summary?.pools.find((pool) => pool.poolHint === "cursor_other") ?? null;
+  const other = periodPlanHasTotalSpend(sources.period)
+    ? (period?.other ?? null)
+    : (period?.other ?? summaryOther);
 
   const pools: LivePoolUpdate[] = [];
   if (models) pools.push({ ...models, resetAt: models.resetAt ?? resetAt, recordedAt });

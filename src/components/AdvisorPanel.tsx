@@ -216,7 +216,7 @@ function Metric({
   );
 }
 
-function RiskBadge({ level, compact = false }: { level: RiskLevel; compact?: boolean }) {
+export function RiskBadge({ level, compact = false }: { level: RiskLevel; compact?: boolean }) {
   const { t } = useTranslation();
   const tone = riskTone(level);
   const label =

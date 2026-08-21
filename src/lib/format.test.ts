@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { formatAmount, formatAtMostDecimals, formatSignedAmount, formatTrendHoverValue } from "@/lib/format";
+import { PRESET_POOL_COLORS } from "@/db/defaults";
+import {
+  formatAmount,
+  formatAtMostDecimals,
+  formatSignedAmount,
+  formatTrendHoverValue,
+  formatUsdQuotaLine,
+  otherUsdView,
+  progressFillPercent,
+  progressIndicatorStyle,
+} from "@/lib/format";
 
 describe("formatAmount", () => {
   it("uses 0 fraction digits for integers and request counts", () => {
@@ -29,6 +39,48 @@ describe("formatSignedAmount", () => {
     expect(formatSignedAmount(0, "credits")).toBe("0 credits");
     expect(formatSignedAmount(-1.239, "USD")).toMatch(/-.*1\.24|−.*1\.24/);
     expect(formatSignedAmount(-1.239, "USD")).not.toMatch(/1\.239/);
+  });
+});
+
+describe("otherUsdView", () => {
+  it("maps period $126.58 / $400 as a dollar line, not 0%", () => {
+    const view = otherUsdView({ unit: "USD", quota_used: 126.58, quota_total: 400 });
+    expect(view?.dollarLine).toMatch(/126\.58/);
+    expect(view?.dollarLine).toMatch(/400/);
+    expect(view?.dollarLine).not.toMatch(/%/);
+    expect(view?.remaining).toBeCloseTo(273.42, 5);
+    expect(view?.usedPercent).toBeCloseTo(31.645, 3);
+  });
+
+  it("shows $0 / $400 when spend is truly 0, not “0%” as the dollar line", () => {
+    const view = otherUsdView({ unit: "USD", quota_used: 0, quota_total: 400 });
+    expect(view?.dollarLine).toMatch(/0/);
+    expect(view?.dollarLine).toMatch(/400/);
+    expect(view?.dollarLine).not.toMatch(/0%/);
+    expect(formatUsdQuotaLine(0, 400)).not.toMatch(/%/);
+  });
+
+  it("does not treat a leftover % seed as Other dollars", () => {
+    expect(otherUsdView({ unit: "%", quota_used: 0, quota_total: 100 })).toBeNull();
+  });
+});
+
+describe("progressIndicatorStyle", () => {
+  it("uses used% width and the original pool accent, not a full bar", () => {
+    const other = progressIndicatorStyle(PRESET_POOL_COLORS["preset-cursor-other"], 31.645);
+    expect(other.backgroundColor).toBe("#fbbf24");
+    expect(other.width).toBe(`${progressFillPercent(31.645)}%`);
+    expect(progressFillPercent(31.645)).toBeLessThan(100);
+    expect(progressFillPercent(21)).not.toBe(100);
+    expect(progressIndicatorStyle(PRESET_POOL_COLORS["preset-grok-heavy"], 12).backgroundColor).toBe(
+      "#38bdf8",
+    );
+    expect(progressIndicatorStyle(PRESET_POOL_COLORS["preset-grok-bot"], 21).backgroundColor).toBe(
+      "#a78bfa",
+    );
+    expect(progressIndicatorStyle(PRESET_POOL_COLORS["preset-cursor-models"], 42).backgroundColor).toBe(
+      "#34d399",
+    );
   });
 });
 

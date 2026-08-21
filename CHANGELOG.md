@@ -6,6 +6,22 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-08-21
+
+### Fixed
+
+- Cursor Other is period USD only. Live `get-current-period-usage` `planUsage.totalSpend` / `limit` (cents) maps as dollars — example `$126.58 / $400` (remaining `$273.42`). A disabled `onDemand.used=0` no longer overwrites that spend. `apiPercentUsed=0` is not Other. Honest `$0 / $400` only when `period.totalSpend` is truly 0. Leftover Other `unit=%` / `quota_total=100` is rewritten to USD on live apply.
+- Progress bars use each preset’s original accent again (Heavy `#38bdf8`, Bot `#a78bfa`, Models `#34d399`, Other `#fbbf24`). Risk / usage tone stays on the right-side used% text and RiskBadge. Indicator width is used%; the empty track remainder stays visible.
+
+### Changed
+
+- macOS `/tray`: delete Day/Week/Month and `tray chartScale`. Heatmap is always daily cells and is not bound to web Usage week/month/pies.
+- Tray hero is used% (not remaining). Selector is All + each visible pool. All shows the tightest *connected* pool’s used% labeled `全部 · {name}` / `All · {name}`. No number when used% is unknown. Never a combined `$` + `%` figure.
+- Compact tray heatmap: no tooltip / title / footer legend. Hover is opacity or a 1px ring only. Horizontal drag-zoom (min 2 week-columns × 7 daily rows, 1:1 cells); double-click resets. Month labels 8.5px.
+- Compact Advisor strip under the hero: color dot + pool name + RiskBadge + recommendedDaily / todayUsed / daysLeft. Second amber line only when `switchAdvice` exists. Burn-rate math unchanged.
+- Denser tray type and spacing (title 13/600, hero 22/600, pool 11/500, row % 11/600, helper 10/14, header py6 px8, content px8 py6 gap6, bar h4 r2). Hover stays transparent.
+- Version 0.27.0 (package.json + src-tauri + README + docs/RELEASE.md). Web Usage week/month/pies, SAND Bot %, Models `autoPercentUsed`, and `isCursorGrokBotSku` are unchanged. Accessory + zoom UNVERIFIED on a real Mac.
+
 ## [0.26.0] - 2026-08-21
 
 ### Changed

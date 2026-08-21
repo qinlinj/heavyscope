@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityHeatmap } from "@/components/ActivityHeatmap";
 import { AddCardsStrip } from "@/components/AddCardsStrip";
-import { AdvisorPanel } from "@/components/AdvisorPanel";
+import { AdvisorPanel, RiskBadge } from "@/components/AdvisorPanel";
 import { ChartsPanel } from "@/components/ChartsPanel";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { PiesPanel } from "@/components/PiesPanel";
@@ -19,7 +19,7 @@ import { useTileDragPreview } from "@/hooks/useTileDragPreview";
 import { useWidgetLayout } from "@/hooks/useWidgetLayout";
 import { advisePool, crossPoolAdvice, tightestAdvice } from "@/lib/burnRate";
 import { hasSuccessfulApply, isUnsyncedPreset } from "@/lib/poolSyncState";
-import { chartRecords, type ChartScale } from "@/lib/charts";
+import { chartRecords } from "@/lib/charts";
 import { hiddenTiles, visibleTiles, type DashboardLayout, type LayoutTile } from "@/lib/dashboardLayout";
 import { formatAmount } from "@/lib/format";
 import { displayPoolName } from "@/lib/poolName";
@@ -34,17 +34,16 @@ import {
   shouldShowTrayConnectBanner,
   shouldShowTrayHeatmap,
   toggleExpandedPoolId,
-  trayHeroRemaining,
+  trayHeroUsedPercent,
   trayProviderSync,
   visiblePoolIds,
   TRAY_HEATMAP_MAX_CELL_PX,
   TRAY_HEATMAP_MIN_CELL_PX,
   TRAY_OPEN_MS,
   TRAY_PANEL_RADIUS_PX,
+  type TrayHeroSelection,
   type TrayPane,
 } from "@/lib/trayView";
-
-const SCALES: ChartScale[] = ["day", "week", "month"];
 
 export function TrayPage() {
   const { t } = useTranslation();
@@ -65,12 +64,12 @@ export function TrayPage() {
   });
   const [editingLayout, setEditingLayout] = useState(false);
   const [editSnapshot, setEditSnapshot] = useState<DashboardLayout | null>(null);
-  const [chartScale, setChartScale] = useState<ChartScale>("day");
   const drag = useTileDragPreview(layout, editingLayout, commitLayout);
   const previewShown = useMemo(() => visibleTiles(drag.displayLayout), [drag.displayLayout]);
   const shown = drag.draggingId ? shownBase : previewShown;
   const [expandedPoolId, setExpandedPoolId] = useState<string | null>(null);
   const [syncBusy, setSyncBusy] = useState(false);
+  const [heroSelection, setHeroSelection] = useState<TrayHeroSelection>("all");
 
   const liveRecords = useMemo(() => chartRecords(records), [records]);
   const advices = useMemo(
@@ -105,8 +104,12 @@ export function TrayPage() {
     cursorConfigured: providerSync.cursor.configured,
     grokConfigured: providerSync.grok.configured,
   });
-  const hero = useMemo(() => trayHeroRemaining(advices, pools), [advices, pools]);
+  const hero = useMemo(
+    () => trayHeroUsedPercent(heroSelection, advices, pools, visibleIds),
+    [heroSelection, advices, pools, visibleIds],
+  );
   const heroPool = hero ? pools.find((item) => item.id === hero.poolId) : undefined;
+  const heroAdvice = hero ? advices.find((item) => item.poolId === hero.poolId) : undefined;
 
   function tileLabel(tile: LayoutTile): string {
     if (tile.type === "pool") {
@@ -159,46 +162,31 @@ export function TrayPage() {
   if (!ready) {
     return (
       <TrayShell>
-        <p className="px-3 py-2.5 text-xs text-muted-foreground">{error ?? t("common.loading")}</p>
+        <p className="px-2 py-1.5 text-[10px] leading-[14px] text-muted-foreground">{error ?? t("common.loading")}</p>
       </TrayShell>
     );
   }
 
   return (
     <TrayShell>
-      <header className="sticky top-0 z-20 flex shrink-0 items-center justify-between gap-1.5 border-b border-foreground/10 bg-[var(--tray-panel)] px-2.5 py-2">
+      <header className="sticky top-0 z-20 flex shrink-0 items-center justify-between gap-1.5 border-b border-foreground/10 bg-[var(--tray-panel)] px-2 py-1.5">
         <div className="flex min-w-0 items-center gap-1">
           {pane === "settings" ? (
-            <Button type="button" size="icon-xs" variant="ghost" onClick={() => openPane("dashboard")}>
+            <Button type="button" size="icon-xs" variant="ghost" className="hover:bg-transparent" onClick={() => openPane("dashboard")}>
               <ArrowLeft />
               <span className="sr-only">{t("tray.settingsBack")}</span>
             </Button>
           ) : null}
-          <h1 className="font-heading truncate text-sm font-semibold tracking-tight">
+          <h1 className="font-heading truncate text-[13px] font-semibold tracking-tight">
             {pane === "settings" ? t("settings.title") : t("app.name")}
           </h1>
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
-          {pane === "dashboard" && !editingLayout ? (
-            <div className="mr-0.5 flex items-center gap-0.5">
-              {SCALES.map((item) => (
-                <Button
-                  key={item}
-                  type="button"
-                  size="xs"
-                  variant={chartScale === item ? "default" : "ghost"}
-                  className="h-6 px-1.5 text-[11px]"
-                  onClick={() => setChartScale(item)}
-                >
-                  {t(`charts.scale.${item}`)}
-                </Button>
-              ))}
-            </div>
-          ) : null}
           <Button
             type="button"
             size="icon-xs"
             variant="ghost"
+            className="hover:bg-transparent"
             disabled={!ready || syncBusy || !canRefresh}
             onClick={() => void handleRefreshNow()}
             title={t("live.refreshNow")}
@@ -211,6 +199,7 @@ export function TrayPage() {
               type="button"
               size="icon-xs"
               variant="ghost"
+              className="hover:bg-transparent"
               onClick={() => openPane("settings")}
               title={t("nav.settings")}
             >
@@ -226,6 +215,7 @@ export function TrayPage() {
               type="button"
               size="icon-xs"
               variant={editingLayout ? "default" : "ghost"}
+              className={editingLayout ? undefined : "hover:bg-transparent"}
               onClick={toggleEdit}
               title={editingLayout ? t("layout.done") : t("tray.editLayout")}
             >
@@ -238,18 +228,18 @@ export function TrayPage() {
 
       {pane === "settings" ? (
         <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="px-2.5 py-2">
+          <div className="px-2 py-1.5">
             <TraySettings />
           </div>
         </div>
       ) : editingLayout ? (
         <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex flex-col gap-2 px-2.5 py-2">
-            <p className="rounded-md border border-dashed border-foreground/20 bg-muted/30 px-2 py-1 text-xs text-muted-foreground">
+          <div className="flex flex-col gap-1.5 px-2 py-1.5">
+            <p className="rounded-md border border-dashed border-foreground/20 px-2 py-1 text-[10px] leading-[14px] text-muted-foreground">
               {t("layout.editHint")}
             </p>
             {shown.length === 0 ? (
-              <p className="text-xs text-muted-foreground">{t("tray.empty")}</p>
+              <p className="text-[10px] leading-[14px] text-muted-foreground">{t("tray.empty")}</p>
             ) : (
               <WidgetGrid
                 columns={2}
@@ -318,33 +308,86 @@ export function TrayPage() {
         </div>
       ) : (
         <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex flex-col gap-2 px-2.5 py-2">
+          <div className="flex flex-col gap-1.5 px-2 py-1.5">
             {showConnectBanner ? (
               <div className="flex flex-wrap items-center justify-between gap-1.5">
-                <p className="min-w-0 text-xs leading-snug text-muted-foreground">
+                <p className="min-w-0 text-[10px] leading-[14px] text-muted-foreground">
                   {t("tray.subtitleConnect")}
                 </p>
-                <Button type="button" size="xs" onClick={() => openPane("settings")}>
+                <Button type="button" size="xs" className="hover:bg-transparent" variant="ghost" onClick={() => openPane("settings")}>
                   {t("tray.goToSettings")}
                 </Button>
               </div>
             ) : null}
 
+            <div className="flex flex-wrap items-center gap-1">
+              <select
+                value={heroSelection}
+                onChange={(event) => setHeroSelection(event.target.value as TrayHeroSelection)}
+                className="h-6 max-w-full rounded-md border-0 bg-transparent px-1 text-[10px] leading-[14px] text-muted-foreground outline-none"
+                aria-label={t("tray.heroSelect")}
+              >
+                <option value="all">{t("tray.heroAll")}</option>
+                {dashboardPools.map((pool) => (
+                  <option key={pool.id} value={pool.id}>
+                    {displayPoolName(pool, t)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {hero ? (
               <div className="min-w-0">
-                <p className="text-[28px] leading-none font-semibold tabular-nums tracking-tight">
-                  {formatAmount(hero.remaining, hero.unit)}
+                <p className="text-[22px] leading-none font-semibold tabular-nums tracking-tight">
+                  {`${hero.usedPercent.toFixed(0)}%`}
                 </p>
                 {heroPool ? (
-                  <p className="mt-1 truncate text-xs text-muted-foreground">{displayPoolName(heroPool, t)}</p>
+                  <p className="mt-1 truncate text-[10px] leading-[14px] text-muted-foreground">
+                    {hero.mode === "all"
+                      ? t("tray.heroAllLabel", { pool: displayPoolName(heroPool, t) })
+                      : displayPoolName(heroPool, t)}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            {heroPool && heroAdvice && heroAdvice.risk !== "unconnected" ? (
+              <div className="space-y-0.5">
+                <div className="flex min-w-0 items-center gap-1.5 text-[10px] leading-[14px]">
+                  <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: heroPool.color }} />
+                  <span className="min-w-0 truncate font-medium">{displayPoolName(heroPool, t)}</span>
+                  <RiskBadge level={heroAdvice.risk} compact />
+                </div>
+                <p className="text-[10px] leading-[14px] text-muted-foreground tabular-nums">
+                  {t("advisor.recommendedDaily")} {formatAmount(heroAdvice.recommendedDaily, heroPool.unit)}
+                  {" · "}
+                  {t("advisor.todayUsed")} {formatAmount(heroAdvice.todayUsedAmount, heroPool.unit)}
+                  {" · "}
+                  {heroPool.reset_at
+                    ? t("advisor.daysLeftValue", { days: heroAdvice.daysLeft.toFixed(1) })
+                    : t("advisor.noReset")}
+                </p>
+                {switchAdvice ? (
+                  <p className="text-[10px] leading-[14px] text-amber-700 dark:text-amber-300">
+                    {t("advisor.switchSuggestion", {
+                      from: displayPoolName(
+                        pools.find((item) => item.id === switchAdvice.fromPoolId) ?? heroPool,
+                        t,
+                      ),
+                      to: displayPoolName(
+                        pools.find((item) => item.id === switchAdvice.toPoolId) ?? heroPool,
+                        t,
+                      ),
+                    })}
+                  </p>
                 ) : null}
               </div>
             ) : null}
 
             {dashboardPools.length === 0 ? (
-              <p className="text-xs text-muted-foreground">{t("tray.empty")}</p>
+              <p className="text-[10px] leading-[14px] text-muted-foreground">{t("tray.empty")}</p>
             ) : (
-              <div className="space-y-0.5">
+              <div className="space-y-0">
                 {dashboardPools.map((pool) => (
                   <TrayPoolRow
                     key={pool.id}
@@ -368,7 +411,6 @@ export function TrayPage() {
                 records={liveRecords}
                 pools={pools}
                 compact
-                scale={chartScale}
                 minCellPx={TRAY_HEATMAP_MIN_CELL_PX}
                 maxCellPx={TRAY_HEATMAP_MAX_CELL_PX}
               />

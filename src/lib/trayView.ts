@@ -1,6 +1,6 @@
 import type { Pool, UsageRecord } from "@/db/schema";
 import { tightestAdvice, tightestAdvices, type PoolAdvice } from "@/lib/burnRate";
-import { chartRecords, type ChartScale } from "@/lib/charts";
+import { chartRecords } from "@/lib/charts";
 import {
   defaultTrayLayout,
   hideTile,
@@ -144,12 +144,30 @@ export function fitTrayHeatmap(
   return { weeks: Math.max(1, weeks), cell: cell > 0 ? cell : TRAY_HEATMAP_MIN_CELL_PX };
 }
 
-/** ChartsPanel Day/Week/Month increment window — no invented token series. */
-export function trayHeatmapWeeksForScale(scale: ChartScale, fittedWeeks: number): number {
-  const fitted = Math.max(1, Math.trunc(fittedWeeks));
-  if (scale === "week") return Math.min(fitted, 8);
-  if (scale === "month") return Math.min(fitted, 26);
-  return fitted;
+/** Compact tray heatmap can pinch/drag-zoom to at least 2 week-columns. */
+export const TRAY_HEATMAP_MIN_ZOOM_WEEKS = 2;
+
+export function clampTrayHeatmapZoomWeeks(weeks: number, fitted: number): number {
+  const max = Math.max(TRAY_HEATMAP_MIN_ZOOM_WEEKS, Math.trunc(fitted));
+  return Math.min(max, Math.max(TRAY_HEATMAP_MIN_ZOOM_WEEKS, Math.trunc(weeks)));
+}
+
+/**
+ * Horizontal drag-zoom. Drag right (positive dx) zooms in toward today
+ * (fewer week columns). Daily cells stay daily. Double-click resets to fitted.
+ */
+export function trayHeatmapWeeksFromDrag(
+  startWeeks: number,
+  deltaX: number,
+  trackWidth: number,
+  fittedWeeks: number,
+): number {
+  if (!(trackWidth > 0) || !Number.isFinite(deltaX)) {
+    return clampTrayHeatmapZoomWeeks(startWeeks, fittedWeeks);
+  }
+  const span = Math.max(1, fittedWeeks - TRAY_HEATMAP_MIN_ZOOM_WEEKS);
+  const deltaWeeks = Math.round((deltaX / trackWidth) * span);
+  return clampTrayHeatmapZoomWeeks(startWeeks - deltaWeeks, fittedWeeks);
 }
 
 export function trayHeatFill(
@@ -213,27 +231,53 @@ export function defaultTrayVisibilityLayout(
   return defaultTrayLayout([...poolIds]);
 }
 
-export type TrayHeroRemaining = {
+export type TrayHeroSelection = "all" | string;
+
+export type TrayHeroUsed = {
   poolId: string;
-  remaining: number;
-  unit: string;
+  usedPercent: number;
+  mode: "all" | "pool";
 };
 
-/**
- * Remaining of the tightest *connected* pool. Returns null when remaining
- * cannot be computed — never invents a number.
- */
-export function trayHeroRemaining(
-  advices: readonly PoolAdvice[],
-  pools: readonly Pick<Pool, "id" | "unit" | "quota_total">[],
-): TrayHeroRemaining | null {
-  const tightest = tightestAdvice([...advices]);
-  if (!tightest || tightest.risk === "unconnected") return null;
-  const pool = pools.find((item) => item.id === tightest.poolId);
+function connectedHeroPool(
+  advice: PoolAdvice | null | undefined,
+  pools: readonly Pick<Pool, "id" | "quota_total" | "quota_used">[],
+): TrayHeroUsed | null {
+  if (!advice || advice.risk === "unconnected") return null;
+  const pool = pools.find((item) => item.id === advice.poolId);
   if (!pool) return null;
   if (!(pool.quota_total > 0)) return null;
-  if (!Number.isFinite(tightest.remaining)) return null;
-  return { poolId: pool.id, remaining: tightest.remaining, unit: pool.unit };
+  const percent = Number.isFinite(advice.usagePercent)
+    ? advice.usagePercent
+    : Math.min(100, Math.max(0, (pool.quota_used / pool.quota_total) * 100));
+  if (!Number.isFinite(percent)) return null;
+  return { poolId: pool.id, usedPercent: percent, mode: "pool" };
+}
+
+/**
+ * Hero used% for All (tightest *connected* visible pool) or one selected pool.
+ * Null when used% cannot be computed — never invents, never sums mixed units.
+ */
+export function trayHeroUsedPercent(
+  selection: TrayHeroSelection,
+  advices: readonly PoolAdvice[],
+  pools: readonly Pick<Pool, "id" | "quota_total" | "quota_used">[],
+  visibleIds?: readonly string[],
+): TrayHeroUsed | null {
+  const allowed = visibleIds ? new Set(visibleIds) : null;
+  const scoped = allowed ? advices.filter((item) => allowed.has(item.poolId)) : [...advices];
+
+  if (selection !== "all") {
+    const picked = connectedHeroPool(
+      scoped.find((item) => item.poolId === selection),
+      pools,
+    );
+    return picked;
+  }
+
+  const tightest = tightestAdvice(scoped);
+  const picked = connectedHeroPool(tightest, pools);
+  return picked ? { ...picked, mode: "all" } : null;
 }
 
 /**
