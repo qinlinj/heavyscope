@@ -196,6 +196,8 @@ export function Settings() {
         <h2 className="font-heading text-xl font-semibold">{t("settings.title")}</h2>
       </div>
 
+      <DataSourcesCard />
+
       <Card size="sm">
         <CardHeader>
           <CardTitle>{t("settings.language")}</CardTitle>
@@ -289,8 +291,6 @@ export function Settings() {
           )}
         </CardContent>
       </Card>
-
-      <DataSourcesCard />
 
       <Card size="sm">
         <CardHeader>

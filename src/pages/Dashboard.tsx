@@ -1,6 +1,7 @@
-import { Check, Pencil, Plus, RefreshCw, ScrollText } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Check, Ellipsis, Pencil, Plus, RefreshCw, ScrollText } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { AddCardsStrip } from "@/components/AddCardsStrip";
 import { AdvisorPanel } from "@/components/AdvisorPanel";
 import { ChartsPanel } from "@/components/ChartsPanel";
@@ -11,7 +12,8 @@ import { PoolFormDialog } from "@/components/PoolFormDialog";
 import { UsageDialog } from "@/components/UsageDialog";
 import { WidgetGrid } from "@/components/WidgetGrid";
 import { WidgetTile } from "@/components/WidgetTile";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { Pool, PoolDraft, UsageRecord } from "@/db/schema";
 import { advisePool, crossPoolAdvice, tightestAdvice } from "@/lib/burnRate";
 import { useLiveProxyAvailable } from "@/hooks/useLiveProxy";
@@ -25,6 +27,7 @@ import { useWidgetLayout } from "@/hooks/useWidgetLayout";
 import { formatDateTime } from "@/lib/format";
 import { displayPoolName } from "@/lib/poolName";
 import {
+  isCursorLiveConnected,
   nextSyncAt,
   parseSyncInterval,
   SETTING_CURSOR_CONNECTED,
@@ -107,9 +110,15 @@ export function Dashboard() {
   const switchAdvice = useMemo(() => crossPoolAdvice(advices), [advices]);
 
   const cursorConfigured = Boolean(settings[SETTING_CURSOR_SESSION_TOKEN]?.trim());
+  const cursorConnected = isCursorLiveConnected(settings);
   const grokConfigured = Boolean(
     settings[SETTING_GROK_SESSION_TOKEN]?.trim() || settings[SETTING_GROK_BEARER_TOKEN]?.trim(),
   );
+  const moreRef = useRef<HTMLDetailsElement>(null);
+
+  function closeMore() {
+    moreRef.current?.removeAttribute("open");
+  }
   const intervalMin = parseSyncInterval(settings[SETTING_SYNC_INTERVAL_MIN]);
   const cursorNext = cursorConfigured
     ? nextSyncAt(settings[SETTING_CURSOR_LAST_SYNCED_AT], intervalMin)
@@ -181,36 +190,65 @@ export function Dashboard() {
           <h2 className="min-w-0 font-heading text-xl font-semibold">{t("dashboard.title")}</h2>
           <div className="flex flex-wrap gap-2">
             <Button
-              variant={editingLayout ? "default" : "outline"}
-              onClick={() => setEditingLayout((current) => !current)}
-            >
-              {editingLayout ? <Check data-icon="inline-start" /> : <Pencil data-icon="inline-start" />}
-              {editingLayout ? t("layout.done") : t("layout.edit")}
-            </Button>
-            <Button
-              variant="outline"
               disabled={!ready || syncBusy || (!cursorConfigured && !grokConfigured)}
               onClick={() => void handleRefreshNow()}
             >
               <RefreshCw data-icon="inline-start" />
               {t("live.refreshNow")}
             </Button>
-            <Button variant="outline" onClick={() => setUsageOpen(true)} disabled={pools.length === 0}>
-              <ScrollText data-icon="inline-start" />
-              {t("dashboard.recordUsage")}
+            <Button variant="outline" onClick={() => setEditingLayout((current) => !current)}>
+              {editingLayout ? <Check data-icon="inline-start" /> : <Pencil data-icon="inline-start" />}
+              {editingLayout ? t("layout.done") : t("layout.edit")}
             </Button>
-            <Button
-              onClick={() => {
-                setEditing(null);
-                setFormOpen(true);
-              }}
-            >
-              <Plus data-icon="inline-start" />
-              {t("dashboard.addPool")}
-            </Button>
+            <details ref={moreRef} className="relative">
+              <summary
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "cursor-pointer list-none [&::-webkit-details-marker]:hidden",
+                )}
+              >
+                <Ellipsis data-icon="inline-start" />
+                {t("dashboard.moreActions")}
+              </summary>
+              <div className="absolute right-0 z-20 mt-1 min-w-44 rounded-lg border border-border bg-popover p-1 shadow-md">
+                <button
+                  type="button"
+                  disabled={pools.length === 0}
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+                  onClick={() => {
+                    setUsageOpen(true);
+                    closeMore();
+                  }}
+                >
+                  <ScrollText className="size-4" />
+                  {t("dashboard.recordUsage")}
+                </button>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
+                  onClick={() => {
+                    setEditing(null);
+                    setFormOpen(true);
+                    closeMore();
+                  }}
+                >
+                  <Plus className="size-4" />
+                  {t("dashboard.addPool")}
+                </button>
+              </div>
+            </details>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">{t("dashboard.subtitle")}</p>
+        {cursorConnected ? (
+          <p className="text-sm text-muted-foreground">{t("dashboard.subtitle")}</p>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm text-muted-foreground">{t("dashboard.subtitleConnect")}</p>
+            <Button asChild size="sm">
+              <Link to="/settings#data-sources">{t("dashboard.openSettings")}</Link>
+            </Button>
+          </div>
+        )}
         {proxyAvailable === false ? (
           <p className="text-sm text-amber-600 dark:text-amber-400">{t("live.webNoProxy")}</p>
         ) : null}

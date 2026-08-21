@@ -238,21 +238,25 @@ export function PoolCard({
           </div>
         )}
       </CardContent>
-      {showRecent && records.length > 0 && (
+      {showRecent && (
         <CardFooter className="shrink-0 flex-col items-stretch gap-2">
           <p className="text-xs text-muted-foreground">{t("pool.recent")}</p>
-          <ul className="h-[7.5rem] space-y-1 overflow-y-auto overscroll-contain pr-1">
-            {records.slice(0, 30).map((record) => (
-              <li key={record.id} className="flex justify-between gap-2 text-xs leading-5">
-                <span className="min-w-0 truncate text-muted-foreground">
-                  {new Date(record.recorded_at).toLocaleString(i18n.language)}
-                </span>
-                <span className="shrink-0 tabular-nums">
-                  {formatSignedAmount(record.amount, pool.unit)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {records.length > 0 ? (
+            <ul className="h-[7.5rem] space-y-1 overflow-y-auto overscroll-contain pr-1">
+              {records.slice(0, 30).map((record) => (
+                <li key={record.id} className="flex justify-between gap-2 text-xs leading-5">
+                  <span className="min-w-0 truncate text-muted-foreground">
+                    {new Date(record.recorded_at).toLocaleString(i18n.language)}
+                  </span>
+                  <span className="shrink-0 tabular-nums">
+                    {formatSignedAmount(record.amount, pool.unit)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-xs text-muted-foreground">{t("pool.recentEmpty")}</p>
+          )}
         </CardFooter>
       )}
     </Card>

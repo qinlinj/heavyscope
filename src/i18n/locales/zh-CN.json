@@ -11,6 +11,9 @@
   "dashboard": {
     "title": "额度总览",
     "subtitle": "本地剩余额度。",
+    "subtitleConnect": "前往设置粘贴 WorkosCursorSessionToken，然后刷新「模型 / 其他 / Grok Bot」。",
+    "openSettings": "前往设置",
+    "moreActions": "更多",
     "addPool": "添加额度池",
     "recordUsage": "记录用量",
     "empty": "还没有额度池。先添加一个。"
@@ -93,6 +96,7 @@
     "preset": "预置",
     "custom": "自定义",
     "recent": "最近记录",
+    "recentEmpty": "连接后才会出现增量记录。",
     "awaitingConnect": "待连接"
   },
   "presets": {
