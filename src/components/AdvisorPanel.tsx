@@ -63,7 +63,9 @@ export function AdvisorPanel({
           <CardDescription>{t("advisor.subtitle")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">{t("dashboard.empty")}</p>
+          <p className="text-sm text-muted-foreground">
+            {pools.length === 0 ? t("dashboard.empty") : t("advisor.noneConnected")}
+          </p>
         </CardContent>
       </Card>
     );
@@ -174,7 +176,9 @@ export function AdvisorPanel({
                   <span className="truncate">{displayPoolName(source, t)}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-2 tabular-nums text-muted-foreground">
-                  {formatAmount(item.recommendedDaily, source.unit)}/{t("advisor.perDay")}
+                  {item.risk === "unconnected"
+                    ? t("pool.awaitingConnect")
+                    : `${formatAmount(item.recommendedDaily, source.unit)}/${t("advisor.perDay")}`}
                   <RiskBadge level={item.risk} compact />
                 </span>
               </li>
@@ -220,7 +224,9 @@ function RiskBadge({ level, compact = false }: { level: RiskLevel; compact?: boo
       ? t("advisor.riskOverspend")
       : level === "waste"
         ? t("advisor.riskWaste")
-        : t("advisor.riskOk");
+        : level === "unconnected"
+          ? t("pool.awaitingConnect")
+          : t("advisor.riskOk");
   return (
     <span
       className={cn(

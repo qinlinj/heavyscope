@@ -2,6 +2,14 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.19.0
+
+- Production web live refresh via same-origin `/proxy/cursor`, `/proxy/grok`, `/proxy/grok-cli` (Vite + Vercel Edge rewrite). Forwards `X-HeavyScope-Cookie` / `X-HeavyScope-Authorization`. Tokens are never logged.
+- Without a proxy, zh-CN + en tell the user to use the desktop app or `pnpm dev` (not only the English CORS sentence).
+- Advisor: zero usage or never-applied pools are not waste. Unconnected Grok Heavy is not ranked as tightest.
+- Unsynced presets show 待连接 / Not connected instead of a placeholder `0/400` bar. After a successful apply, numbers show.
+- Version 0.19.0.
+
 ## v0.18.0
 
 - Quota overview stays short and scrollable (`max-h-16`). Sync status lines stay in that box. The title row stays full width.

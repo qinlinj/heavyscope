@@ -42,6 +42,7 @@ type Props = {
   critPercent?: number;
   syncMeta?: PoolSyncMeta;
   compact?: boolean;
+  unsynced?: boolean;
   showActions?: boolean;
   showRecent?: boolean;
   showAdvice?: boolean;
@@ -57,6 +58,7 @@ export function PoolCard({
   critPercent,
   syncMeta,
   compact = false,
+  unsynced = false,
   showActions = false,
   showRecent = true,
   showAdvice = true,
@@ -81,14 +83,19 @@ export function PoolCard({
             <span
               className={cn(
                 "shrink-0 text-sm font-semibold tabular-nums",
-                tone === "ok" && "text-emerald-600 dark:text-emerald-400",
-                tone === "warn" && "text-amber-600 dark:text-amber-400",
-                tone === "crit" && "text-red-600 dark:text-red-400",
+                unsynced && "text-muted-foreground",
+                !unsynced && tone === "ok" && "text-emerald-600 dark:text-emerald-400",
+                !unsynced && tone === "warn" && "text-amber-600 dark:text-amber-400",
+                !unsynced && tone === "crit" && "text-red-600 dark:text-red-400",
               )}
             >
-              {view.percent.toFixed(0)}%
+              {unsynced ? t("pool.awaitingConnect") : `${view.percent.toFixed(0)}%`}
             </span>
           </div>
+          {unsynced ? (
+            <p className="text-[11px] leading-tight text-muted-foreground">{t("live.notConnected")}</p>
+          ) : (
+            <>
           <Progress
             value={view.percent}
             className={cn(
@@ -108,6 +115,8 @@ export function PoolCard({
               {formatCountdown(view.resetAt, i18n.language)}
             </p>
           </div>
+            </>
+          )}
         </CardContent>
       </Card>
     );
@@ -145,6 +154,13 @@ export function PoolCard({
         ) : null}
       </CardHeader>
       <CardContent className="min-h-0 flex-1 space-y-3 overflow-y-auto">
+        {unsynced ? (
+          <div className="space-y-1">
+            <p className="font-heading text-2xl font-semibold tracking-tight">{t("pool.awaitingConnect")}</p>
+            <p className="text-xs text-muted-foreground">{t("live.notConnected")}</p>
+          </div>
+        ) : (
+          <>
         <div className="flex items-end justify-between gap-3">
           <div>
             <p className="text-xs text-muted-foreground">{t("pool.used")}</p>
@@ -177,6 +193,8 @@ export function PoolCard({
           <Stat label={t("pool.total")} value={formatAmount(pool.quota_total, pool.unit)} />
           <Stat label={t("pool.reset")} value={formatCountdown(pool.reset_at, i18n.language)} />
         </div>
+          </>
+        )}
         {syncMeta && (
           <p className="text-xs text-muted-foreground">
             {syncMeta.connected
@@ -213,7 +231,9 @@ export function PoolCard({
                 ? t("advisor.riskOverspend")
                 : advice.risk === "waste"
                   ? t("advisor.riskWaste")
-                  : t("advisor.riskOk")}
+                  : advice.risk === "unconnected"
+                    ? t("pool.awaitingConnect")
+                    : t("advisor.riskOk")}
             </span>
           </div>
         )}

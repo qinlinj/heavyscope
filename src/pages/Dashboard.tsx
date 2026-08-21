@@ -14,6 +14,9 @@ import { WidgetTile } from "@/components/WidgetTile";
 import { Button } from "@/components/ui/button";
 import type { Pool, PoolDraft, UsageRecord } from "@/db/schema";
 import { advisePool, crossPoolAdvice, tightestAdvice } from "@/lib/burnRate";
+import { useLiveProxyAvailable } from "@/hooks/useLiveProxy";
+import { liveUserMessage } from "@/lib/liveFlash";
+import { hasSuccessfulApply, isUnsyncedPreset } from "@/lib/poolSyncState";
 import { chartRecords } from "@/lib/charts";
 import { hiddenTiles, visibleTiles, type LayoutTile } from "@/lib/dashboardLayout";
 import { useDatabase } from "@/hooks/useDatabase";
@@ -88,11 +91,17 @@ export function Dashboard() {
   const [pendingDelete, setPendingDelete] = useState<Pool | null>(null);
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncFlash, setSyncFlash] = useState<string | null>(null);
+  const proxyAvailable = useLiveProxyAvailable();
 
   const liveRecords = useMemo(() => chartRecords(records), [records]);
   const advices = useMemo(
-    () => pools.map((pool) => advisePool(pool, liveRecords)),
-    [pools, liveRecords],
+    () =>
+      pools.map((pool) =>
+        advisePool(pool, liveRecords, new Date(), {
+          hasSuccessfulApply: hasSuccessfulApply(pool.id, liveRecords, settings),
+        }),
+      ),
+    [pools, liveRecords, settings],
   );
   const tightest = useMemo(() => tightestAdvice(advices), [advices]);
   const switchAdvice = useMemo(() => crossPoolAdvice(advices), [advices]);
@@ -141,7 +150,13 @@ export function Dashboard() {
     setSyncBusy(true);
     try {
       const report = await refreshLiveProviders();
-      setSyncFlash(report.message);
+      setSyncFlash(
+        liveUserMessage(t, {
+          message: report.message,
+          code: report.code,
+          proxyAvailable,
+        }),
+      );
     } finally {
       setSyncBusy(false);
     }
@@ -196,6 +211,9 @@ export function Dashboard() {
           </div>
         </div>
         <p className="text-sm text-muted-foreground">{t("dashboard.subtitle")}</p>
+        {proxyAvailable === false ? (
+          <p className="text-sm text-amber-600 dark:text-amber-400">{t("live.webNoProxy")}</p>
+        ) : null}
         <div className="max-h-16 space-y-0.5 overflow-y-auto text-xs text-muted-foreground">
           {cursorConfigured ? (
             <p>
@@ -350,6 +368,7 @@ export function Dashboard() {
         critPercent={thresholds.crit}
         syncMeta={syncMetaFor(pool, poolRecords)}
         compact={tile.size === "sm"}
+        unsynced={isUnsyncedPreset(pool, liveRecords, settings)}
         showActions={editingLayout}
         showRecent={tile.size !== "sm"}
         showAdvice={tile.size !== "sm"}

@@ -32,6 +32,7 @@ import {
   type BackupMode,
 } from "@/lib/backup";
 import { formatAmount, usagePercent } from "@/lib/format";
+import { isUnsyncedPreset } from "@/lib/poolSyncState";
 import { displayPoolName } from "@/lib/poolName";
 import {
   isValidThresholds,
@@ -59,6 +60,7 @@ export function Settings() {
     resetLocalData,
     ready,
     pools,
+    records,
     createPool,
     updatePool,
     deletePool,
@@ -324,9 +326,9 @@ export function Settings() {
                       {displayPoolName(pool, t)}
                     </p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {formatAmount(pool.quota_used, pool.unit)} / {formatAmount(pool.quota_total, pool.unit)}
-                      {" · "}
-                      {usagePercent(pool).toFixed(0)}%
+                      {isUnsyncedPreset(pool, records, settings)
+                        ? t("pool.awaitingConnect")
+                        : `${formatAmount(pool.quota_used, pool.unit)} / ${formatAmount(pool.quota_total, pool.unit)} · ${usagePercent(pool).toFixed(0)}%`}
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-1">

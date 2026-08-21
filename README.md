@@ -4,7 +4,7 @@ Local-first multi-quota monitoring panel for SuperGrok Heavy and Cursor Ultra.
 
 HeavyScope helps you see how fast you are burning weekly or monthly quotas, when a pool will reset, and whether you should switch work to a pool with more headroom. The same React UI runs as a web app and inside a Tauri 2 desktop shell. Quota data stays on your machine. There is no HeavyScope cloud account.
 
-Current product version is **0.18.0**.
+Current product version is **0.19.0**.
 
 ## Features
 
@@ -58,7 +58,7 @@ pnpm install
 pnpm dev
 ```
 
-`pnpm dev` proxies `/proxy/cursor` → `https://cursor.com` and `/proxy/grok` → `https://grok.com` so live sync works in the browser. A production static host cannot call those sites (CORS). Use the Tauri desktop app, or keep using snapshot / manual entry.
+`pnpm dev` and `pnpm preview` proxy `/proxy/cursor` → `https://cursor.com`, `/proxy/grok` → `https://grok.com`, and `/proxy/grok-cli` → `https://cli-chat-proxy.grok.com`. A Vercel deploy uses the same paths via an Edge function (`vercel.json` rewrites `/proxy/*` → `/api/proxy/*`) that forwards `X-HeavyScope-Cookie` / `X-HeavyScope-Authorization`. Tokens are never logged. A pure static host has no proxy — the UI tells you (zh-CN + en) to use the desktop app or `pnpm dev`.
 
 The Vite app is enough for local web development. Other scripts:
 
@@ -127,7 +127,7 @@ When a Bearer is saved, HeavyScope also calls `GET https://cli-chat-proxy.grok.c
 
 A saved Cursor token or Grok cookie/bearer is enough to join the auto-refresh interval immediately. A failed tick does not disable later ticks.
 
-Same CORS rule as Cursor: desktop Tauri HTTP or `pnpm dev` proxy (`/proxy/grok` and `/proxy/grok-cli`).
+Same proxy rule as Cursor: desktop Tauri HTTP, `pnpm dev` / `pnpm preview`, or the production `/proxy/grok` and `/proxy/grok-cli` Edge rewrite.
 
 ## Cursor snapshot format
 
@@ -204,7 +204,7 @@ Import and replace-all use in-app confirm dialogs.
 
 All quota data stays local. The database is a sql.js file encoded in localStorage under `heavyscope.sqlite.v1`. Export or import a JSON backup (or reset) from Settings. There is no HeavyScope cloud, analytics, or remote sync.
 
-Session tokens you paste (`cursor_session_token`, `grok_session_token`, `grok_bearer_token`) stay in the local settings table. They are never written to `usage_records` notes. JSON backup export omits those keys. Live calls go from your machine to cursor.com / grok.com (Tauri HTTP or the Vite dev proxy). Unofficial endpoints may change without notice. The optional macOS `state.vscdb` helper is read-only and is not used in Linux CI.
+Session tokens you paste (`cursor_session_token`, `grok_session_token`, `grok_bearer_token`) stay in the local settings table. They are never written to `usage_records` notes or server logs. JSON backup export omits those keys. Live calls go from your machine to cursor.com / grok.com (Tauri HTTP, the Vite `/proxy/*` path, or the Vercel Edge rewrite). Unofficial endpoints may change without notice. The optional macOS `state.vscdb` helper is read-only and is not used in Linux CI.
 
 ## License
 

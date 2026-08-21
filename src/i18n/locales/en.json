@@ -60,6 +60,7 @@
     "intervalMinutes": "{{count}} min",
     "connected": "Connected",
     "notConnected": "Not connected",
+    "webNoProxy": "This web build cannot live-refresh. Use the desktop app or run `pnpm dev`.",
     "expired": "Disconnected / expired",
     "tokenStored": "Token stored on this device. Paste a new value to replace it.",
     "lastSynced": "Last synced",
@@ -91,7 +92,8 @@
     "percent": "Usage",
     "preset": "Preset",
     "custom": "Custom",
-    "recent": "Recent records"
+    "recent": "Recent records",
+    "awaitingConnect": "Not connected"
   },
   "presets": {
     "preset-grok-heavy": "Grok Heavy Weekly Shared Pool",
@@ -232,7 +234,8 @@
     "riskOverspend": "Overspend risk",
     "switchTitle": "Switch suggestion",
     "switchSuggestion": "{{from}} is running hot. Switch new work to {{to}} while it still has headroom.",
-    "noReset": "No reset scheduled"
+    "noReset": "No reset scheduled",
+    "noneConnected": "No connected pool to rank yet."
   },
   "charts": {
     "title": "Usage trends",

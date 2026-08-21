@@ -62,6 +62,7 @@ export type LiveApplyReport = {
   unmatched: string[];
   message: string;
   skipped: boolean;
+  code?: LiveErrorCode;
 };
 
 export type LiveApplyDeps = {

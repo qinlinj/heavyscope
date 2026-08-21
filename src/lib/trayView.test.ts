@@ -96,6 +96,18 @@ describe("selectTrayDashboardPools", () => {
 });
 
 describe("highlightedTrayPoolIds", () => {
+  it("does not highlight an unconnected Grok Heavy row", () => {
+    expect(
+      highlightedTrayPoolIds(
+        [
+          advice({ poolId: "preset-grok-heavy", usagePercent: 0, risk: "unconnected" }),
+          advice({ poolId: "preset-cursor-models", usagePercent: 40, risk: "ok" }),
+        ],
+        ["preset-grok-heavy", "preset-cursor-models"],
+      ),
+    ).toEqual(["preset-cursor-models"]);
+  });
+
   it("marks only the tightest 1–2 visible pools", () => {
     expect(
       highlightedTrayPoolIds(
