@@ -12,7 +12,7 @@ export const CURSOR_SAND_USAGE_PATH = "/api/dashboard/get-sand-usage-status";
 export const CURSOR_ORIGIN = "https://cursor.com";
 export const CURSOR_SPENDING_REFERER = "https://cursor.com/dashboard/spending";
 export const CURSOR_PROXY_PREFIX = "/proxy/cursor";
-/** Default Other Models included spend when the payload has used but no limit (USD, not cents). */
+/** Included Other Models cap copy (“at least $400”), not used Other. */
 export const CURSOR_OTHER_DEFAULT_USD = 400;
 export const LIVE_USD_UNIT = "USD";
 

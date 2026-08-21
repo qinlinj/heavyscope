@@ -28,7 +28,7 @@ export function ThemeToggle({ compact = false }: Props) {
         onClick={() => persistTheme(next, setSetting)}
         title={t(`settings.theme${capitalize(current)}`)}
         aria-label={t("settings.theme")}
-        className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-transparent hover:text-foreground"
       >
         <Icon className="size-3.5" />
       </button>

@@ -38,6 +38,14 @@ export function computeResetAt(
   return null;
 }
 
+/** Original product accents — do not invent a new palette. */
+export const PRESET_POOL_COLORS = {
+  "preset-grok-heavy": "#38bdf8",
+  "preset-grok-bot": "#a78bfa",
+  "preset-cursor-models": "#34d399",
+  "preset-cursor-other": "#fbbf24",
+} as const;
+
 export function defaultPools(): Pool[] {
   const now = isoNow();
   return [
@@ -50,7 +58,7 @@ export function defaultPools(): Pool[] {
       reset_at: nextWeeklyReset(),
       reset_cycle: "weekly",
       unit: "credits",
-      color: "#38bdf8",
+      color: PRESET_POOL_COLORS["preset-grok-heavy"],
       is_preset: 1,
       created_at: now,
       updated_at: now,
@@ -64,7 +72,7 @@ export function defaultPools(): Pool[] {
       reset_at: nextWeeklyReset(),
       reset_cycle: "weekly",
       unit: "requests",
-      color: "#a78bfa",
+      color: PRESET_POOL_COLORS["preset-grok-bot"],
       is_preset: 1,
       created_at: now,
       updated_at: now,
@@ -78,7 +86,7 @@ export function defaultPools(): Pool[] {
       reset_at: nextMonthlyReset(),
       reset_cycle: "monthly",
       unit: "requests",
-      color: "#34d399",
+      color: PRESET_POOL_COLORS["preset-cursor-models"],
       is_preset: 1,
       created_at: now,
       updated_at: now,
@@ -92,7 +100,7 @@ export function defaultPools(): Pool[] {
       reset_at: nextMonthlyReset(),
       reset_cycle: "monthly",
       unit: "USD",
-      color: "#fbbf24",
+      color: PRESET_POOL_COLORS["preset-cursor-other"],
       is_preset: 1,
       created_at: now,
       updated_at: now,

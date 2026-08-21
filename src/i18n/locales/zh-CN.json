@@ -97,7 +97,8 @@
     "custom": "自定义",
     "recent": "最近记录",
     "recentEmpty": "连接后才会出现增量记录。",
-    "awaitingConnect": "待连接"
+    "awaitingConnect": "待连接",
+    "sourceCursorPeriod": "包含于 Ultra / Other Models"
   },
   "presets": {
     "preset-grok-heavy": "Grok Heavy 每周共享池",
@@ -345,6 +346,9 @@
     "grokParsedToggle": "解析到的产品",
     "tightest": "最紧张",
     "scrollPrev": "向左滚动",
-    "scrollNext": "向右滚动"
+    "scrollNext": "向右滚动",
+    "heroAll": "全部",
+    "heroAllLabel": "全部 · {{pool}}",
+    "heroSelect": "主数字额度池"
   }
 }

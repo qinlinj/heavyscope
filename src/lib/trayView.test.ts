@@ -26,8 +26,10 @@ import {
   trayExpandFacts,
   trayHeatFill,
   trayHeatmapCellPx,
-  trayHeatmapWeeksForScale,
-  trayHeroRemaining,
+  clampTrayHeatmapZoomWeeks,
+  trayHeatmapWeeksFromDrag,
+  trayHeroUsedPercent,
+  TRAY_HEATMAP_MIN_ZOOM_WEEKS,
   trayProviderSync,
   TRAY_DEFAULT_POOL_IDS,
   TRAY_HEATMAP_MAX_CELL_PX,
@@ -278,11 +280,17 @@ describe("fitTrayHeatmap", () => {
     expect(panel.cell).toBeLessThanOrEqual(TRAY_HEATMAP_MAX_CELL_PX);
   });
 
-  it("maps ChartsPanel Day/Week/Month onto the width-fit increment window", () => {
+  it("drag-zooms daily week-columns to a minimum of 2, never week/month buckets", () => {
     const fitted = fitTrayHeatmap(MACOS_TRAY_PANEL.width).weeks;
-    expect(trayHeatmapWeeksForScale("day", fitted)).toBe(fitted);
-    expect(trayHeatmapWeeksForScale("week", fitted)).toBe(Math.min(fitted, 8));
-    expect(trayHeatmapWeeksForScale("month", fitted)).toBe(Math.min(fitted, 26));
+    expect(TRAY_HEATMAP_MIN_ZOOM_WEEKS).toBe(2);
+    expect(clampTrayHeatmapZoomWeeks(1, fitted)).toBe(2);
+    expect(clampTrayHeatmapZoomWeeks(fitted + 8, fitted)).toBe(fitted);
+    const zoomed = trayHeatmapWeeksFromDrag(fitted, 200, 200, fitted);
+    expect(zoomed).toBe(2);
+    expect(zoomed).toBeGreaterThanOrEqual(2);
+    const reset = trayHeatmapWeeksFromDrag(2, -200, 200, fitted);
+    expect(reset).toBe(fitted);
+    expect(typeof trayHeatmapWeeksFromDrag).toBe("function");
   });
 });
 
@@ -317,43 +325,55 @@ describe("tray edit Done does not drop tiles", () => {
   });
 });
 
-describe("trayHeroRemaining", () => {
-  it("uses remaining of the tightest connected pool", () => {
-    const hero = trayHeroRemaining(
-      [
-        advice({ poolId: "preset-grok-heavy", risk: "unconnected", remaining: 100, usagePercent: 0 }),
-        advice({ poolId: "preset-cursor-models", risk: "overspend", remaining: 42, usagePercent: 91 }),
-        advice({ poolId: "preset-cursor-other", risk: "ok", remaining: 200, usagePercent: 20 }),
-      ],
-      [
-        { id: "preset-grok-heavy", unit: "credits", quota_total: 100 },
-        { id: "preset-cursor-models", unit: "requests", quota_total: 500 },
-        { id: "preset-cursor-other", unit: "USD", quota_total: 400 },
-      ],
-    );
-    expect(hero).toEqual({ poolId: "preset-cursor-models", remaining: 42, unit: "requests" });
+describe("trayHeroUsedPercent", () => {
+  const pools = [
+    { id: "preset-grok-heavy", quota_total: 100, quota_used: 0 },
+    { id: "preset-cursor-models", quota_total: 100, quota_used: 91 },
+    { id: "preset-cursor-other", quota_total: 100, quota_used: 0 },
+  ];
+  const advices = [
+    advice({ poolId: "preset-grok-heavy", risk: "unconnected", remaining: 100, usagePercent: 0 }),
+    advice({ poolId: "preset-cursor-models", risk: "overspend", remaining: 9, usagePercent: 91 }),
+    advice({ poolId: "preset-cursor-other", risk: "ok", remaining: 100, usagePercent: 0 }),
+  ];
+
+  it("uses used% of the tightest connected pool for All", () => {
+    const hero = trayHeroUsedPercent("all", advices, pools);
+    expect(hero).toEqual({ poolId: "preset-cursor-models", usedPercent: 91, mode: "all" });
+    expect(hero?.usedPercent).not.toBe(36);
+    expect(hero?.usedPercent).not.toBe(145.99);
   });
 
-  it("does not draw a hero or invent a number when remaining is unknown", () => {
+  it("shows Other used% as 0 and does not invent totalSpend dollars", () => {
+    const all = trayHeroUsedPercent("all", advices, pools, [
+      "preset-cursor-models",
+      "preset-cursor-other",
+    ]);
+    expect(all?.usedPercent).toBe(91);
+    const other = trayHeroUsedPercent("preset-cursor-other", advices, pools);
+    expect(other).toEqual({
+      poolId: "preset-cursor-other",
+      usedPercent: 0,
+      mode: "pool",
+    });
+    expect(other?.usedPercent).not.toBe(36);
+    expect(other?.usedPercent).not.toBe(145.99);
+  });
+
+  it("draws no hero when used% is unknown", () => {
     expect(
-      trayHeroRemaining(
-        [advice({ poolId: "preset-grok-heavy", risk: "unconnected", remaining: 100 })],
-        [{ id: "preset-grok-heavy", unit: "credits", quota_total: 100 }],
+      trayHeroUsedPercent(
+        "all",
+        [advice({ poolId: "preset-grok-heavy", risk: "unconnected", usagePercent: 0 })],
+        [{ id: "preset-grok-heavy", quota_total: 100, quota_used: 0 }],
       ),
     ).toBeNull();
     expect(
-      trayHeroRemaining(
-        [advice({ poolId: "hot", risk: "ok", remaining: 12 })],
-        [{ id: "hot", unit: "%", quota_total: 0 }],
-      ),
+      trayHeroUsedPercent("hot", [advice({ poolId: "hot", risk: "ok", usagePercent: 12 })], [
+        { id: "hot", quota_total: 0, quota_used: 0 },
+      ]),
     ).toBeNull();
-    expect(
-      trayHeroRemaining(
-        [advice({ poolId: "hot", risk: "ok", remaining: Number.NaN })],
-        [{ id: "hot", unit: "%", quota_total: 100 }],
-      ),
-    ).toBeNull();
-    expect(trayHeroRemaining([], [])).toBeNull();
+    expect(trayHeroUsedPercent("all", [], [])).toBeNull();
   });
 });
 

@@ -37,6 +37,60 @@ const SAMPLE_SUMMARY = {
   },
 };
 
+/**
+ * Live re-hit 2026-08-21 (desensitized). Period + usage-summary both 200.
+ * Spending JS (`1govohjdzqjzr.js`): Other Models = apiPercentUsed (live 0).
+ * totalSpend/limit 14599/40000 cents = $145.99 / $400 is included / Auto
+ * (displayMessage “You've used 36% of your included usage”) — never Other.
+ * Models = autoPercentUsed 7.2995. onDemand disabled used=0 is On-Demand.
+ * Billing window PT 2026-08-16 17:52 → 2026-09-16 17:52. membership ultra.
+ */
+const LIVE_PERIOD = {
+  billingCycleStart: "2026-08-17T00:52:00.000Z",
+  billingCycleEnd: "2026-09-17T00:52:00.000Z",
+  membershipType: "ultra",
+  planUsage: {
+    autoPercentUsed: 7.2995,
+    apiPercentUsed: 0,
+    totalSpend: 14599,
+    includedSpend: 14599,
+    limit: 40000,
+    used: 0,
+    displayMessage: "You've used 36% of your included usage",
+  },
+};
+
+const LIVE_SUMMARY = {
+  billingCycleStart: "2026-08-17T00:52:00.000Z",
+  billingCycleEnd: "2026-09-17T00:52:00.000Z",
+  membershipType: "ultra",
+  individualUsage: {
+    plan: {
+      autoPercentUsed: 7.2995,
+      apiPercentUsed: 0,
+      used: 14599,
+      limit: 40000,
+    },
+    onDemand: { enabled: false, used: 0, limit: null },
+  },
+};
+
+/** Live get-sand-usage-status (2026-08-21). Grok Bot weekly used% only. */
+const LIVE_SAND = {
+  usagePercent: 36.327845,
+  currentPeriodStart: "2026-08-17T01:40:00.748Z",
+  nextResetTimestampUtc: "2026-08-24T01:40:00.748Z",
+  hasAvailableUsage: true,
+  hasNonZeroIncludedLimit: true,
+};
+
+const OTHER_UNUSED = {
+  quotaUsed: 0,
+  quotaTotal: 100,
+  unit: "%",
+  note: "Included in Ultra / Other Models",
+};
+
 const SAMPLE_PERIOD = {
   billingCycleStart: 1752883200000,
   billingCycleEnd: 1755561600000,
@@ -94,7 +148,7 @@ const SAMPLE_AGGREGATIONS = {
 };
 
 describe("mapCursorUsageSummary", () => {
-  it("maps Models as % and Other as USD from on-demand cents, not apiPercent", () => {
+  it("maps Models from autoPercentUsed and Other from apiPercentUsed as %", () => {
     const result = mapCursorUsageSummary(SAMPLE_SUMMARY);
     expect(result.ok).toBe(true);
     expect(result.pools).toHaveLength(2);
@@ -108,12 +162,14 @@ describe("mapCursorUsageSummary", () => {
       resetAt: "2026-08-19T00:00:00.000Z",
     });
     expect(other).toMatchObject({
-      quotaUsed: 12.5,
-      quotaTotal: 400,
-      unit: "USD",
+      quotaUsed: 18,
+      quotaTotal: 100,
+      unit: "%",
       resetAt: "2026-08-19T00:00:00.000Z",
+      note: "Included in Ultra / Other Models",
     });
-    expect(other?.note).toContain("On-demand $12.50 / $400.00");
+    expect(other?.quotaUsed).not.toBe(12.5);
+    expect(other?.unit).not.toBe("USD");
     expect(result.pools.find((pool) => pool.poolHint === "grok_bot")).toBeUndefined();
   });
 
@@ -123,33 +179,70 @@ describe("mapCursorUsageSummary", () => {
       individualUsage: { plan: { autoPercentUsed: 112, apiPercentUsed: 5 } },
     });
     expect(result.ok).toBe(true);
-    expect(result.pools).toHaveLength(1);
-    expect(result.pools[0]?.poolHint).toBe("cursor_models");
-    expect(result.pools[0]?.quotaUsed).toBe(112);
-    expect(result.pools[0]?.quotaTotal).toBe(100);
+    expect(result.pools.find((pool) => pool.poolHint === "cursor_models")).toMatchObject({
+      quotaUsed: 112,
+      quotaTotal: 100,
+      unit: "%",
+    });
+    expect(result.pools.find((pool) => pool.poolHint === "cursor_other")).toMatchObject({
+      quotaUsed: 5,
+      quotaTotal: 100,
+      unit: "%",
+    });
   });
 
-  it("does not map Other from apiPercentUsed as 0–100%", () => {
+  it("maps apiPercentUsed=12 as Other 12% used, not onDemand cents", () => {
     const result = mapCursorUsageSummary({
       individualUsage: {
-        plan: { autoPercentUsed: 10, apiPercentUsed: 7 },
+        plan: { autoPercentUsed: 10, apiPercentUsed: 12 },
         onDemand: { enabled: true, used: 20000, limit: 40000 },
       },
     });
     const other = result.pools.find((pool) => pool.poolHint === "cursor_other");
-    expect(other?.quotaUsed).toBe(200);
-    expect(other?.quotaTotal).toBe(400);
-    expect(other?.unit).toBe("USD");
-    expect(other?.quotaUsed).not.toBe(7);
-    expect(other?.quotaTotal).not.toBe(100);
+    expect(other).toMatchObject({
+      quotaUsed: 12,
+      quotaTotal: 100,
+      unit: "%",
+      note: "Included in Ultra / Other Models",
+    });
+    expect(other?.quotaUsed).not.toBe(200);
+    expect(other?.quotaTotal).not.toBe(400);
+    expect(other?.unit).not.toBe("USD");
   });
 
-  it("omits Other when only apiPercentUsed is present", () => {
+  it("maps live summary Other as 0% used; plan.used/limit $145.99 is not Other", () => {
+    const result = mapCursorUsageSummary(LIVE_SUMMARY);
+    const models = result.pools.find((pool) => pool.poolHint === "cursor_models");
+    const other = result.pools.find((pool) => pool.poolHint === "cursor_other");
+    expect(models?.quotaUsed).toBe(7.2995);
+    expect(other).toMatchObject(OTHER_UNUSED);
+    expect(other?.quotaUsed).not.toBe(145.99);
+    expect(other?.quotaTotal).not.toBe(400);
+    expect(other?.unit).not.toBe("USD");
+  });
+
+  it("does not treat disabled onDemand.used=0 as used Other", () => {
+    const result = mapCursorUsageSummary({
+      individualUsage: {
+        plan: { autoPercentUsed: 10, apiPercentUsed: 0 },
+        onDemand: { enabled: false, used: 0, limit: 40000 },
+      },
+    });
+    expect(result.pools.find((pool) => pool.poolHint === "cursor_other")).toMatchObject(OTHER_UNUSED);
+    expect(result.pools.map((pool) => pool.poolHint)).toEqual(["cursor_models", "cursor_other"]);
+  });
+
+  it("maps Other when only apiPercentUsed is present", () => {
     const result = mapCursorUsageSummary({
       individualUsage: { plan: { autoPercentUsed: 10, apiPercentUsed: 18 } },
     });
     expect(result.ok).toBe(true);
-    expect(result.pools.map((pool) => pool.poolHint)).toEqual(["cursor_models"]);
+    expect(result.pools.map((pool) => pool.poolHint)).toEqual(["cursor_models", "cursor_other"]);
+    expect(result.pools.find((pool) => pool.poolHint === "cursor_other")).toMatchObject({
+      quotaUsed: 18,
+      quotaTotal: 100,
+      unit: "%",
+    });
   });
 
   it("returns an error result for missing fields without throwing", () => {
@@ -178,10 +271,12 @@ describe("mergeCursorSpendingSources", () => {
       unit: "%",
     });
     expect(other).toMatchObject({
-      quotaUsed: 12.5,
-      quotaTotal: 400,
-      unit: "USD",
+      quotaUsed: 18,
+      quotaTotal: 100,
+      unit: "%",
+      note: "Included in Ultra / Other Models",
     });
+    expect(other?.quotaUsed).not.toBe(12.5);
     expect(bot).toMatchObject({
       quotaUsed: 3.3,
       unit: "USD",
@@ -231,41 +326,89 @@ describe("mergeCursorSpendingSources", () => {
     expect(result.pools.some((pool) => pool.quotaUsed === 999 || pool.quotaUsed === 9.99)).toBe(false);
   });
 
-  it("uses planUsage.limit as Other total when present, else 400 USD", () => {
-    const withLimit = mergeCursorSpendingSources({
-      period: {
-        planUsage: { autoPercentUsed: 1, totalSpend: 500, limit: 20000 },
-      },
+  it("maps live period Other as 0% used; totalSpend $145.99 / $400 is not Other", () => {
+    const result = mergeCursorSpendingSources({
+      period: LIVE_PERIOD,
+      summary: LIVE_SUMMARY,
     });
-    expect(withLimit.pools.find((pool) => pool.poolHint === "cursor_other")).toMatchObject({
-      quotaUsed: 5,
-      quotaTotal: 200,
-      unit: "USD",
-    });
-
-    const defaultLimit = mergeCursorSpendingSources({
-      period: {
-        planUsage: { autoPercentUsed: 1, totalSpend: 500, limit: 0 },
-      },
-    });
-    expect(defaultLimit.pools.find((pool) => pool.poolHint === "cursor_other")).toMatchObject({
-      quotaUsed: 5,
-      quotaTotal: 400,
-      unit: "USD",
-    });
+    const models = result.pools.find((pool) => pool.poolHint === "cursor_models");
+    const other = result.pools.find((pool) => pool.poolHint === "cursor_other");
+    expect(models?.quotaUsed).toBe(7.2995);
+    expect(other).toMatchObject(OTHER_UNUSED);
+    expect(other?.quotaUsed).not.toBe(145.99);
+    expect(other?.quotaTotal).not.toBe(400);
+    expect(other?.unit).not.toBe("USD");
+    expect(other?.note).toBe("Included in Ultra / Other Models");
   });
 
-  it("falls back to usage-summary Models % when period autoPercent is missing", () => {
+  it("maps apiPercentUsed=0 as Other 0% used even when totalSpend is $145.99", () => {
+    const result = mergeCursorSpendingSources({
+      period: {
+        planUsage: {
+          autoPercentUsed: 7.2995,
+          apiPercentUsed: 0,
+          totalSpend: 14599,
+          includedSpend: 14599,
+          limit: 40000,
+        },
+      },
+    });
+    const other = result.pools.find((pool) => pool.poolHint === "cursor_other");
+    expect(other).toMatchObject(OTHER_UNUSED);
+    expect(other?.quotaUsed).not.toBe(145.99);
+    expect(other?.quotaUsed).not.toBe(36);
+  });
+
+  it("never writes period totalSpend / limit onto preset-cursor-other as dollars", () => {
+    const withSpend = mergeCursorSpendingSources({
+      period: {
+        planUsage: { autoPercentUsed: 1, totalSpend: 14599, includedSpend: 14599, limit: 40000 },
+      },
+    });
+    expect(withSpend.pools.find((pool) => pool.poolHint === "cursor_other")).toBeUndefined();
+    expect(withSpend.pools.map((pool) => pool.poolHint)).toEqual(["cursor_models"]);
+    expect(withSpend.pools.some((pool) => pool.quotaUsed === 145.99 || pool.quotaTotal === 400)).toBe(
+      false,
+    );
+
+    const totalSpendZero = mergeCursorSpendingSources({
+      period: {
+        planUsage: { autoPercentUsed: 1, apiPercentUsed: 0, totalSpend: 0, limit: 40000 },
+      },
+    });
+    expect(totalSpendZero.pools.find((pool) => pool.poolHint === "cursor_other")).toMatchObject(
+      OTHER_UNUSED,
+    );
+  });
+
+  it("maps apiPercentUsed=12 as Other 12% used and ignores totalSpend dollars", () => {
+    const result = mergeCursorSpendingSources({
+      period: {
+        planUsage: { autoPercentUsed: 1, apiPercentUsed: 12, totalSpend: 14599, limit: 40000 },
+      },
+    });
+    expect(result.pools.find((pool) => pool.poolHint === "cursor_other")).toMatchObject({
+      quotaUsed: 12,
+      quotaTotal: 100,
+      unit: "%",
+    });
+    expect(result.pools.some((pool) => pool.poolHint === "cursor_other" && pool.quotaUsed === 145.99)).toBe(
+      false,
+    );
+  });
+
+  it("falls back to usage-summary Models % and Other % when period autoPercent is missing", () => {
     const result = mergeCursorSpendingSources({
       period: { planUsage: { totalSpend: 250, limit: 40000 } },
       summary: SAMPLE_SUMMARY,
     });
     expect(result.pools.find((pool) => pool.poolHint === "cursor_models")?.quotaUsed).toBe(42.5);
     expect(result.pools.find((pool) => pool.poolHint === "cursor_other")).toMatchObject({
-      quotaUsed: 2.5,
-      quotaTotal: 400,
-      unit: "USD",
+      quotaUsed: 18,
+      quotaTotal: 100,
+      unit: "%",
     });
+    expect(result.pools.some((pool) => pool.quotaUsed === 2.5 && pool.unit === "USD")).toBe(false);
   });
 
   it("writes Grok Bot used+limit when the row has both, and never uses Composer/Cursor Grok", () => {
@@ -307,9 +450,9 @@ describe("mergeCursorSpendingSources", () => {
       unit: "%",
     });
     expect(result.pools.find((pool) => pool.poolHint === "cursor_other")).toMatchObject({
-      quotaUsed: 12.5,
-      quotaTotal: 400,
-      unit: "USD",
+      quotaUsed: 18,
+      quotaTotal: 100,
+      unit: "%",
     });
     const bot = result.pools.find((pool) => pool.poolHint === "grok_bot");
     expect(bot).toMatchObject({
@@ -395,12 +538,11 @@ describe("mapCursorUsageResponse", () => {
     expect(result.code).toBe("invalid");
   });
 
-  it("parses a 200 JSON body without treating Other as a percent pool", () => {
+  it("parses a 200 JSON body with Other as apiPercentUsed percent", () => {
     const result = mapCursorUsageResponse(200, JSON.stringify(SAMPLE_SUMMARY));
     expect(result.ok).toBe(true);
     const other = result.pools.find((pool) => pool.poolHint === "cursor_other");
-    expect(other?.unit).toBe("USD");
-    expect(other?.quotaTotal).toBe(400);
+    expect(other).toMatchObject({ quotaUsed: 18, quotaTotal: 100, unit: "%" });
   });
 });
 
@@ -498,9 +640,9 @@ describe("finishCursorLiveRefresh", () => {
       unit: "%",
     });
     expect(result.pools.find((pool) => pool.poolHint === "cursor_other")).toMatchObject({
-      quotaUsed: 12.5,
-      quotaTotal: 400,
-      unit: "USD",
+      quotaUsed: 18,
+      quotaTotal: 100,
+      unit: "%",
     });
     expect(result.pools.find((pool) => pool.poolHint === "grok_bot")).toBeUndefined();
   });
@@ -553,9 +695,9 @@ describe("finishCursorLiveRefresh", () => {
       unit: "%",
     });
     expect(result.pools.find((pool) => pool.poolHint === "cursor_other")).toMatchObject({
-      quotaUsed: 12.5,
-      quotaTotal: 400,
-      unit: "USD",
+      quotaUsed: 18,
+      quotaTotal: 100,
+      unit: "%",
     });
     expect(result.pools.find((pool) => pool.poolHint === "grok_bot")).toBeUndefined();
   });
@@ -592,6 +734,27 @@ describe("finishCursorLiveRefresh", () => {
       unit: "%",
       resetAt: "2026-08-24T01:40:00.748Z",
     });
+  });
+
+  it("maps live SAND usagePercent 36.327845 onto Grok Bot and keeps Other at 0%", () => {
+    const sandParsed = parseCursorJsonBody(200, JSON.stringify(LIVE_SAND), "Cursor sand-usage-status");
+    const result = finishCursorLiveRefresh({
+      period: LIVE_PERIOD,
+      summary: LIVE_SUMMARY,
+      aggregations: LIVE_LIKE_AGGREGATIONS_NO_BOT,
+      sandParsed,
+    });
+    expect(result.ok).toBe(true);
+    expect(result.botUnavailable).toBe(false);
+    expect(result.pools.find((pool) => pool.poolHint === "cursor_models")?.quotaUsed).toBe(7.2995);
+    expect(result.pools.find((pool) => pool.poolHint === "cursor_other")).toMatchObject(OTHER_UNUSED);
+    expect(result.pools.find((pool) => pool.poolHint === "grok_bot")).toMatchObject({
+      quotaUsed: 36.327845,
+      quotaTotal: 100,
+      unit: "%",
+      resetCycle: "weekly",
+    });
+    expect(result.pools.some((pool) => pool.quotaUsed === 145.99)).toBe(false);
   });
 });
 

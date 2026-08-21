@@ -1,5 +1,4 @@
 import {
-  CURSOR_OTHER_DEFAULT_USD,
   LIVE_PERCENT_TOTAL,
   LIVE_PERCENT_UNIT,
   LIVE_USD_UNIT,
@@ -72,10 +71,6 @@ export function asEpochMs(value: unknown): number | null {
     return Number.isNaN(time) ? null : time;
   }
   return null;
-}
-
-function centsToUsdLabel(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
 }
 
 function centsToUsdAmount(cents: number): number {
@@ -162,14 +157,6 @@ export function cursorCookieHeader(token: string): string {
   if (!value) return "";
   if (/^WorkosCursorSessionToken=/i.test(value)) return value;
   return `WorkosCursorSessionToken=${value}`;
-}
-
-function onDemandCents(onDemand: unknown): { used: number; limit: number | null } | null {
-  const rec = recordFrom(onDemand);
-  if (!rec) return null;
-  const used = asFiniteNumber(rec.used);
-  if (used == null) return null;
-  return { used, limit: asFiniteNumber(rec.limit) };
 }
 
 /**
@@ -344,21 +331,20 @@ function autoPercentFrom(root: Record<string, unknown> | null, plan: Record<stri
   return null;
 }
 
-function otherUsdFromPlan(plan: Record<string, unknown> | null): { used: number; total: number } | null {
-  if (!plan) return null;
-  const spendCents = asFiniteNumber(plan.totalSpend ?? plan.used);
-  if (spendCents == null) return null;
-  const limitCents = asFiniteNumber(plan.limit);
-  const total =
-    limitCents != null && limitCents > 0 ? centsToUsdAmount(limitCents) : CURSOR_OTHER_DEFAULT_USD;
-  return { used: centsToUsdAmount(spendCents), total };
-}
-
-function otherUsdFromOnDemand(onDemand: unknown): { used: number; total: number } | null {
-  const cents = onDemandCents(onDemand);
-  if (!cents) return null;
-  const total = cents.limit != null && cents.limit > 0 ? centsToUsdAmount(cents.limit) : CURSOR_OTHER_DEFAULT_USD;
-  return { used: centsToUsdAmount(cents.used), total };
+/**
+ * Spending #included-in-ultra Other Models meter.
+ * Proven in spending JS (`1govohjdzqjzr.js`): `nV.apiTitle="Other Models"`;
+ * `DT` sets `apiPercentage: e.apiPercentUsed??0`; the second `DI` bar is
+ * Other Models `{Math.round}% used`. Dual-bar JS never reads totalSpend.
+ * Live apiPercentUsed=0 is honest 0% used. `$400` is included cap copy
+ * (`get-plan-info.planInfo.includedAmountCents/100`), not used Other.
+ * Never invent apiSpend. Never map totalSpend or onDemand.used.
+ */
+function apiPercentFrom(root: Record<string, unknown> | null, plan: Record<string, unknown> | null): number | null {
+  const fromPlan = plan ? asFiniteNumber(plan.apiPercentUsed) : null;
+  if (fromPlan != null) return fromPlan;
+  if (root) return asFiniteNumber(root.apiPercentUsed);
+  return null;
 }
 
 export function resolveCursorBillingWindow(
@@ -400,28 +386,23 @@ function modelsPool(percent: number, resetAt: string | null, recordedAt: string)
   };
 }
 
-function otherUsdPool(
-  used: number,
-  total: number,
-  resetAt: string | null,
-  recordedAt: string,
-  extraNote?: string,
-): LivePoolUpdate {
+function otherPercentPool(percent: number, resetAt: string | null, recordedAt: string): LivePoolUpdate {
   return {
     poolHint: "cursor_other",
-    quotaUsed: used,
-    quotaTotal: total,
+    quotaUsed: percent,
+    quotaTotal: LIVE_PERCENT_TOTAL,
     resetAt,
     resetCycle: "monthly",
-    unit: LIVE_USD_UNIT,
-    note: extraNote ? `Cursor live sync. ${extraNote}` : "Cursor live sync",
+    unit: LIVE_PERCENT_UNIT,
+    note: "Included in Ultra / Other Models",
     recordedAt,
   };
 }
 
 /**
  * usage-summary fallback: Models % from autoPercentUsed.
- * Other is USD from on-demand cents when present — never apiPercentUsed as 0–100%.
+ * Other Models is apiPercentUsed (percent-of-100) — the #included-in-ultra
+ * Other Models row. Never totalSpend, plan.used cents, or onDemand.
  */
 export function mapCursorUsageSummary(input: unknown): LiveProviderResult {
   if (!isRecord(input)) {
@@ -431,16 +412,15 @@ export function mapCursorUsageSummary(input: unknown): LiveProviderResult {
   const root = unwrapCursorPayload(input);
   const individual = root ? recordFrom(root.individualUsage) : null;
   const plan = individual ? recordFrom(individual.plan) : null;
-  const onDemand = individual?.onDemand;
 
   const autoPercent = autoPercentFrom(root, plan);
-  const other = otherUsdFromOnDemand(onDemand);
+  const apiPercent = apiPercentFrom(root, plan);
 
-  if (autoPercent == null && other == null) {
+  if (autoPercent == null && apiPercent == null) {
     return {
       ok: false,
       code: "invalid",
-      message: "Cursor usage-summary is missing autoPercentUsed and on-demand spend",
+      message: "Cursor usage-summary is missing autoPercentUsed and apiPercentUsed",
       pools: [],
     };
   }
@@ -452,13 +432,8 @@ export function mapCursorUsageSummary(input: unknown): LiveProviderResult {
   if (autoPercent != null) {
     pools.push(modelsPool(autoPercent, resetAt, fetchedAt));
   }
-  if (other) {
-    const usedCents = onDemandCents(onDemand);
-    const extra =
-      usedCents && usedCents.limit != null
-        ? `On-demand ${centsToUsdLabel(usedCents.used)} / ${centsToUsdLabel(usedCents.limit)}`
-        : `On-demand ${centsToUsdLabel(other.used * 100)} / $${other.total.toFixed(2)}`;
-    pools.push(otherUsdPool(other.used, other.total, resetAt, fetchedAt, extra));
+  if (apiPercent != null) {
+    pools.push(otherPercentPool(apiPercent, resetAt, fetchedAt));
   }
 
   if (pools.length === 0) {
@@ -481,23 +456,14 @@ export function mapCursorPeriodUsage(
 ): { models: LivePoolUpdate | null; other: LivePoolUpdate | null; resetAt: string | null } {
   const root = unwrapCursorPayload(input);
   const plan = planUsageRecord(root);
-  const individual = root ? recordFrom(root.individualUsage) : null;
   const resetAt = asIso(root?.billingCycleEnd);
 
   const autoPercent = autoPercentFrom(root, plan);
-  const other = otherUsdFromPlan(plan) ?? otherUsdFromOnDemand(individual?.onDemand);
+  const apiPercent = apiPercentFrom(root, plan);
 
   return {
     models: autoPercent != null ? modelsPool(autoPercent, resetAt, recordedAt) : null,
-    other: other
-      ? otherUsdPool(
-          other.used,
-          other.total,
-          resetAt,
-          recordedAt,
-          `Spend $${other.used.toFixed(2)} / $${other.total.toFixed(2)}`,
-        )
-      : null,
+    other: apiPercent != null ? otherPercentPool(apiPercent, resetAt, recordedAt) : null,
     resetAt,
   };
 }
@@ -544,9 +510,11 @@ export function mapCursorSandUsage(
 
 /**
  * Merge current-period-usage + aggregations/events + usage-summary + SAND.
- * Spending Other (USD) wins over the old usage-summary Other-% mapping.
- * usage-summary is only a Models % fallback when period autoPercent is missing.
- * Grok Bot prefers SAND weekly %; SKU rows are fallback only. Never invent counts.
+ * Other Models is apiPercentUsed (Included in Ultra / Other Models).
+ * planUsage.totalSpend is an included/Auto aggregate — never Other.
+ * Disabled onDemand.used=0 is not used Other. usage-summary is also a
+ * Models % fallback. Grok Bot prefers SAND weekly %; SKU rows are
+ * fallback only. Never invent counts.
  */
 export function mergeCursorSpendingSources(sources: CursorSpendingSources): LiveProviderResult {
   const recordedAt = new Date().toISOString();

@@ -24,9 +24,65 @@ function normalizeUnitKey(unit: string): string {
   return unit.trim().toLowerCase();
 }
 
-function isMoneyUnit(unit: string): boolean {
+export function isUsdUnit(unit: string): boolean {
   const normalized = normalizeUnitKey(unit);
   return normalized === "usd" || normalized === "$";
+}
+
+function isMoneyUnit(unit: string): boolean {
+  return isUsdUnit(unit);
+}
+
+/** Used / limit as dollars. Never prints “0%” — that is not a dollar line. */
+export function formatUsdQuotaLine(used: number, total: number): string {
+  return `${formatAmount(used, "USD")} / ${formatAmount(total, "USD")}`;
+}
+
+export type OtherUsdView = {
+  used: number;
+  remaining: number;
+  total: number;
+  usedPercent: number;
+  dollarLine: string;
+  remainingLine: string;
+};
+
+/**
+ * Leftover USD snapshots only. Live Other is apiPercentUsed as `%` / 100;
+ * that path returns null so the card shows 0% used, not invented dollars.
+ */
+export function otherUsdView(
+  pool: Pick<Pool, "unit" | "quota_used" | "quota_total">,
+): OtherUsdView | null {
+  if (!isUsdUnit(pool.unit)) return null;
+  const used = Number(pool.quota_used);
+  const total = Number(pool.quota_total);
+  if (!Number.isFinite(used) || !Number.isFinite(total) || !(total > 0)) return null;
+  const leftover = Math.max(0, total - used);
+  return {
+    used,
+    remaining: leftover,
+    total,
+    usedPercent: usagePercent({ ...pool, quota_used: used, quota_total: total } as Pool),
+    dollarLine: formatUsdQuotaLine(used, total),
+    remainingLine: formatAmount(leftover, "USD"),
+  };
+}
+
+/** Indicator width is used%. Never stretch a partial fill to 100%. */
+export function progressFillPercent(percent: number): number {
+  if (!Number.isFinite(percent)) return 0;
+  return Math.min(100, Math.max(0, percent));
+}
+
+export function progressIndicatorStyle(
+  color: string,
+  percent: number,
+): { width: string; backgroundColor: string } {
+  return {
+    width: `${progressFillPercent(percent)}%`,
+    backgroundColor: color,
+  };
 }
 
 function isPercentUnit(unit: string): boolean {

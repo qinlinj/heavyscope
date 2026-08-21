@@ -18,6 +18,7 @@ import {
   formatCountdown,
   formatDateTime,
   formatSignedAmount,
+  otherUsdView,
   remaining,
   usagePercent,
   usageTone,
@@ -71,6 +72,8 @@ export function PoolCard({
   const tone = usageTone(percent, warnPercent, critPercent);
   const left = remaining(pool);
   const recent = dashboardRecentRecords(records);
+  const usd = otherUsdView(pool);
+  const sourceLabel = pool.id === "preset-cursor-other" ? t("pool.sourceCursorPeriod") : null;
 
   if (compact) {
     const view = compactPoolView(pool);
@@ -98,19 +101,22 @@ export function PoolCard({
             <p className="text-[11px] leading-tight text-muted-foreground">{t("live.notConnected")}</p>
           ) : (
             <>
-          <Progress
-            value={view.percent}
-            className={cn(
-              "h-1.5",
-              tone === "ok" && "[&_[data-slot=progress-indicator]]:bg-emerald-500",
-              tone === "warn" && "[&_[data-slot=progress-indicator]]:bg-amber-500",
-              tone === "crit" && "[&_[data-slot=progress-indicator]]:bg-red-500",
-            )}
-          />
+          <Progress value={view.percent} indicatorColor={pool.color} className="h-1.5 w-full" />
           <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] leading-tight">
+            {usd ? (
+              <>
+                <p className="truncate text-muted-foreground">{sourceLabel ?? t("pool.used")}</p>
+                <p className="truncate text-right font-medium tabular-nums">{usd.dollarLine}</p>
+              </>
+            ) : sourceLabel ? (
+              <>
+                <p className="truncate text-muted-foreground">{sourceLabel}</p>
+                <p className="truncate text-right font-medium tabular-nums">{`${view.percent.toFixed(0)}%`}</p>
+              </>
+            ) : null}
             <p className="truncate text-muted-foreground">{t("pool.remaining")}</p>
             <p className="truncate text-right font-medium tabular-nums">
-              {formatAmount(view.remaining, view.unit)}
+              {usd ? usd.remainingLine : formatAmount(view.remaining, view.unit)}
             </p>
             <p className="truncate text-muted-foreground">{t("pool.reset")}</p>
             <p className="truncate text-right font-medium tabular-nums">
@@ -167,8 +173,9 @@ export function PoolCard({
           <div>
             <p className="text-xs text-muted-foreground">{t("pool.used")}</p>
             <p className="font-heading text-2xl font-semibold tracking-tight">
-              {formatAmount(pool.quota_used, pool.unit)}
+              {usd ? usd.dollarLine : formatAmount(pool.quota_used, pool.unit)}
             </p>
+            {sourceLabel ? <p className="text-[10px] text-muted-foreground">{sourceLabel}</p> : null}
           </div>
           <p
             className={cn(
@@ -181,18 +188,10 @@ export function PoolCard({
             {percent.toFixed(0)}%
           </p>
         </div>
-        <Progress
-          value={percent}
-          className={cn(
-            "h-2",
-            tone === "ok" && "[&_[data-slot=progress-indicator]]:bg-emerald-400",
-            tone === "warn" && "[&_[data-slot=progress-indicator]]:bg-amber-400",
-            tone === "crit" && "[&_[data-slot=progress-indicator]]:bg-red-400",
-          )}
-        />
+        <Progress value={percent} indicatorColor={pool.color} className="h-2 w-full" />
         <div className="grid grid-cols-3 gap-2 text-xs">
-          <Stat label={t("pool.remaining")} value={formatAmount(left, pool.unit)} />
-          <Stat label={t("pool.total")} value={formatAmount(pool.quota_total, pool.unit)} />
+          <Stat label={t("pool.remaining")} value={usd ? usd.remainingLine : formatAmount(left, pool.unit)} />
+          <Stat label={t("pool.total")} value={usd ? formatAmount(usd.total, "USD") : formatAmount(pool.quota_total, pool.unit)} />
           <Stat label={t("pool.reset")} value={formatCountdown(pool.reset_at, i18n.language)} />
         </div>
           </>

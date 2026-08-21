@@ -2,6 +2,14 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.27.0
+
+- Other Models is **`planUsage.apiPercentUsed`** (spending JS `1govohjdzqjzr.js`). Live **0% used**, unit `%`, source **Included in Ultra / Other Models**. `$400` is included cap copy, not used. `planUsage.totalSpend` / `limit` (live `$145.99 / $400`, “You've used 36% of your included usage”) is included / Auto — not Other. Models is `autoPercentUsed` 7.2995. Grok Bot is SAND `usagePercent` 36.327845.
+- Progress bars restore original pool accents (Heavy `#38bdf8`, Bot `#a78bfa`, Models `#34d399`, Other `#fbbf24`). Risk tone is text / badge only.
+- `/tray`: hero is used% with All + per-pool selector (All = tightest connected, `全部 · name`). No Day/Week/Month. Daily heatmap drag-zoom (min 2 week-columns, double-click reset, no tooltip). Compact Advisor strip. Denser type. UNVERIFIED on a real Mac.
+- Out of scope: web Usage week/month/pies, SAND Bot mapping, SKU loosening.
+- Version 0.27.0.
+
 ## v0.26.0
 
 - macOS menubar /tray polish only. Transparent window + one 400×660 panel (radius 12, hairline, no drop shadow). Sticky header with Day/Week/Month + refresh / Settings. Normal mode hides Gauge, LanguageToggle, Layout label, ChartsPanel / PiesPanel / AdvisorPanel, hideHint, last-synced essay, and advisor essay.
