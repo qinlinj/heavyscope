@@ -17,9 +17,9 @@ function pool(partial: Partial<Pool> & Pick<Pool, "id" | "name" | "quota_used" |
 }
 
 describe("macOS panel vs Linux window", () => {
-  it("keeps Accessory 380×780 separate from the Linux 980×720 window", () => {
-    expect(MACOS_TRAY_PANEL.width).toBe(380);
-    expect(MACOS_TRAY_PANEL.height).toBe(780);
+  it("keeps Accessory 400×660 separate from the Linux 980×720 window", () => {
+    expect(MACOS_TRAY_PANEL.width).toBe(400);
+    expect(MACOS_TRAY_PANEL.height).toBe(660);
     expect(LINUX_DESKTOP_WINDOW.width).toBe(980);
     expect(LINUX_DESKTOP_WINDOW.height).toBe(720);
   });

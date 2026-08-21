@@ -2,11 +2,11 @@
 
 HeavyScope's Tauri 2 desktop shell is a **menu-bar extra** on macOS (`NSApplicationActivationPolicyAccessory`). It must be built and verified on a real Mac. This Linux/web environment cannot produce a `.app` or `.dmg`.
 
-The web app is unchanged. `src-tauri/Info.plist` already sets `LSUIElement`. Rust calls `App::set_activation_policy(ActivationPolicy::Accessory)` — that method is `&mut self -> ()` on `tauri::App` in Tauri 2.11.3, so do not use `?` (`AppHandle::set_activation_policy` is the `Result<()>` variant) — and positions a compact **~380×780** panel under the status item on top of that plist. It does not replace the plist. Linux/Windows keep the 980×720 centered tray window (`tauri.conf.json`) and still compile (`cfg(target_os = "macos")` in `src-tauri/src/lib.rs`, plus `src-tauri/tauri.macos.conf.json`).
+The web app is unchanged. `src-tauri/Info.plist` already sets `LSUIElement`. Rust calls `App::set_activation_policy(ActivationPolicy::Accessory)` — that method is `&mut self -> ()` on `tauri::App` in Tauri 2.11.3, so do not use `?` (`AppHandle::set_activation_policy` is the `Result<()>` variant) — and positions a compact **~400×660** transparent panel under the status item on top of that plist. It does not replace the plist. Linux/Windows keep the 980×720 centered tray window (`tauri.conf.json`) and still compile (`cfg(target_os = "macos")` in `src-tauri/src/lib.rs`, plus `src-tauri/tauri.macos.conf.json`).
 
 Linux CI compiles a stub for the optional Cursor `state.vscdb` helper and does not read anyone's Cursor database.
 
-The `/tray` popup lists every Layout-visible pool (scroll if needed), keeps heatmap cells as squares (`squareCellPx`), and still hosts Settings in the same window. Wide heatmap / Settings rows scroll horizontally (wheel, shift-wheel, optional prev/next).
+The `/tray` popup lists every Layout-visible pool (one vertical scroll, scrollbar hidden), keeps heatmap cells as 1:1 squares that fill the panel width, and still hosts Settings in the same window. There is no second horizontal scroll.
 
 ## Build on a Mac
 
@@ -43,15 +43,15 @@ The menu-bar glyph is the monochrome template `src-tauri/icons/tray-template.png
 - [ ] The app does **not** appear in the Dock.
 - [ ] Activity Monitor / System Settings show an accessory / UI-element style process (`LSUIElement` + `ActivationPolicy::Accessory`).
 - [ ] A template (black/white) icon sits in the menu bar. Optional percent title (tightest pool) may appear next to it.
-- [ ] Left-click opens a compact ~380×780 panel **anchored under the status item**, not at screen center.
-- [ ] The panel has no overlapping traffic-light title-bar buttons (undecorated / overlay title hidden).
-- [ ] The panel loads `/tray` (all Layout-visible pools in a scroll list, advisor one-liner, last-sync lines, optional square heatmap). Header has Refresh now, a Settings gear, language, and theme.
-- [ ] Settings pane stays inside the ~380×780 popup (not a new OS window). Back returns to the compact dashboard.
+- [ ] Left-click opens a compact ~400×660 panel **anchored under the status item**, not at screen center.
+- [ ] The panel has no overlapping traffic-light title-bar buttons (undecorated / overlay title hidden). The window is transparent; one rounded panel, no outer drop shadow.
+- [ ] The panel loads `/tray` (hero remaining when known, hairline pool rows, compact purple heatmap). Header has title, Day/Week/Month, Refresh now, a Settings gear, and a theme icon.
+- [ ] Settings pane stays inside the ~400×660 popup (not a new OS window). Back returns to the compact dashboard.
 - [ ] Paste a Cursor `WorkosCursorSessionToken` and/or Grok session/Bearer in the tray Settings pane. Connect stores the same local keys as web Settings. Interval starts immediately.
 - [ ] Refresh now (header or Settings) calls the same live sync stack and updates per-provider last sync / error (gRPC 16 / expired).
 - [ ] Unsynced pools show 待连接 / Not connected plus a **Go to Settings** button. The dashboard banner also jumps to the Settings pane when Cursor or Grok is missing.
 - [ ] Click a pool row to expand used/total, remaining, reset, and the last 1–2 deltas. Only one row is open at a time. Four or more Layout-visible pools stay in the list (scroll).
-- [ ] Heatmap cells are squares (8–10px) and do not stretch. Week count comes from available width (max 10 weeks), never a 10-month strip.
+- [ ] Heatmap cells are 1:1 squares that fill the panel width. Week count comes from available width (~20–26), never a fixed 10-week / 10-month strip. Month labels sit on the first week of that month.
 - [ ] Clicking outside the panel, or deactivating the app, hides it.
 - [ ] Clicking the icon again while the panel is open hides it (no flicker-reopen).
 - [ ] Right-click (or the tray menu) still offers Open and Quit.

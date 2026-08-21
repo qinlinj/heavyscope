@@ -2,6 +2,14 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.26.0
+
+- macOS menubar /tray polish only. Transparent window + one 400×660 panel (radius 12, hairline, no drop shadow). Sticky header with Day/Week/Month + refresh / Settings. Normal mode hides Gauge, LanguageToggle, Layout label, ChartsPanel / PiesPanel / AdvisorPanel, hideHint, last-synced essay, and advisor essay.
+- Layout Done does not drop visible tiles. Default four pools + heatmap cannot all be hidden by one accidental hide.
+- Compact heatmap fills the panel (flex columns, 1:1 cells, first-week month labels, ~20–26 weeks from width, product purple). Hero remaining only when known.
+- Web Dashboard, adapters, liveHttp, and SAND are unchanged.
+- Version 0.26.0.
+
 ## v0.25.0
 
 - Web Dashboard polish only. Trend hover: USD 2dp, percent ≤2dp (no raw float tails). Heatmap week count follows panel width; square cells; readable first-week-of-month labels; leftover space is legend / stats. Dashboard pies have no outer white stroke. Recent Records shows the latest 2 rows at a fixed height.

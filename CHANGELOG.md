@@ -6,6 +6,18 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-08-21
+
+### Changed
+
+- macOS `/tray` polish only. Transparent Accessory window with one panel (radius 12, dark `#1f2226` / light `#fff`, 1px hairline, no outer drop shadow). Size **400×660**. Open fade 180ms. One vertical scroll (scrollbar hidden), sticky header. No second horizontal scroll.
+- Header: title + Day/Week/Month (existing ChartsPanel scale / heatmap increment window) + refresh / Settings. Normal mode hides the purple Gauge square, LanguageToggle, and the Layout text row. Theme is a single cycling icon.
+- Normal menubar does not render ChartsPanel / PiesPanel / AdvisorPanel (no week-bars, pies, Requests, or MCP). Layout Done is sticky and does not drop visible tiles; default four pools + heatmap cannot all be hidden by one accidental hide.
+- Honest copy: no hideHint, last-synced essay, advisor essay, or raw syncFlash. Unconnected is one line + Go to Settings.
+- Pool rows are hairline / borderless with a thin bar and no purple glow. Hero remaining (28px tabular-nums + pool name) only when the tightest *connected* pool remaining is known.
+- Compact tray heatmap fills the panel: flex columns, `width: 100%` + `aspect-ratio: 1/1`, first-week-of-month labels, week count from width (~20–26, not a fixed 10). Product purple mixed into the panel background. Less/More legend right-aligned.
+- Version 0.26.0 (package.json + src-tauri + README + docs/RELEASE.md). Web Dashboard, adapters, liveHttp, and SAND are unchanged.
+
 ## [0.25.0] - 2026-08-21
 
 ### Changed

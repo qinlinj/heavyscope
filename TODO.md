@@ -107,6 +107,18 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Persist Day / Week / Month scale (currently component state only)
 - [ ] Optional heatmap filter by pool
 
+## 0.26.0 — macOS menubar /tray polish
+
+- [x] Transparent Accessory window + one panel (radius 12, `#1f2226` / `#fff`, hairline, no drop shadow); ~400×660; fade-in 180ms; one vertical scroll, sticky header
+- [x] Header: title + Day/Week/Month + refresh / Settings; hide Gauge, LanguageToggle, Layout text in normal mode
+- [x] Normal tray does not render ChartsPanel / PiesPanel / AdvisorPanel
+- [x] Done does not drop visible tiles; default four pools + heatmap cannot all hide in one tap
+- [x] Honest copy: no hideHint / last-synced essay / advisor essay / raw syncFlash
+- [x] Hairline pool rows + thin bar; hero remaining only when known
+- [x] Compact heatmap: flex fill, 1:1 cells, first-week month labels, ~20–26 weeks, product purple
+- [x] Version 0.26.0 (package.json + src-tauri + README + docs/RELEASE.md)
+- [ ] Verify Accessory + 400×660 transparent panel on a real Mac
+
 ## 0.25.0 — web Dashboard polish
 
 - [x] Usage/trend hover: USD 2dp, percent ≤2dp (no raw float tail)

@@ -5,6 +5,7 @@ import { OverflowStrip } from "@/components/OverflowStrip";
 import type { Pool, UsageRecord } from "@/db/schema";
 import type { TileSize } from "@/lib/dashboardLayout";
 import { formatAmount } from "@/lib/format";
+import type { ChartScale } from "@/lib/charts";
 import type { HeatmapCell, PlotBox } from "@/lib/heatmap";
 import {
   HEATMAP_CELL_GAP_PX,
@@ -22,7 +23,7 @@ import {
   heatmapWeekOffsetPx,
   squareCellPx,
 } from "@/lib/heatmap";
-import { fitTrayHeatmap } from "@/lib/trayView";
+import { fitTrayHeatmap, trayHeatFill, trayHeatmapWeeksForScale, TRAY_HEATMAP_WEEKS } from "@/lib/trayView";
 import { displayPoolName } from "@/lib/poolName";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +37,8 @@ type Props = {
   size?: TileSize;
   minCellPx?: number;
   maxCellPx?: number;
+  /** ChartsPanel Day/Week/Month increment window. Compact / tray only. */
+  scale?: ChartScale;
 };
 
 const HEAT_LEVELS = [0, 1, 2, 3, 4] as const;
@@ -57,6 +60,7 @@ export function ActivityHeatmap({
   size,
   minCellPx,
   maxCellPx,
+  scale,
 }: Props) {
   const { t, i18n } = useTranslation();
   const fallback = useMemo(() => heatmapFallbackBox(size ?? (compact ? "sm" : "lg")), [size, compact]);
@@ -64,7 +68,10 @@ export function ActivityHeatmap({
   const webFit = size ? fitWebHeatmap(width, size, fallback.width) : null;
   const trayFit = compact && !size ? fitTrayHeatmap(width, fallback.width) : null;
   const autoWeeks = useHeatmapWeeks(compact);
-  const resolvedWeeks = webFit?.weeks ?? trayFit?.weeks ?? weeks ?? autoWeeks;
+  const trayWeeks = trayFit
+    ? trayHeatmapWeeksForScale(scale ?? "day", trayFit.weeks)
+    : null;
+  const resolvedWeeks = webFit?.weeks ?? trayWeeks ?? weeks ?? autoWeeks;
   const grid = useMemo(() => heatmapGrid(records, resolvedWeeks, new Date(), pools), [records, resolvedWeeks, pools]);
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const [tip, setTip] = useState<{ cell: HeatmapCell; anchor: DOMRect } | null>(null);
@@ -86,7 +93,8 @@ export function ActivityHeatmap({
   );
   const cell = webFit?.cell ?? trayFit?.cell ?? clampSquareCellPx(fitted, minCell, maxCell);
   const safeCell = cell > 0 ? cell : 11;
-  const showMonthRow = safeCell >= 12;
+  const showMonthRow = compact || safeCell >= 12;
+  const heatColor = (level: 0 | 1 | 2 | 3 | 4) => (compact ? trayHeatFill(level) : `var(--heat-${level})`);
   const gap = HEATMAP_CELL_GAP_PX;
   const gridW = grid.weeks * safeCell + (grid.weeks - 1) * gap;
   const gridH = 7 * safeCell + 6 * gap;
@@ -151,8 +159,8 @@ export function ActivityHeatmap({
               style={{
                 width: safeCell,
                 height: safeCell,
-                backgroundColor: `var(--heat-${level})`,
-                boxShadow: "inset 0 0 0 1px var(--heat-outline)",
+                backgroundColor: heatColor(level),
+                boxShadow: compact ? undefined : "inset 0 0 0 1px var(--heat-outline)",
               }}
               onMouseEnter={(event) => setTip({ cell: cellItem, anchor: event.currentTarget.getBoundingClientRect() })}
               onMouseLeave={() => setTip(null)}
@@ -167,37 +175,43 @@ export function ActivityHeatmap({
     </div>
   );
 
+  const legend = (
+    <span className="flex shrink-0 items-center gap-1">
+      <span>{t("charts.less")}</span>
+      {HEAT_LEVELS.map((level) => (
+        <span
+          key={level}
+          className="size-2.5 rounded-[2px]"
+          style={{
+            backgroundColor: heatColor(level),
+            boxShadow: compact ? undefined : "inset 0 0 0 1px var(--heat-outline)",
+          }}
+        />
+      ))}
+      <span>{t("charts.more")}</span>
+    </span>
+  );
+
   const stats = (
     <div
       className={cn(
         "flex min-w-[9rem] flex-1 items-center justify-between gap-2 text-xs text-muted-foreground",
-        compact && "mt-1.5 w-full",
+        compact && "mt-1.5 w-full justify-end",
         !compact && "min-h-4",
       )}
     >
-      <span className="min-h-4 min-w-0 truncate tabular-nums">
-        {t("charts.heatmapPeriod", {
-          weeks: grid.weeks,
-          metric:
-            grid.intensityMetric === "amount"
-              ? t("charts.heatmapMetricAmount")
-              : t("charts.heatmapMetricCount"),
-        })}
-      </span>
-      <span className="flex shrink-0 items-center gap-1">
-        <span>{t("charts.less")}</span>
-        {HEAT_LEVELS.map((level) => (
-          <span
-            key={level}
-            className="size-2.5 rounded-[2px]"
-            style={{
-              backgroundColor: `var(--heat-${level})`,
-              boxShadow: "inset 0 0 0 1px var(--heat-outline)",
-            }}
-          />
-        ))}
-        <span>{t("charts.more")}</span>
-      </span>
+      {compact ? null : (
+        <span className="min-h-4 min-w-0 truncate tabular-nums">
+          {t("charts.heatmapPeriod", {
+            weeks: grid.weeks,
+            metric:
+              grid.intensityMetric === "amount"
+                ? t("charts.heatmapMetricAmount")
+                : t("charts.heatmapMetricCount"),
+          })}
+        </span>
+      )}
+      {legend}
     </div>
   );
 
@@ -207,9 +221,19 @@ export function ActivityHeatmap({
     >
       {compact ? (
         <>
-          <OverflowStrip wheel="x" viewportRef={boxRef} className="w-full">
-            <div className="flex w-max min-h-0 justify-start">{plot}</div>
-          </OverflowStrip>
+          <div ref={boxRef} className="w-full min-w-0">
+            <CompactTrayPlot
+              gridWeeks={grid.weeks}
+              cells={grid.cells}
+              months={months}
+              weekdays={weekdays}
+              today={today}
+              maxValue={maxValue}
+              intensity={(cellItem) => heatmapCellIntensity(cellItem, grid)}
+              t={t}
+              onTip={(next) => setTip(next)}
+            />
+          </div>
           {stats}
         </>
       ) : (
@@ -224,6 +248,87 @@ export function ActivityHeatmap({
         </div>
       )}
       {tip ? <HeatmapHoverTip cell={tip.cell} anchor={tip.anchor} pools={pools ?? []} /> : null}
+    </div>
+  );
+}
+
+function CompactTrayPlot({
+  gridWeeks,
+  cells,
+  months,
+  weekdays,
+  today,
+  maxValue,
+  intensity,
+  t,
+  onTip,
+}: {
+  gridWeeks: number;
+  cells: HeatmapCell[];
+  months: Map<number, string>;
+  weekdays: string[];
+  today: string;
+  maxValue: number;
+  intensity: (cell: HeatmapCell) => number;
+  t: (key: string, opts?: Record<string, unknown>) => string;
+  onTip: (next: { cell: HeatmapCell; anchor: DOMRect } | null) => void;
+}) {
+  const gap = HEATMAP_CELL_GAP_PX;
+  return (
+    <div
+      className="grid w-full min-w-0"
+      style={{
+        gridTemplateColumns: `${HEATMAP_WEEKDAY_COL_PX}px repeat(${gridWeeks}, minmax(0, 1fr))`,
+        gridTemplateRows: `${HEATMAP_MONTH_ROW_PX}px repeat(7, auto)`,
+        columnGap: gap,
+        rowGap: gap,
+      }}
+    >
+      <div aria-hidden="true" style={{ gridColumn: 1, gridRow: 1 }} />
+      {Array.from({ length: gridWeeks }, (_, weekIndex) => (
+        <span
+          key={`month-${weekIndex}`}
+          className="overflow-visible text-[10px] leading-none whitespace-nowrap text-muted-foreground"
+          style={{ gridColumn: weekIndex + 2, gridRow: 1 }}
+        >
+          {months.get(weekIndex) ?? ""}
+        </span>
+      ))}
+      {weekdays.map((label, weekday) => (
+        <span
+          key={`dow-${label}-${weekday}`}
+          className={cn(
+            "flex items-center justify-end text-[9px] leading-none text-muted-foreground",
+            weekday % 2 === 0 && "invisible",
+          )}
+          style={{ gridColumn: 1, gridRow: weekday + 2 }}
+        >
+          {label}
+        </span>
+      ))}
+      {cells.map((cellItem) => {
+        const level = heatmapLevel(intensity(cellItem), maxValue);
+        return (
+          <button
+            key={cellItem.date}
+            type="button"
+            className={cn("w-full rounded-[2px] aspect-square", cellItem.date === today && "ring-1 ring-foreground/50")}
+            style={{
+              gridColumn: cellItem.weekIndex + 2,
+              gridRow: cellItem.weekday + 2,
+              width: "100%",
+              aspectRatio: "1 / 1",
+              backgroundColor: trayHeatFill(level),
+            }}
+            onMouseEnter={(event) => onTip({ cell: cellItem, anchor: event.currentTarget.getBoundingClientRect() })}
+            onMouseLeave={() => onTip(null)}
+            onFocus={(event) => onTip({ cell: cellItem, anchor: event.currentTarget.getBoundingClientRect() })}
+            onBlur={() => onTip(null)}
+          >
+            <span className="sr-only">{heatmapAria(t, cellItem)}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -350,10 +455,10 @@ function usePlotBox(fallback: PlotBox): { boxRef: RefObject<HTMLDivElement | nul
 }
 
 function useHeatmapWeeks(compact: boolean): number {
-  const [weeks, setWeeks] = useState(compact ? 10 : 26);
+  const [weeks, setWeeks] = useState(compact ? TRAY_HEATMAP_WEEKS : 26);
   useEffect(() => {
     if (compact) {
-      setWeeks(10);
+      setWeeks(TRAY_HEATMAP_WEEKS);
       return;
     }
     const wide = window.matchMedia("(min-width: 1024px)");
