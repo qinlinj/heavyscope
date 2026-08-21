@@ -3,6 +3,8 @@ import type { Pool, UsageRecord } from "@/db/schema";
 import type { PoolAdvice } from "@/lib/burnRate";
 import type { LayoutTile } from "@/lib/dashboardLayout";
 import { clampSquareCellPx, squareCellPx } from "@/lib/heatmap";
+import en from "@/i18n/locales/en.json";
+import zhCN from "@/i18n/locales/zh-CN.json";
 import {
   fitTrayHeatmap,
   highlightedTrayPoolIds,
@@ -99,11 +101,24 @@ describe("shouldShowTraySettingsCta", () => {
 });
 
 describe("shouldShowTrayConnectBanner", () => {
-  it("asks the user to open Settings when a source is missing", () => {
+  it("shows the blocking banner only when neither token is pasted", () => {
     expect(shouldShowTrayConnectBanner({ cursorConfigured: false, grokConfigured: false })).toBe(true);
-    expect(shouldShowTrayConnectBanner({ cursorConfigured: true, grokConfigured: false })).toBe(true);
-    expect(shouldShowTrayConnectBanner({ cursorConfigured: false, grokConfigured: true })).toBe(true);
+    expect(shouldShowTrayConnectBanner({ cursorConfigured: true, grokConfigured: false })).toBe(false);
+    expect(shouldShowTrayConnectBanner({ cursorConfigured: false, grokConfigured: true })).toBe(false);
     expect(shouldShowTrayConnectBanner({ cursorConfigured: true, grokConfigured: true })).toBe(false);
+  });
+});
+
+describe("tray connect and empty copy", () => {
+  it("never claims four pools or a web app on /tray", () => {
+    expect(en.tray.subtitleConnect.toLowerCase()).not.toMatch(/four pools/);
+    expect(zhCN.tray.subtitleConnect).not.toMatch(/四个额度/);
+    expect(en.tray.subtitleConnect.toLowerCase()).toMatch(/cursor/);
+    expect(zhCN.tray.subtitleConnect).toMatch(/Cursor/);
+    expect(en.tray.empty.toLowerCase()).not.toMatch(/web app/);
+    expect(zhCN.tray.empty).not.toMatch(/网页应用/);
+    expect(en.tray.empty.toLowerCase()).toMatch(/layout/);
+    expect(zhCN.tray.empty).toMatch(/布局/);
   });
 });
 

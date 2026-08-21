@@ -141,12 +141,16 @@ export function shouldShowTraySettingsCta(unsynced: boolean): boolean {
   return unsynced;
 }
 
-/** Banner when Cursor and/or Grok still need a token. */
+/**
+ * Blocking first-run banner: neither token is pasted.
+ * Cursor-only is enough to hide it — Models / Other / Bot come from Cursor;
+ * Heavy already has a per-row Go to Settings CTA.
+ */
 export function shouldShowTrayConnectBanner(opts: {
   cursorConfigured: boolean;
   grokConfigured: boolean;
 }): boolean {
-  return !opts.cursorConfigured || !opts.grokConfigured;
+  return !opts.cursorConfigured && !opts.grokConfigured;
 }
 
 export type TrayExpandFacts = {

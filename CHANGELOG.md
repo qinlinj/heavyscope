@@ -6,6 +6,14 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-08-21
+
+### Changed
+
+- `/tray` connect banner is first-run only: it shows when **neither** Cursor nor Grok token is pasted, and tells the user to go to Settings and paste a Cursor token. Cursor-only (Grok empty) no longer blocks the top of the panel — Heavy already has a per-row Go to Settings CTA. Copy never says “four pools” / 四个额度池.
+- `/tray` empty state no longer mentions a web app. zh-CN + en `tray.empty` tell the user to open Layout and restore hidden pools.
+- Version 0.22.0 (package.json + src-tauri + README + docs/RELEASE.md). Cursor Spending mapping, web Dashboard layout/drag/heatmap/pies, production `/proxy/*`, Accessory 380×780, heatmap collapse, and the Open/Quit English tray menu are unchanged.
+
 ## [0.21.0] - 2026-08-21
 
 ### Added
