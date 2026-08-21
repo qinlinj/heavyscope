@@ -4,13 +4,19 @@ import type { PoolAdvice } from "@/lib/burnRate";
 import type { LayoutTile } from "@/lib/dashboardLayout";
 import { clampSquareCellPx, squareCellPx } from "@/lib/heatmap";
 import {
+  fitTrayHeatmap,
   highlightedTrayPoolIds,
+  LINUX_DESKTOP_WINDOW,
+  MACOS_TRAY_PANEL,
   parseTrayPane,
   recentPoolDeltas,
   runTrayRefresh,
   selectTrayDashboardPools,
+  shouldShowTrayConnectBanner,
   shouldShowTrayHeatmap,
+  shouldShowTraySettingsCta,
   toggleExpandedPoolId,
+  trayExpandFacts,
   trayHeatmapCellPx,
   trayProviderSync,
   TRAY_HEATMAP_MAX_CELL_PX,
@@ -74,6 +80,59 @@ describe("toggleExpandedPoolId", () => {
     expect(toggleExpandedPoolId(null, "hot")).toBe("hot");
     expect(toggleExpandedPoolId("hot", "hot")).toBeNull();
     expect(toggleExpandedPoolId("hot", "mid")).toBe("mid");
+  });
+
+  it("never leaves two ids expanded", () => {
+    let current: string | null = null;
+    current = toggleExpandedPoolId(current, "a");
+    current = toggleExpandedPoolId(current, "b");
+    current = toggleExpandedPoolId(current, "c");
+    expect(current).toBe("c");
+  });
+});
+
+describe("shouldShowTraySettingsCta", () => {
+  it("shows a Settings CTA only for unsynced pools", () => {
+    expect(shouldShowTraySettingsCta(true)).toBe(true);
+    expect(shouldShowTraySettingsCta(false)).toBe(false);
+  });
+});
+
+describe("shouldShowTrayConnectBanner", () => {
+  it("asks the user to open Settings when a source is missing", () => {
+    expect(shouldShowTrayConnectBanner({ cursorConfigured: false, grokConfigured: false })).toBe(true);
+    expect(shouldShowTrayConnectBanner({ cursorConfigured: true, grokConfigured: false })).toBe(true);
+    expect(shouldShowTrayConnectBanner({ cursorConfigured: false, grokConfigured: true })).toBe(true);
+    expect(shouldShowTrayConnectBanner({ cursorConfigured: true, grokConfigured: true })).toBe(false);
+  });
+});
+
+describe("trayExpandFacts", () => {
+  it("returns used/total, remaining, reset, and at most two increments", () => {
+    const facts = trayExpandFacts(pool("hot"), [
+      record({ id: "1", pool_id: "hot", amount: 1, recorded_at: "2026-08-18T10:00:00.000Z" }),
+      record({ id: "2", pool_id: "hot", amount: 3, recorded_at: "2026-08-19T10:00:00.000Z" }),
+      record({ id: "3", pool_id: "hot", amount: 2, recorded_at: "2026-08-17T10:00:00.000Z" }),
+    ]);
+    expect(facts.used).toBe(10);
+    expect(facts.total).toBe(100);
+    expect(facts.remaining).toBe(90);
+    expect(facts.resetAt).toBe("2026-08-24T00:00:00.000Z");
+    expect(facts.increments.map((item) => item.id)).toEqual(["2", "1"]);
+  });
+});
+
+describe("macOS tray panel size", () => {
+  it("encodes 380×780 and does not use the Linux 980×720 window", () => {
+    expect(MACOS_TRAY_PANEL).toEqual({
+      width: 380,
+      height: 780,
+      maxWidth: 420,
+      maxHeight: 820,
+    });
+    expect(LINUX_DESKTOP_WINDOW).toEqual({ width: 980, height: 720 });
+    expect(MACOS_TRAY_PANEL.width).not.toBe(LINUX_DESKTOP_WINDOW.width);
+    expect(MACOS_TRAY_PANEL.height).not.toBe(LINUX_DESKTOP_WINDOW.height);
   });
 });
 
@@ -165,13 +224,27 @@ describe("trayHeatmapCellPx", () => {
     const wide = trayHeatmapCellPx(800, 400, TRAY_HEATMAP_WEEKS);
     expect(wide).toBe(
       clampSquareCellPx(
-        squareCellPx(800, 400, TRAY_HEATMAP_WEEKS),
+        squareCellPx(800, 400, fitTrayHeatmap(800).weeks),
         TRAY_HEATMAP_MIN_CELL_PX,
         TRAY_HEATMAP_MAX_CELL_PX,
       ),
     );
     expect(wide).toBe(TRAY_HEATMAP_MAX_CELL_PX);
     expect(wide).toBeLessThan(squareCellPx(800, 400, TRAY_HEATMAP_WEEKS));
+  });
+});
+
+describe("fitTrayHeatmap", () => {
+  it("derives week count from width and never emits a 10-month strip", () => {
+    const narrow = fitTrayHeatmap(80);
+    const panel = fitTrayHeatmap(MACOS_TRAY_PANEL.width);
+    const wide = fitTrayHeatmap(800);
+    expect(narrow.weeks).toBeLessThan(panel.weeks);
+    expect(panel.weeks).toBeLessThanOrEqual(TRAY_HEATMAP_WEEKS);
+    expect(wide.weeks).toBe(TRAY_HEATMAP_WEEKS);
+    expect(wide.weeks).toBeLessThan(40);
+    expect(narrow.cell).toBeGreaterThanOrEqual(TRAY_HEATMAP_MIN_CELL_PX);
+    expect(panel.cell).toBeLessThanOrEqual(TRAY_HEATMAP_MAX_CELL_PX);
   });
 });
 
@@ -228,5 +301,14 @@ describe("runTrayRefresh", () => {
     expect(refreshLiveProviders).toHaveBeenCalledTimes(1);
     expect(refreshLiveProviders).toHaveBeenCalledWith();
     expect(report).toEqual({ message: "ok" });
+  });
+
+  it("does not invent a Cursor Spending mapper — existing live stack decides Cursor-only pools", async () => {
+    const refreshLiveProviders = vi.fn(async (providers?: Array<"cursor" | "grok">) => {
+      expect(providers).toBeUndefined();
+      return { message: "cursor-only ok" };
+    });
+    await runTrayRefresh(refreshLiveProviders);
+    expect(refreshLiveProviders.mock.calls[0]?.length ?? 0).toBe(0);
   });
 });

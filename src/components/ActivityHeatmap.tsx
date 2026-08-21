@@ -20,6 +20,7 @@ import {
   heatmapLevel,
   squareCellPx,
 } from "@/lib/heatmap";
+import { fitTrayHeatmap } from "@/lib/trayView";
 import { displayPoolName } from "@/lib/poolName";
 import { cn } from "@/lib/utils";
 
@@ -59,8 +60,9 @@ export function ActivityHeatmap({
   const fallback = useMemo(() => heatmapFallbackBox(size ?? (compact ? "sm" : "lg")), [size, compact]);
   const { boxRef, width, height } = usePlotBox(fallback);
   const webFit = size ? fitWebHeatmap(width, size, fallback.width) : null;
+  const trayFit = compact && !size ? fitTrayHeatmap(width, fallback.width) : null;
   const autoWeeks = useHeatmapWeeks(compact);
-  const resolvedWeeks = webFit?.weeks ?? weeks ?? autoWeeks;
+  const resolvedWeeks = webFit?.weeks ?? trayFit?.weeks ?? weeks ?? autoWeeks;
   const grid = useMemo(() => heatmapGrid(records, resolvedWeeks, new Date(), pools), [records, resolvedWeeks, pools]);
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const [tip, setTip] = useState<{ cell: HeatmapCell; anchor: DOMRect } | null>(null);
@@ -80,7 +82,7 @@ export function ActivityHeatmap({
     HEATMAP_CELL_GAP_PX,
     { width: Math.max(0, fallback.width - HEATMAP_WEEKDAY_COL_PX), height: fallback.height },
   );
-  const cell = webFit?.cell ?? clampSquareCellPx(fitted, minCell, maxCell);
+  const cell = webFit?.cell ?? trayFit?.cell ?? clampSquareCellPx(fitted, minCell, maxCell);
   const safeCell = cell > 0 ? cell : 11;
   const showMonthRow = safeCell >= 12;
   const gap = HEATMAP_CELL_GAP_PX;

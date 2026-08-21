@@ -328,6 +328,9 @@
   },
   "tray": {
     "subtitle": "Visible pools this cycle",
+    "subtitleConnect": "Go to Settings, paste a token, then refresh the four pools.",
+    "goToSettings": "Go to Settings",
+    "connectHint": "This pool is not connected. Go to Settings, paste a token, then refresh.",
     "empty": "No pools yet. Add one in the web app.",
     "lineOnPace": "{{pool}} is on pace at {{percent}}%.",
     "lineOverspend": "{{pool}} is overspending at {{percent}}%.",

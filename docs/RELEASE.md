@@ -2,6 +2,14 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.21.0
+
+- Complete `/tray` daily loop in the browser and the macOS menu-bar popover: Settings (tokens, interval, Refresh now), Go to Settings CTA on unsynced pools, one advisor sentence, expandable rows (used/total, remaining, reset, 1–2 increments; one open at a time).
+- Cursor-only Refresh still fills Models / Other / Grok Bot through the existing 0.14.0 / 0.19.0 live stack. No new Spending mapper.
+- Tray heatmap weeks come from width (`fitTrayHeatmap`, 8–10px, max 10 weeks). Unsynced presets stay 待连接 / Not connected.
+- macOS panel 380×780 + Accessory encoded in Rust/TS. **UNVERIFIED on device.**
+- Version 0.21.0.
+
 ## v0.20.0
 
 - First-run (Cursor not connected): dashboard subtitle tells you to open Settings, paste `WorkosCursorSessionToken`, then refresh Models / Other / Grok Bot. **Open Settings** jumps to Data sources.

@@ -49,8 +49,9 @@ The menu-bar glyph is the monochrome template `src-tauri/icons/tray-template.png
 - [ ] Settings pane stays inside the ~380×780 popup (not a new OS window). Back returns to the compact dashboard.
 - [ ] Paste a Cursor `WorkosCursorSessionToken` and/or Grok session/Bearer in the tray Settings pane. Connect stores the same local keys as web Settings. Interval starts immediately.
 - [ ] Refresh now (header or Settings) calls the same live sync stack and updates per-provider last sync / error (gRPC 16 / expired).
-- [ ] Click a pool row to expand used/total, advice, and the last 1–2 deltas. Only one row is open at a time. Four or more Layout-visible pools stay in the list (scroll).
-- [ ] Heatmap cells are squares and do not stretch. Rows wider than the panel scroll horizontally.
+- [ ] Unsynced pools show 待连接 / Not connected plus a **Go to Settings** button. The dashboard banner also jumps to the Settings pane when Cursor or Grok is missing.
+- [ ] Click a pool row to expand used/total, remaining, reset, and the last 1–2 deltas. Only one row is open at a time. Four or more Layout-visible pools stay in the list (scroll).
+- [ ] Heatmap cells are squares (8–10px) and do not stretch. Week count comes from available width (max 10 weeks), never a 10-month strip.
 - [ ] Clicking outside the panel, or deactivating the app, hides it.
 - [ ] Clicking the icon again while the panel is open hides it (no flicker-reopen).
 - [ ] Right-click (or the tray menu) still offers Open and Quit.

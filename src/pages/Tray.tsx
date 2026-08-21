@@ -29,16 +29,17 @@ import { formatDateTime } from "@/lib/format";
 import { displayPoolName } from "@/lib/poolName";
 import {
   highlightedTrayPoolIds,
+  MACOS_TRAY_PANEL,
   parseTrayPane,
   runTrayRefresh,
   selectTrayDashboardPools,
+  shouldShowTrayConnectBanner,
   shouldShowTrayHeatmap,
   toggleExpandedPoolId,
   trayProviderSync,
   visiblePoolIds,
   TRAY_HEATMAP_MAX_CELL_PX,
   TRAY_HEATMAP_MIN_CELL_PX,
-  TRAY_HEATMAP_WEEKS,
   type TrayPane,
 } from "@/lib/trayView";
 
@@ -97,6 +98,10 @@ export function TrayPage() {
   });
   const providerSync = useMemo(() => trayProviderSync(settings), [settings]);
   const canRefresh = providerSync.cursor.configured || providerSync.grok.configured;
+  const showConnectBanner = shouldShowTrayConnectBanner({
+    cursorConfigured: providerSync.cursor.configured,
+    grokConfigured: providerSync.grok.configured,
+  });
 
   function tileLabel(tile: LayoutTile): string {
     if (tile.type === "pool") {
@@ -160,7 +165,7 @@ export function TrayPage() {
             <h1 className="font-heading truncate text-sm font-semibold tracking-tight">
               {pane === "settings" ? t("settings.title") : t("app.name")}
             </h1>
-            {pane === "dashboard" ? (
+            {pane === "dashboard" && !showConnectBanner ? (
               <p className="truncate text-xs text-muted-foreground">{t("tray.subtitle")}</p>
             ) : null}
           </div>
@@ -292,6 +297,16 @@ export function TrayPage() {
             </div>
           ) : (
             <div className="flex min-h-0 flex-1 flex-col gap-2">
+              {showConnectBanner ? (
+                <div className="flex flex-wrap items-center justify-between gap-1.5 rounded-md border border-dashed border-primary/30 bg-primary/5 px-2 py-1.5">
+                  <p className="min-w-0 text-xs leading-snug text-muted-foreground">
+                    {t("tray.subtitleConnect")}
+                  </p>
+                  <Button type="button" size="xs" onClick={() => openPane("settings")}>
+                    {t("tray.goToSettings")}
+                  </Button>
+                </div>
+              ) : null}
               <p className="text-xs leading-snug text-muted-foreground">
                 {formatAdvisorLine(t, tightest, switchAdvice, pools) ?? t("tray.empty")}
               </p>
@@ -312,6 +327,7 @@ export function TrayPage() {
                       warnPercent={thresholds.warn}
                       critPercent={thresholds.crit}
                       onToggle={(id) => setExpandedPoolId((current) => toggleExpandedPoolId(current, id))}
+                      onOpenSettings={() => openPane("settings")}
                     />
                   ))}
                 </div>
@@ -348,7 +364,6 @@ export function TrayPage() {
                 <ActivityHeatmap
                   records={liveRecords}
                   pools={pools}
-                  weeks={TRAY_HEATMAP_WEEKS}
                   compact
                   minCellPx={TRAY_HEATMAP_MIN_CELL_PX}
                   maxCellPx={TRAY_HEATMAP_MAX_CELL_PX}
@@ -385,9 +400,15 @@ export function TrayPage() {
 
 function TrayShell({ children }: { children: ReactNode }) {
   return (
-    <div className="h-svh overflow-hidden bg-background text-xs text-foreground">
+    <div className="flex h-svh justify-center overflow-hidden bg-background text-xs text-foreground">
       <div className="pointer-events-none fixed inset-0 dark:bg-[radial-gradient(circle_at_top,_oklch(0.32_0.08_300/_0.40),_transparent_55%)]" />
-      <div className="relative flex h-full min-h-0 flex-col gap-2 overflow-x-auto overflow-y-auto px-2.5 py-2.5">
+      <div
+        className="relative flex h-full min-h-0 w-full flex-col gap-2 overflow-x-auto overflow-y-auto px-2.5 py-2.5"
+        style={{
+          maxWidth: MACOS_TRAY_PANEL.maxWidth,
+          width: MACOS_TRAY_PANEL.width,
+        }}
+      >
         {children}
       </div>
     </div>
