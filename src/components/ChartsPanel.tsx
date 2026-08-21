@@ -95,8 +95,8 @@ export function ChartsPanel({
 
       <div className="grid min-h-0 flex-1 gap-3">
         {showHeatmap && (
-          <ChartCard title={t("charts.heatmap")} hint={t("charts.heatmapHint")}>
-            <ActivityHeatmap records={liveRecords} pools={pools} compact={compact || size === "sm"} />
+          <ChartCard title={t("charts.heatmap")} hint={t("charts.heatmapHint")} size={size}>
+            <ActivityHeatmap records={liveRecords} pools={pools} compact={compact} size={size} />
           </ChartCard>
         )}
 
@@ -104,6 +104,7 @@ export function ChartsPanel({
           <ChartCard
             title={t("charts.trend")}
             hint={t(`charts.trendHint.${scale}`)}
+            size={size}
             action={
               showStackedChart ? (
                 <div className="flex flex-wrap gap-1">
@@ -208,17 +209,26 @@ export function ChartsPanel({
   );
 }
 
+function tileContentMinH(size: TileSize): string {
+  if (size === "sm") return "min-h-[168px]";
+  if (size === "md") return "min-h-[200px]";
+  if (size === "lg") return "min-h-[240px]";
+  return "min-h-80";
+}
+
 function ChartCard({
   title,
   hint,
   className,
   action,
+  size,
   children,
 }: {
   title: string;
   hint: string;
   className?: string;
   action?: ReactNode;
+  size: TileSize;
   children: ReactNode;
 }) {
   return (
@@ -228,7 +238,7 @@ function ChartCard({
         <CardDescription>{hint}</CardDescription>
         {action ? <div className="col-span-full">{action}</div> : null}
       </CardHeader>
-      <CardContent className="min-h-0 flex-1">{children}</CardContent>
+      <CardContent className={`min-h-0 flex-1 ${tileContentMinH(size)}`}>{children}</CardContent>
     </Card>
   );
 }

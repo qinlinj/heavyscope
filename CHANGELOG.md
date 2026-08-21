@@ -6,6 +6,20 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-08-21
+
+### Fixed
+
+- Daily Activity heatmap no longer paints 0×0 cells on the first layout of a 1/2 or Full tile. `usePlotBox` starts from a fallback box and reuses the last good size; `squareCellPx` never returns 0 when a fallback box exists. Hide then Add is no longer required to see the grid.
+- Heatmap cells stay 1:1 squares with one shared px for all 7 rows. Leftover space is padding or horizontal scroll, never stretched cells. Web `sm` derives week count from width (not a hardcoded 10-week / 10-month strip). Month labels only appear on the first week of a month, and the month row hides when the cell is under 12px.
+- Heatmap hover lists every pool that has usage that day (color · name · `formatAmount`), not a single vague percent. Same-day total sums amounts only when units match; mixed `$` and `%` become a record count.
+- Heatmap and pie hover tips portal to `document.body`, flip top → bottom → left → right, and stay above edit chrome (`z-50`, solid `var(--popover)`, no backdrop-blur).
+
+### Changed
+
+- Pies: `sm` is one percent-used pie (hover only, outer radius ≥ 56px). `md` is still one used pie plus a 10–11px color-dot legend — no remaining pie, no in-slice labels. `lg` / `xl` keep used + remaining side by side with a 12px legend. Zero-value slices stay omitted. Visibility is still Edit hide + Add cards.
+- Version 0.15.0 (package.json + src-tauri).
+
 ## [0.14.0] - 2026-08-21
 
 ### Added

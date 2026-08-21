@@ -105,7 +105,7 @@ export function WidgetTile({
             </Button>
           </div>
         ) : null}
-        <div className="h-full min-h-0 overflow-hidden">{children}</div>
+        <div className="h-full min-h-0 overflow-visible">{children}</div>
       </div>
     </div>
   );

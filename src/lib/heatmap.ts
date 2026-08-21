@@ -1,7 +1,22 @@
 import type { Pool, UsageRecord } from "@/db/schema";
+import type { TileSize } from "@/lib/dashboardLayout";
 import { toLocalDateKey } from "@/lib/charts";
 
 export type HeatIntensityMetric = "record_count" | "amount";
+
+export type PlotBox = { width: number; height: number };
+
+export type HeatmapPoolUsage = {
+  poolId: string;
+  amount: number;
+  unit: string;
+};
+
+export type HeatmapDayTotal =
+  | { kind: "amount"; amount: number; unit: string }
+  | { kind: "count"; count: number };
+
+export type TooltipPlacement = "top" | "bottom" | "left" | "right";
 
 /** GitHub contribution greens. Mirrored as `--heat-0`…`--heat-4` in `src/index.css`. */
 export const HEATMAP_GITHUB_COLORS = {
@@ -19,6 +34,8 @@ export type HeatmapCell = {
   unit: string | null;
   weekday: number;
   weekIndex: number;
+  /** Every pool that has at least one record that day. Not a hardcoded set. */
+  pools: HeatmapPoolUsage[];
 };
 
 export type HeatmapGrid = {
@@ -88,14 +105,31 @@ export function heatmapGrid(
   const sharedUnit = units.size === 1 ? [...units][0]! : null;
   const intensityMetric: HeatIntensityMetric = sharedUnit && pools ? "amount" : "record_count";
 
-  const byDate = new Map<string, { count: number; amount: number; units: Set<string> }>();
+  type DayAgg = {
+    count: number;
+    amount: number;
+    units: Set<string>;
+    byPool: Map<string, HeatmapPoolUsage>;
+  };
+  const byDate = new Map<string, DayAgg>();
   for (const record of records) {
     const key = toLocalDateKey(record.recorded_at);
-    const current = byDate.get(key) ?? { count: 0, amount: 0, units: new Set<string>() };
+    const current =
+      byDate.get(key) ?? { count: 0, amount: 0, units: new Set<string>(), byPool: new Map<string, HeatmapPoolUsage>() };
     current.count += 1;
     current.amount += record.amount;
     const unit = unitForRecord(record, pools);
     if (unit) current.units.add(unit);
+    const poolMeta = pools?.find((item) => item.id === record.pool_id);
+    const displayUnit = poolMeta?.unit ?? unit ?? "";
+    const poolUsage = current.byPool.get(record.pool_id) ?? {
+      poolId: record.pool_id,
+      amount: 0,
+      unit: displayUnit,
+    };
+    poolUsage.amount += record.amount;
+    if (displayUnit) poolUsage.unit = displayUnit;
+    current.byPool.set(record.pool_id, poolUsage);
     byDate.set(key, current);
   }
 
@@ -119,6 +153,7 @@ export function heatmapGrid(
         unit: intensityMetric === "amount" ? sharedUnit : dayUnit,
         weekday,
         weekIndex,
+        pools: day ? poolBreakdown(day.byPool, pools) : [],
       });
     }
   }
@@ -137,20 +172,160 @@ export function heatmapCellIntensity(cell: HeatmapCell, grid: HeatmapGrid): numb
   return grid.intensityMetric === "amount" ? cell.amount : cell.count;
 }
 
-/** Quartile buckets against the busiest day in the window (0 = empty). */
-/** Gap between GitHub-style heatmap cells (px). */
-export const HEATMAP_CELL_GAP_PX = 3;
+function poolBreakdown(
+  byPool: Map<string, HeatmapPoolUsage>,
+  pools?: Pick<Pool, "id" | "unit">[],
+): HeatmapPoolUsage[] {
+  const lines: HeatmapPoolUsage[] = [];
+  const seen = new Set<string>();
+  for (const pool of pools ?? []) {
+    const usage = byPool.get(pool.id);
+    if (!usage) continue;
+    lines.push(usage);
+    seen.add(pool.id);
+  }
+  for (const [poolId, usage] of byPool) {
+    if (seen.has(poolId)) continue;
+    lines.push(usage);
+  }
+  return lines;
+}
 
 /**
- * Perfect-square cell size. Never stretches to fill leftover card width/height.
- * `width` / `height` are the box for the week×7 grid, including gaps.
+ * Same-day total. Sum amounts only when every contributing pool shares one
+ * unit. Mixed $ and % become a record count — never one combined number.
  */
-export function squareCellPx(width: number, height: number, weeks: number, gap = HEATMAP_CELL_GAP_PX): number {
+export function heatmapDayTotal(cell: Pick<HeatmapCell, "count" | "pools">): HeatmapDayTotal {
+  if (cell.pools.length === 0) return { kind: "count", count: cell.count };
+  const units = new Set(cell.pools.map((item) => normalizeUnit(item.unit)));
+  if (units.size !== 1) return { kind: "count", count: cell.count };
+  const unit = cell.pools[0]?.unit ?? "";
+  const amount = cell.pools.reduce((sum, item) => sum + item.amount, 0);
+  return { kind: "amount", amount, unit };
+}
+
+/** Gap between GitHub-style heatmap cells (px). */
+export const HEATMAP_CELL_GAP_PX = 3;
+export const HEATMAP_WEEKDAY_COL_PX = 12;
+export const HEATMAP_MONTH_ROW_PX = 12;
+export const HEATMAP_WEB_MIN_CELL_PX = 11;
+export const HEATMAP_MAX_WEEKS = 26;
+
+const WEB_CELL_RANGE: Record<TileSize, { min: number; max: number }> = {
+  sm: { min: 11, max: 16 },
+  md: { min: 12, max: 14 },
+  lg: { min: 13, max: 16 },
+  xl: { min: 13, max: 16 },
+};
+
+export function heatmapCellRange(size: TileSize): { min: number; max: number } {
+  return WEB_CELL_RANGE[size];
+}
+
+export function heatmapFallbackBox(size: TileSize = "lg"): PlotBox {
+  if (size === "sm") return { width: 220, height: 168 };
+  if (size === "md") return { width: 400, height: 200 };
+  if (size === "xl") return { width: 720, height: 280 };
+  return { width: 720, height: 240 };
+}
+
+function fittedSquareCell(width: number, height: number, weeks: number, gap: number): number {
   const cols = Math.max(1, Math.round(weeks));
   const innerW = width - gap * Math.max(0, cols - 1);
   const innerH = height - gap * 6;
   if (innerW <= 0 || innerH <= 0) return 0;
   return Math.max(0, Math.floor(Math.min(innerW / cols, innerH / 7)));
+}
+
+/**
+ * Perfect-square cell size. Never stretches to fill leftover card width/height.
+ * `width` / `height` are the box for the week×7 grid, including gaps.
+ * When the measured box is empty and a fallback box exists, size from the
+ * fallback instead of returning 0.
+ */
+export function squareCellPx(
+  width: number,
+  height: number,
+  weeks: number,
+  gap = HEATMAP_CELL_GAP_PX,
+  fallbackBox?: PlotBox,
+): number {
+  const fitted = fittedSquareCell(width, height, weeks, gap);
+  if (fitted > 0) return fitted;
+  if (!fallbackBox) return 0;
+  const fallbackWidth = width > 0 ? width : fallbackBox.width;
+  const fallbackHeight = height > 0 ? height : fallbackBox.height;
+  const fallbackFitted = fittedSquareCell(fallbackWidth, fallbackHeight, weeks, gap);
+  return Math.max(1, fallbackFitted);
+}
+
+/** How many Sunday-aligned weeks fit at `cellPx` given the card width. */
+export function weeksFromWidth(
+  width: number,
+  cellPx: number,
+  gap = HEATMAP_CELL_GAP_PX,
+  weekdayColPx = HEATMAP_WEEKDAY_COL_PX,
+): number {
+  const plotW = Math.max(0, width - weekdayColPx);
+  const step = Math.max(1, cellPx + gap);
+  return Math.max(1, Math.floor((plotW + gap) / step));
+}
+
+/**
+ * Web heatmap fit: cell size from width (clamped per tile size). Week count
+ * shrinks with width. Height never stretches squares. Cell is never 0.
+ */
+export function fitWebHeatmap(
+  width: number,
+  size: TileSize,
+  fallbackWidth = heatmapFallbackBox(size).width,
+): { weeks: number; cell: number } {
+  const { min, max } = heatmapCellRange(size);
+  const usableWidth = width > 0 ? width : fallbackWidth;
+  const weeks = Math.min(HEATMAP_MAX_WEEKS, weeksFromWidth(usableWidth, min));
+  const plotW = Math.max(0, usableWidth - HEATMAP_WEEKDAY_COL_PX);
+  const raw = Math.floor((plotW - Math.max(0, weeks - 1) * HEATMAP_CELL_GAP_PX) / Math.max(1, weeks));
+  const cell = clampSquareCellPx(raw, min, max);
+  return { weeks, cell: cell > 0 ? cell : min };
+}
+
+export function flipTooltipPosition(
+  anchor: { x: number; y: number; width: number; height: number },
+  tip: { width: number; height: number },
+  viewport: PlotBox,
+  gap = 8,
+): { top: number; left: number; placement: TooltipPlacement } {
+  const candidates: Record<TooltipPlacement, { top: number; left: number }> = {
+    top: { top: anchor.y - tip.height - gap, left: anchor.x + anchor.width / 2 - tip.width / 2 },
+    bottom: { top: anchor.y + anchor.height + gap, left: anchor.x + anchor.width / 2 - tip.width / 2 },
+    left: { top: anchor.y + anchor.height / 2 - tip.height / 2, left: anchor.x - tip.width - gap },
+    right: { top: anchor.y + anchor.height / 2 - tip.height / 2, left: anchor.x + anchor.width + gap },
+  };
+
+  const order: TooltipPlacement[] = ["top", "bottom", "left", "right"];
+  const chosen =
+    order
+      .map((placement) => ({ placement, ...candidates[placement] }))
+      .find((pos) => fitsViewport(pos, tip, viewport)) ?? { placement: "top" as const, ...candidates.top };
+
+  return {
+    placement: chosen.placement,
+    top: clampAxis(chosen.top, tip.height, viewport.height),
+    left: clampAxis(chosen.left, tip.width, viewport.width),
+  };
+}
+
+function fitsViewport(
+  pos: { top: number; left: number },
+  tip: { width: number; height: number },
+  viewport: PlotBox,
+): boolean {
+  return pos.top >= 0 && pos.left >= 0 && pos.top + tip.height <= viewport.height && pos.left + tip.width <= viewport.width;
+}
+
+function clampAxis(start: number, size: number, max: number): number {
+  if (max <= 0) return Math.max(0, start);
+  return Math.min(Math.max(0, start), Math.max(0, max - size));
 }
 
 /**

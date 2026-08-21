@@ -1,6 +1,16 @@
-import { useMemo } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+} from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import {
   Card,
   CardContent,
@@ -12,7 +22,9 @@ import type { Pool } from "@/db/schema";
 import { remainingSharePie, usedPercentPies, type PieSlice } from "@/lib/charts";
 import type { TileSize } from "@/lib/dashboardLayout";
 import { formatAmount } from "@/lib/format";
+import { flipTooltipPosition, type PlotBox } from "@/lib/heatmap";
 import { displayPoolName } from "@/lib/poolName";
+import { cn } from "@/lib/utils";
 
 type Props = {
   pools: Pool[];
@@ -20,20 +32,51 @@ type Props = {
   size?: TileSize;
 };
 
-const TOOLTIP_STYLE = {
-  backgroundColor: "var(--popover)",
-  border: "1px solid var(--border)",
-  borderRadius: "0.75rem",
-  color: "var(--popover-foreground)",
-};
+export type LegendMode = "none" | "short" | "full";
 
-type LegendMode = "none" | "short" | "full";
-
-function legendModeFor(size: TileSize, compact: boolean): LegendMode {
+export function pieLegendMode(size: TileSize, compact: boolean): LegendMode {
   if (compact || size === "sm") return "none";
   if (size === "md") return "short";
   return "full";
 }
+
+export function pieShowsRemaining(size: TileSize, compact: boolean): boolean {
+  if (compact) return false;
+  return size === "lg" || size === "xl";
+}
+
+export function pieMinOuterRadius(size: TileSize): number {
+  return size === "sm" ? 56 : 72;
+}
+
+export function pieOuterRadiusPx(size: TileSize, boxPx: number): number {
+  const min = pieMinOuterRadius(size);
+  if (boxPx <= 0) return min;
+  return Math.max(min, Math.floor(boxPx / 2) - 4);
+}
+
+export function pieChartHeight(size: TileSize): number {
+  if (size === "sm") return 132;
+  if (size === "md") return 190;
+  if (size === "xl") return 260;
+  return 220;
+}
+
+function tileContentMinH(size: TileSize): string {
+  if (size === "sm") return "min-h-[168px]";
+  if (size === "md") return "min-h-[200px]";
+  if (size === "lg") return "min-h-[240px]";
+  return "min-h-80";
+}
+
+const TOOLTIP_STYLE: CSSProperties = {
+  backgroundColor: "var(--popover)",
+  color: "var(--popover-foreground)",
+  border: "1px solid var(--border)",
+  borderRadius: "0.75rem",
+  opacity: 1,
+  boxShadow: "0 8px 24px color-mix(in oklch, var(--foreground) 18%, transparent)",
+};
 
 export function PiesPanel({ pools, compact = false, size = "lg" }: Props) {
   const { t } = useTranslation();
@@ -46,9 +89,9 @@ export function PiesPanel({ pools, compact = false, size = "lg" }: Props) {
     [pools, t],
   );
   const remainingSlices = remaining.slices.filter((slice) => slice.value > 0);
-  const legend = legendModeFor(size, compact);
-  const height = size === "xl" ? 260 : legend === "none" ? 160 : 220;
-  const showRemaining = legend !== "none";
+  const legend = pieLegendMode(size, compact);
+  const showRemaining = pieShowsRemaining(size, compact);
+  const height = pieChartHeight(size);
 
   return (
     <Card className="flex h-full min-h-0 flex-col overflow-hidden bg-card/90 ring-1 ring-foreground/10 backdrop-blur">
@@ -56,25 +99,23 @@ export function PiesPanel({ pools, compact = false, size = "lg" }: Props) {
         <CardTitle>{t("charts.pies")}</CardTitle>
         <CardDescription>{t("charts.piesHint")}</CardDescription>
       </CardHeader>
-      <CardContent className="min-h-0 flex-1">
+      <CardContent className={cn("min-h-0 flex-1", tileContentMinH(size))}>
         <div className={showRemaining ? "grid min-h-0 gap-4 md:grid-cols-2" : "grid min-h-0 gap-3"}>
           <PieBlock
             title={t("charts.piesUsed")}
             empty={t("charts.empty")}
             slices={used}
             height={height}
+            size={size}
             legend={legend}
             tooltipValue={(slice) =>
-              t("charts.piesTooltip", {
+              t("charts.piesTooltipUsed", {
+                name: slice.name,
                 percent: slice.value.toFixed(0),
                 remaining: formatAmount(slice.remaining, slice.unit),
               })
             }
-            legendValue={(slice) =>
-              legend === "full"
-                ? `${formatAmount(slice.remaining, slice.unit)} · ${slice.value.toFixed(0)}%`
-                : `${slice.value.toFixed(0)}%`
-            }
+            legendValue={(slice) => `${slice.value.toFixed(0)}%`}
           />
           {showRemaining ? (
             <PieBlock
@@ -86,18 +127,19 @@ export function PiesPanel({ pools, compact = false, size = "lg" }: Props) {
               empty={t("charts.empty")}
               slices={remainingSlices}
               height={height}
+              size={size}
               legend={legend}
               tooltipValue={(slice) =>
-                t("charts.piesTooltip", {
+                `${slice.name} · ${t("charts.piesTooltip", {
                   percent:
                     remaining.mode === "absolute"
                       ? formatAmount(slice.value, slice.unit)
                       : `${slice.value.toFixed(0)}%`,
                   remaining: formatAmount(slice.remaining, slice.unit),
-                })
+                })}`
               }
               legendValue={(slice) =>
-                legend === "full" ? formatAmount(slice.remaining, slice.unit) : slice.name
+                legend === "full" ? formatAmount(slice.remaining, slice.unit) : `${slice.value.toFixed(0)}%`
               }
             />
           ) : null}
@@ -112,6 +154,7 @@ function PieBlock({
   empty,
   slices,
   height,
+  size,
   legend,
   tooltipValue,
   legendValue,
@@ -120,14 +163,20 @@ function PieBlock({
   empty: string;
   slices: PieSlice[];
   height: number;
+  size: TileSize;
   legend: LegendMode;
   tooltipValue: (slice: PieSlice) => string;
   legendValue: (slice: PieSlice) => string;
 }) {
+  const { boxRef, width, height: boxHeight } = useBoxSize({ width: height, height });
+  const box = Math.min(width > 0 ? width : height, boxHeight > 0 ? boxHeight : height);
+  const outer = pieOuterRadiusPx(size, box);
+  const inner = size === "sm" ? 0 : Math.round(outer * 0.45);
+
   if (slices.length === 0) {
     return (
       <div className="min-w-0">
-        <p className="mb-2 text-xs font-medium">{title}</p>
+        {legend !== "none" ? <p className="mb-2 text-xs font-medium">{title}</p> : null}
         <div className="flex items-center justify-center text-sm text-muted-foreground" style={{ height }}>
           {empty}
         </div>
@@ -137,42 +186,149 @@ function PieBlock({
 
   return (
     <div className="min-w-0">
-      <p className="mb-2 text-xs font-medium">{title}</p>
-      <ResponsiveContainer width="100%" height={height}>
-        <PieChart>
-          <Pie
-            data={slices}
-            dataKey="value"
-            nameKey="name"
-            innerRadius="45%"
-            outerRadius={legend === "none" ? "80%" : "70%"}
-            paddingAngle={2}
-            label={false}
-          >
-            {slices.map((slice) => (
-              <Cell key={slice.id} fill={slice.color} />
-            ))}
-          </Pie>
-          <Tooltip
-            contentStyle={TOOLTIP_STYLE}
-            formatter={(_value, name, item) => {
-              const slice = item?.payload as PieSlice | undefined;
-              return slice ? [tooltipValue(slice), name] : "";
-            }}
-          />
-          {legend !== "none" ? (
-            <Legend
-              layout="horizontal"
-              verticalAlign="bottom"
-              formatter={(name, entry) => {
-                const slice = entry.payload as PieSlice | undefined;
-                if (!slice) return String(name);
-                return legend === "short" ? `${name} · ${slice.value.toFixed(0)}%` : `${name} · ${legendValue(slice)}`;
-              }}
+      {legend !== "none" ? <p className="mb-2 text-xs font-medium">{title}</p> : null}
+      <div ref={boxRef} className="min-h-0 w-full" style={{ height }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={slices}
+              dataKey="value"
+              nameKey="name"
+              innerRadius={inner}
+              outerRadius={outer}
+              paddingAngle={2}
+              label={false}
+            >
+              {slices.map((slice) => (
+                <Cell key={slice.id} fill={slice.color} />
+              ))}
+            </Pie>
+            <Tooltip
+              allowEscapeViewBox={{ x: true, y: true }}
+              wrapperStyle={{ outline: "none", pointerEvents: "none", visibility: "hidden" }}
+              content={(props) => (
+                <EscapingTooltip active={Boolean(props.active)} payload={props.payload} render={tooltipValue} />
+              )}
             />
-          ) : null}
-        </PieChart>
-      </ResponsiveContainer>
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      {legend !== "none" ? <PieLegend slices={slices} mode={legend} valueOf={legendValue} /> : null}
     </div>
   );
+}
+
+function PieLegend({
+  slices,
+  mode,
+  valueOf,
+}: {
+  slices: PieSlice[];
+  mode: "short" | "full";
+  valueOf: (slice: PieSlice) => string;
+}) {
+  return (
+    <ul
+      className={cn(
+        "mt-1 flex flex-wrap justify-center gap-x-2 gap-y-1 text-muted-foreground",
+        mode === "short" ? "text-[10px] leading-tight sm:text-[11px]" : "text-xs",
+      )}
+    >
+      {slices.map((slice) => (
+        <li key={slice.id} className="flex min-w-0 items-center gap-1">
+          <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: slice.color }} />
+          <span className="truncate">{slice.name}</span>
+          <span className="tabular-nums">{valueOf(slice)}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function EscapingTooltip({
+  active,
+  payload,
+  render,
+}: {
+  active: boolean;
+  payload?: ReadonlyArray<{ payload?: PieSlice }>;
+  render: (slice: PieSlice) => string;
+}) {
+  const slice = payload?.[0]?.payload;
+  if (!active || !slice) return null;
+  return (
+    <HoverPortal>
+      <span className="block max-w-56 text-xs leading-snug">{render(slice)}</span>
+    </HoverPortal>
+  );
+}
+
+function HoverPortal({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [mouse, setMouse] = useState({ x: 0, y: 0 });
+  const [tip, setTip] = useState({ width: 200, height: 72 });
+
+  useEffect(() => {
+    const move = (event: MouseEvent) => setMouse({ x: event.clientX, y: event.clientY });
+    window.addEventListener("mousemove", move);
+    return () => window.removeEventListener("mousemove", move);
+  }, []);
+
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    setTip({ width: node.offsetWidth, height: node.offsetHeight });
+  }, [children]);
+
+  const pos = flipTooltipPosition(
+    { x: mouse.x, y: mouse.y, width: 1, height: 1 },
+    tip,
+    { width: window.innerWidth, height: window.innerHeight },
+  );
+
+  return createPortal(
+    <div
+      ref={ref}
+      role="tooltip"
+      className="pointer-events-none fixed z-50 px-2.5 py-1.5 text-xs"
+      style={{
+        top: pos.top,
+        left: pos.left,
+        ...TOOLTIP_STYLE,
+      }}
+    >
+      {children}
+    </div>,
+    document.body,
+  );
+}
+
+function useBoxSize(fallback: PlotBox): { boxRef: RefObject<HTMLDivElement | null> } & PlotBox {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const lastGood = useRef(fallback);
+  const [box, setBox] = useState(fallback);
+
+  useEffect(() => {
+    const node = boxRef.current;
+    if (!node) return;
+    const apply = (width: number, height: number) => {
+      if (width > 0 && height > 0) {
+        lastGood.current = { width, height };
+        setBox((current) => (current.width === width && current.height === height ? current : { width, height }));
+        return;
+      }
+      setBox(lastGood.current);
+    };
+    apply(node.clientWidth, node.clientHeight);
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      apply(entry.contentRect.width, entry.contentRect.height);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [fallback.height, fallback.width]);
+
+  return { boxRef, ...box };
 }
