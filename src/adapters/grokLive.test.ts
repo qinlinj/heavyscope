@@ -178,6 +178,8 @@ describe("isBotProductName", () => {
     expect(isBotProductName("SuperGrok Heavy")).toBe(false);
     expect(isBotProductName("PRODUCT_GROK_BUILD")).toBe(false);
     expect(isBotProductName("GrokBuild")).toBe(false);
+    expect(isBotProductName("GROK_CHAT")).toBe(false);
+    expect(isBotProductName("product_usage")).toBe(false);
   });
 });
 
@@ -223,6 +225,13 @@ describe("pickBotProduct", () => {
   it("does not invent Bot when only Heavy exists", () => {
     expect(pickBotProduct([{ name: "SuperGrok Heavy", percent: 25 }], 25)).toBeNull();
     expect(pickBotProduct([], 25)).toBeNull();
+  });
+
+  it("does not map GetGrokCreditsConfig GROK_CHAT 12% (or product_usage enum) to Bot", () => {
+    expect(pickBotProduct([{ name: "GROK_CHAT", percent: 12 }], 12)).toBeNull();
+    expect(pickBotProduct([{ name: "GROK_CHAT", percent: 12 }], 25)).toBeNull();
+    expect(pickBotProduct([{ name: "SuperGrok Heavy", percent: 12 }, { name: "GROK_CHAT", percent: 12 }], 12)).toBeNull();
+    expect(grokProductTarget("GROK_CHAT")).toBeNull();
   });
 });
 

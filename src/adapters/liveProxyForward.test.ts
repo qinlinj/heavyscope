@@ -32,6 +32,9 @@ describe("liveProxyUpstreamUrl", () => {
     expect(liveProxyUpstreamUrl("cursor", "/api/dashboard/get-current-period-usage")).toBe(
       `${CURSOR_ORIGIN}/api/dashboard/get-current-period-usage`,
     );
+    expect(liveProxyUpstreamUrl("cursor", "/api/dashboard/get-sand-usage-status")).toBe(
+      `${CURSOR_ORIGIN}/api/dashboard/get-sand-usage-status`,
+    );
     expect(liveProxyUpstreamUrl("grok", "/grok_api_v2.GrokBuildBilling/GetGrokCreditsConfig")).toBe(
       `${GROK_ORIGIN}/grok_api_v2.GrokBuildBilling/GetGrokCreditsConfig`,
     );

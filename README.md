@@ -4,7 +4,7 @@ Local-first multi-quota monitoring panel for SuperGrok Heavy and Cursor Ultra.
 
 HeavyScope helps you see how fast you are burning weekly or monthly quotas, when a pool will reset, and whether you should switch work to a pool with more headroom. The same React UI runs as a web app and inside a Tauri 2 desktop shell. Quota data stays on your machine. There is no HeavyScope cloud account.
 
-Current product version is **0.23.0**.
+Current product version is **0.24.0**.
 
 ## Features
 
@@ -100,12 +100,12 @@ Live mapping (unofficial Cursor Spending endpoints, same cookie as [cursor.com/d
 
 - `preset-cursor-models` = Cursor Models (Auto / Composer / Cursor Grok) from `planUsage.autoPercentUsed` on `POST /api/dashboard/get-current-period-usage`, falling back to `GET /api/usage-summary` `individualUsage.plan.autoPercentUsed`. Stored as `quota_total=100`, `quota_used=autoPercentUsed`, unit `%`.
 - `preset-cursor-other` = Other Models as a **USD** pool from `planUsage.totalSpend` / `planUsage.limit` (cents → dollars). If the limit is missing or 0, the default total is **$400**. `individualUsage.onDemand.used/limit` (cents) is accepted when plan spend is missing. Other is **not** mapped from `apiPercentUsed` as 0–100%.
-- `preset-grok-bot` = only a real Grok Bot / Grok API / Agents SKU row from `POST /api/dashboard/get-aggregated-usage-events` (`aggregations[].modelIntent`) or `get-filtered-usage-events`. Composer, Cursor Grok chat models (`cursor-grok`, `grok-2/3/4`), and Heavy are excluded. If no matching row exists the pool stays unavailable — no invented number. If the row has used+limit those are written; cents-only used is written as USD and **no weekly cap is invented**.
-- `reset_at` = `billingCycleEnd` (ISO or epoch ms). Cursor Models / Other use `reset_cycle` = monthly. Grok Bot stays weekly when mapped.
+- `preset-grok-bot` = Cursor SAND weekly used percent from `POST /api/dashboard/get-sand-usage-status` (`{}` body, same cookie as Spending). `usagePercent` is used%; remaining% is `clamp(100 - usagePercent, 0, 100)`; `reset_at` prefers `nextResetTimestampUtc`. Stored as a 100% basis (`quota_used=usagePercent`, `quota_total=100`), unit `%`. The wire has no used/remaining/limit counts — HeavyScope does not invent them. `hasAvailableUsage` / `hasNonZeroIncludedLimit` are flags only. GET on this path is HTTP 405 (`http`, not session expired). A conservative grok-bot SKU row from aggregations / filtered events is fallback only. Composer, Cursor Grok chat models (`cursor-grok`, `cursor-grok-4.6-high-fast`, `grok-2/3/4`), and Heavy are excluded. grok.com `GetGrokCreditsConfig` `GROK_CHAT` 12% is not Bot.
+- `reset_at` for Models / Other = `billingCycleEnd` (ISO or epoch ms), `reset_cycle` monthly. Grok Bot from SAND uses `nextResetTimestampUtc` and stays weekly.
 
 Grok.com proto / CLI billing remains a supplement for Heavy and Bot. It is not required for the three Cursor-session pools.
 
-Auto-refresh uses the existing `sync_enabled` / `sync_interval_min` / `sync_source` settings. Default interval is **5 minutes** (1–60). `sync_source` can be `cursor`, `grok`, or `both` so both live connectors can run on one ticker. Live values are **absolute**: `quota_used`, `quota_total`, and `reset_at` are written even when used goes down (cycle reset). A `source=sync` record is inserted only when used increased; a lower used number still updates the pool and does not write a negative usage bar. A 401/403 marks the Cursor session expired and does not wipe pools. Refresh now is on the dashboard, Settings, and the `/tray` header.
+Auto-refresh uses the existing `sync_enabled` / `sync_interval_min` / `sync_source` settings. Default interval is **5 minutes** (1–60). `sync_source` can be `cursor`, `grok`, or `both` so both live connectors can run on one ticker. Live values are **absolute**: `quota_used`, `quota_total`, and `reset_at` are written even when used goes down (cycle reset). A `source=sync` record is inserted only when used increased; a lower used number still updates the pool and does not write a negative usage bar. A real 401/403 auth rejection marks the Cursor session expired and does not wipe pools. HTTP 405 and Cursor `Team ID is required` stay `http`. A SAND 401 marks Bot unavailable and still applies Models + Other. Refresh now is on the dashboard, Settings, and the `/tray` header.
 
 These endpoints are unofficial and may change.
 

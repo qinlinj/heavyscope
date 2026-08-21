@@ -107,6 +107,16 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Persist Day / Week / Month scale (currently component state only)
 - [ ] Optional heatmap filter by pool
 
+## 0.24.0 — Cursor Grok Bot weekly pool from SAND
+
+- [x] `POST /api/dashboard/get-sand-usage-status` (`{}`) alongside usage-summary + get-current-period-usage + aggregations
+- [x] `usagePercent` → Bot used%; remaining% = clamp(100 − usagePercent, 0, 100); `reset_at` = `nextResetTimestampUtc`; unit `%`; 100% basis only (no invented used/remaining/limit counts)
+- [x] GET/HTTP 405 on SAND is `http` not expired; real 401 marks Bot unavailable; Models + Other still apply
+- [x] Do not loosen `isCursorGrokBotSku` (`cursor-grok-4.6-high-fast` is chat); do not map grok.com `GROK_CHAT` 12% to Bot
+- [x] Vitest: live JSON fixture, missing counts, 405-not-expired, SAND 401 keeps Models/Other
+- [x] Version 0.24.0 (package.json + src-tauri + README + docs/RELEASE.md)
+- [ ] Sister SAND access/trial status calls remain optional; never call `start-sand-trial`
+
 ## 0.23.0 — live Cursor refresh does not abort on fake 401
 
 - [x] `isCursorSessionExpired` / `mapCursorHttpStatus(status, label, body?)`: 405 → `http`; 401/403 expired only for a real auth rejection; `Team ID is required` is not expired

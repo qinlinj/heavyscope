@@ -4,6 +4,7 @@ export {
   cursorCookieHeader,
   deriveCursorSessionTokenFromJwt,
   isCursorGrokBotSku,
+  mapCursorSandUsage,
   mapCursorUsageResponse,
   mapCursorUsageSummary,
   mergeCursorSpendingSources,

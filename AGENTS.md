@@ -63,6 +63,7 @@ https://github.com/qinlinj/heavyscope
 - 0.21.0 — complete macOS menubar /tray daily-loop migration
 - 0.22.0 — honest tray connect / empty copy (no four-pools nag)
 - 0.23.0 — live Cursor refresh no longer aborts on filtered-usage-events 401 Team ID
+- 0.24.0 — Cursor Grok Bot weekly pool from get-sand-usage-status
 
 ## Commits
 

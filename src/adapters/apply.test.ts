@@ -198,6 +198,39 @@ describe("applyAbsoluteUsage", () => {
     expect(usages).toHaveLength(1);
   });
 
+  it("writes SAND Bot as a 100% basis, not fake request or dollar counts", () => {
+    const { deps, pools } = absoluteDeps([
+      pool({
+        id: "preset-grok-bot",
+        name: "Grok Bot Weekly Quota",
+        quota_used: 0,
+        quota_total: 50,
+        unit: "requests",
+        reset_cycle: "weekly",
+      }),
+    ]);
+    applyAbsoluteUsage(
+      [
+        {
+          poolHint: "grok_bot",
+          quotaUsed: 21.473078,
+          quotaTotal: 100,
+          resetAt: "2026-08-24T01:40:00.748Z",
+          resetCycle: "weekly",
+          unit: "%",
+          note: "Cursor SAND weekly sync (Grok Bot)",
+        },
+      ],
+      deps,
+    );
+    expect(pools[0]?.quota_used).toBe(21.473078);
+    expect(pools[0]?.quota_total).toBe(100);
+    expect(pools[0]?.unit).toBe("%");
+    expect(pools[0]?.reset_at).toBe("2026-08-24T01:40:00.748Z");
+    expect(pools[0]?.quota_total).not.toBe(50);
+    expect(pools[0]?.quota_used).not.toBe(21);
+  });
+
   it("writes the lower used number after a cycle reset without a usage record", () => {
     const { deps, pools, usages } = absoluteDeps([
       pool({ id: "preset-cursor-models", name: "Cursor Models", quota_used: 88, quota_total: 100 }),
