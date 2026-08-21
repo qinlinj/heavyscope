@@ -6,6 +6,19 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-08-21
+
+### Changed
+
+- Quota overview stays the short copy with the existing `max-h-16` scroll box. Last / next sync and flash lines stay inside that box. The title row remains full width (no `max-w-xl`).
+- Recent records lists go through `formatSignedAmount` → `formatAmount`: at most two decimals; integers and request counts use 0 decimals. The PoolCard list is a fixed `h-[7.5rem]` (~4–6 rows) with `overflow-y-auto` so it does not grow the card.
+- Demo is removed from the product. Settings no longer offers Load demo data. New databases do not seed demo rows on first open. `demoSeed.ts` remains a test fixture. Charts and History still default to excluding `source=demo`; leftover rows stay visible only if History filters for Demo.
+- Version 0.18.0 (package.json + src-tauri + README + docs/RELEASE.md).
+
+### Confirmed
+
+- Normal mode has no grip / size / hide chrome. PoolCard delete / edit still appear only when `editingLayout` (`showActions`).
+
 ## [0.17.0] - 2026-08-21
 
 ### Added

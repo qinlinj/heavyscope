@@ -4,27 +4,26 @@ Local-first multi-quota monitoring panel for SuperGrok Heavy and Cursor Ultra.
 
 HeavyScope helps you see how fast you are burning weekly or monthly quotas, when a pool will reset, and whether you should switch work to a pool with more headroom. The same React UI runs as a web app and inside a Tauri 2 desktop shell. Quota data stays on your machine. There is no HeavyScope cloud account.
 
-Current product version is **0.17.0**.
+Current product version is **0.18.0**.
 
 ## Features
 
 - **Dashboard + burn rate advisor** — four preset pools plus custom services, progress bars, remaining quota, reset countdown, and usage-tone colors. The advisor shows recommended daily pace, today used, waste / overspend risk, and cross-pool switch suggestions.
 - **Widget grid** — advisor, heatmap, trend, unit-safe pies, and every pool are independent cards. From `md` up the dashboard is a stable 4-column grid (`sm` = 1/4, `md` = 1/2, `lg` = full, optional `xl` = full + tall). Same-row tiles share height. Edit chrome overlays the card so neighbors never collide. An Edit / Done control reveals drag-to-reorder (cards slide aside live to show the insertion slot), size chips, and hide/restore. Normal mode stays clean (no grips or checkboxes). Layout is saved as `dashboard_layout` in the local settings table; old `chart_show_*` / `chart_module_order` prefs migrate automatically.
 - **Charts / history** — Daily Activity heatmap uses GitHub contribution greens (26 weeks on large screens). Cells are measured squares and do not stretch when the card is wide. Intensity uses that day's usage amount when every record shares one unit; mixed $ and % stay on record count. The trend chart plots live deltas (`+N` per bucket), not a flat absolute. Two pies: used % (safe across pools) and remaining share among comparable absolute units (`sm` hides labels). History defaults to live sync + manual and hides demo-seeded sample rows.
-- **Settings** — pool management (add / edit / delete), alert thresholds (warn / crit), language (EN / 中文), theme (dark / light / system; default dark), JSON backup export / copy / import, and optional demo usage seed.
+- **Settings** — pool management (add / edit / delete), alert thresholds (warn / crit), language (EN / 中文), theme (dark / light / system; default dark), and JSON backup export / copy / import.
 - **Live Cursor + Grok sync** — connect your own accounts in web Settings → Data sources **or** in the menu-bar `/tray` Settings pane. Saving a Cursor session token or Grok session/bearer puts that provider on the timer immediately (1 / 5 / 15 / 30 / 60 min, default 5). Dashboard, Settings, and `/tray` show last synced + next tick per provider. A failed Grok tick is shown and does not skip later ticks. Snapshot import stays as a Cursor fallback when no session token is stored.
 - **Cursor snapshot import** — paste a Cursor usage snapshot (JSON or CSV) in Settings → Data sources. Optional auto-sync re-applies the last import when live Cursor is not connected.
 - **JSON backup export / copy / import** — Settings → Local data downloads `heavyscope-backup.json`, copies the same payload to the clipboard, or accepts a file / paste (table dump, not a wasm / binary file). Merge is the default; replace-all is optional.
-- **Demo seed** — optional sample-only usage for the four preset pools (last 10 days, English notes). History and default charts hide these rows unless you opt in to the Demo filter. First load applies immediately; a later load asks for confirm because `demo_seeded=1`.
 - **Tauri 2 tray** — system tray / macOS menu-bar shell around the same web UI and sql.js database. On macOS the shell is an **Accessory** (no Dock icon); the popup is **~380×780** under the status item. `/tray` is a compact plugin: Refresh now, a Settings pane for tokens/interval, **all Layout-visible pool rows** (scroll; tightest 1–2 highlighted), last-sync lines, and an optional square heatmap (`squareCellPx`, never stretched). Layout Edit / Done is secondary. Linux/Windows keep a normal tray window. Close hides to tray. Use Quit to exit. **Verify the menu-bar accessory on a real Mac** — see [docs/MACOS.md](docs/MACOS.md).
-- **In-app confirm dialogs** — delete pool, reset local database, demo re-apply, import, and import replace-all use in-app AlertDialogs with zh-CN / en titles and actions. Native `window.confirm` is not used.
+- **In-app confirm dialogs** — delete pool, reset local database, import, and import replace-all use in-app AlertDialogs with zh-CN / en titles and actions. Native `window.confirm` is not used.
 - **Cycle rollover** — when a pool `reset_at` is past, quota used resets to 0, the next weekly/monthly date is set, and a Cycle reset usage note is stored. History is not deleted.
 
 Manual entry remains the source of truth when a connector fails. Tokens you paste stay in the local settings table on this device. JSON backup export redacts them. Unofficial dashboard endpoints may change.
 
 ## Screenshots
 
-Dashboard with demo usage, pool cards, burn-rate advisor, and charts:
+Dashboard with pool cards, burn-rate advisor, and charts:
 
 ![Dashboard](docs/images/dashboard.png)
 

@@ -202,14 +202,7 @@
     "syncStatusSkipped": "Already applied",
     "syncStatusError": "Failed",
     "noSnapshot": "Connect a Cursor session or import a snapshot before Cursor auto-sync can run.",
-    "manualTruth": "Manual entry remains the source of truth when adapters fail or a snapshot is stale.",
-    "demoLoad": "Load demo data",
-    "demoTitle": "Load sample-only demo data",
-    "demoHint": "Sample-only. Inserts fake usage across the last 10 days so you can preview charts. History and default charts hide these rows unless you opt in to the Demo filter. Notes are English. Existing live records stay.",
-    "demoConfirm": "Add demo usage records to the four preset pools?",
-    "demoConfirmAgain": "Demo data was already loaded. Add another set of sample records?",
-    "demoApplied": "Loaded {{count}} demo usage records.",
-    "demoSkipped": "Demo data is already loaded."
+    "manualTruth": "Manual entry remains the source of truth when adapters fail or a snapshot is stale."
   },
   "common": {
     "ok": "OK",
@@ -335,7 +328,7 @@
     "hideHint": "Click outside or the menu-bar icon to hide.",
     "settingsHint": "Paste a Cursor or Grok token to connect. Tokens stay on this device.",
     "settingsBack": "Back to quotas",
-    "moreOnWeb": "Pool CRUD, demo seed, and JSON backup stay on the web Settings page.",
+    "moreOnWeb": "Pool CRUD and JSON backup stay on the web Settings page.",
     "editLayout": "Layout",
     "expandPool": "Show pool details",
     "collapsePool": "Hide pool details",

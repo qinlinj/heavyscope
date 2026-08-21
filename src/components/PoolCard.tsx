@@ -17,6 +17,7 @@ import {
   formatAmount,
   formatCountdown,
   formatDateTime,
+  formatSignedAmount,
   remaining,
   usagePercent,
   usageTone,
@@ -114,7 +115,7 @@ export function PoolCard({
 
   return (
     <Card size="sm" className="h-full w-full min-h-0 min-w-0 overflow-hidden bg-card/90 backdrop-blur">
-      <CardHeader>
+      <CardHeader className="shrink-0">
         <CardTitle className={cn("flex items-center gap-2", showActions && "pr-16")}>
           <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: pool.color }} />
           {displayPoolName(pool, t)}
@@ -143,7 +144,7 @@ export function PoolCard({
           </CardAction>
         ) : null}
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="min-h-0 flex-1 space-y-3 overflow-y-auto">
         <div className="flex items-end justify-between gap-3">
           <div>
             <p className="text-xs text-muted-foreground">{t("pool.used")}</p>
@@ -218,17 +219,16 @@ export function PoolCard({
         )}
       </CardContent>
       {showRecent && records.length > 0 && (
-        <CardFooter className="flex-col items-stretch gap-2">
+        <CardFooter className="shrink-0 flex-col items-stretch gap-2">
           <p className="text-xs text-muted-foreground">{t("pool.recent")}</p>
-          <ul className="max-h-24 space-y-1 overflow-y-auto pr-1">
-            {records.slice(0, 12).map((record) => (
-              <li key={record.id} className="flex justify-between gap-2 text-xs">
+          <ul className="h-[7.5rem] space-y-1 overflow-y-auto overscroll-contain pr-1">
+            {records.slice(0, 30).map((record) => (
+              <li key={record.id} className="flex justify-between gap-2 text-xs leading-5">
                 <span className="min-w-0 truncate text-muted-foreground">
                   {new Date(record.recorded_at).toLocaleString(i18n.language)}
                 </span>
                 <span className="shrink-0 tabular-nums">
-                  {record.amount > 0 ? "+" : ""}
-                  {formatAmount(record.amount, pool.unit)}
+                  {formatSignedAmount(record.amount, pool.unit)}
                 </span>
               </li>
             ))}

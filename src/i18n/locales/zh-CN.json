@@ -202,14 +202,7 @@
     "syncStatusSkipped": "已应用过",
     "syncStatusError": "失败",
     "noSnapshot": "请先连接 Cursor 会话或导入快照，Cursor 自动同步才会运行。",
-    "manualTruth": "适配器失败或快照过期时，仍以手动记录为准。",
-    "demoLoad": "载入演示数据",
-    "demoTitle": "载入仅作示例的演示数据",
-    "demoHint": "仅作示例。写入最近 10 天的假用量，方便预览图表。历史和默认图表会隐藏这些行，除非你主动选择「演示」筛选。备注为英文。不会覆盖真实记录。",
-    "demoConfirm": "为四个预置额度池添加演示用量记录？",
-    "demoConfirmAgain": "已经载入过演示数据。再添加一套示例记录？",
-    "demoApplied": "已载入 {{count}} 条演示用量记录。",
-    "demoSkipped": "演示数据已载入过。"
+    "manualTruth": "适配器失败或快照过期时，仍以手动记录为准。"
   },
   "common": {
     "ok": "确定",
@@ -335,7 +328,7 @@
     "hideHint": "点击菜单栏图标或面板外区域即可隐藏。",
     "settingsHint": "粘贴 Cursor 或 Grok 令牌即可连接。令牌只保存在本机。",
     "settingsBack": "返回额度",
-    "moreOnWeb": "额度池增删、演示数据和 JSON 备份仍在网页设置页。",
+    "moreOnWeb": "额度池增删和 JSON 备份仍在网页设置页。",
     "editLayout": "布局",
     "expandPool": "展开额度池详情",
     "collapsePool": "收起额度池详情",

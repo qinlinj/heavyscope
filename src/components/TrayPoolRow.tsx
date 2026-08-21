@@ -5,6 +5,7 @@ import { type PoolAdvice, riskTone } from "@/lib/burnRate";
 import {
   formatAmount,
   formatCountdown,
+  formatSignedAmount,
   usagePercent,
   usageTone,
 } from "@/lib/format";
@@ -121,8 +122,7 @@ export function TrayPoolRow({
                 <li key={row.id} className="flex justify-between gap-2 text-muted-foreground">
                   <span>{new Date(row.recorded_at).toLocaleString(i18n.language, { month: "short", day: "numeric" })}</span>
                   <span className="tabular-nums text-foreground">
-                    {row.amount > 0 ? "+" : ""}
-                    {row.amount} {pool.unit}
+                    {formatSignedAmount(row.amount, pool.unit)}
                   </span>
                 </li>
               ))}
