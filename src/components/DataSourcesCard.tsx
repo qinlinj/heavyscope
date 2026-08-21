@@ -12,6 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useDatabase } from "@/hooks/useDatabase";
+import { useLiveProxyAvailable } from "@/hooks/useLiveProxy";
+import { liveUserMessage } from "@/lib/liveFlash";
 import { isMacDesktop, readCursorSessionTokenFromApp } from "@/lib/desktop";
 import { formatGrokProductLine } from "@/adapters/grokLive";
 import { formatDateTime } from "@/lib/format";
@@ -79,6 +81,7 @@ export function DataSourcesCard() {
   const [cursorToken, setCursorToken] = useState("");
   const [grokCookie, setGrokCookie] = useState("");
   const [grokBearer, setGrokBearer] = useState("");
+  const proxyAvailable = useLiveProxyAvailable();
 
   useEffect(() => {
     setDraft(storedSnapshot);
@@ -130,7 +133,7 @@ export function DataSourcesCard() {
     setBusy(true);
     try {
       const report = await connectCursor(cursorToken, sourceHint);
-      setFlash(report.message);
+      setFlash(liveUserMessage(t, { message: report.message, code: report.code, proxyAvailable }));
       if (!report.skipped) setCursorToken("");
     } finally {
       setBusy(false);
@@ -147,7 +150,7 @@ export function DataSourcesCard() {
       }
       setCursorToken(token);
       const report = await connectCursor(token, "session");
-      setFlash(report.message);
+      setFlash(liveUserMessage(t, { message: report.message, code: report.code, proxyAvailable }));
       if (!report.skipped) setCursorToken("");
     } finally {
       setBusy(false);
@@ -158,7 +161,7 @@ export function DataSourcesCard() {
     setBusy(true);
     try {
       const report = await connectGrok(grokCookie, grokBearer);
-      setFlash(report.message);
+      setFlash(liveUserMessage(t, { message: report.message, code: report.code, proxyAvailable }));
       if (!report.skipped) {
         setGrokCookie("");
         setGrokBearer("");
@@ -172,7 +175,7 @@ export function DataSourcesCard() {
     setBusy(true);
     try {
       const report = await refreshLiveProviders(provider ? [provider] : undefined);
-      setFlash(report.message);
+      setFlash(liveUserMessage(t, { message: report.message, code: report.code, proxyAvailable }));
     } finally {
       setBusy(false);
     }
@@ -194,6 +197,9 @@ export function DataSourcesCard() {
         <CardDescription>{t("settings.dataSourcesHint")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {proxyAvailable === false ? (
+          <p className="text-sm text-amber-600 dark:text-amber-400">{t("live.webNoProxy")}</p>
+        ) : null}
         <section className="space-y-3 rounded-lg border border-foreground/10 p-3">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>

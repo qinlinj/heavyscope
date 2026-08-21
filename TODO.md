@@ -95,6 +95,18 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Verify Grok Bot auto-track on a real Bearer (`Api 11%` → Bot) without manual calibrate
 - [x] Do not start macOS tray 1.5x / horizontal-scroll work here (moved to 0.13.0)
 
+## 0.19.0 — production web live proxy + honest advisor
+
+- [x] Same-origin `/proxy/cursor` `/proxy/grok` `/proxy/grok-cli` for Vite and Vercel (Edge rewrite + header forward). Tokens never logged.
+- [x] Production Refresh now uses the proxy so Cursor Spending can fill Models / Other / Grok Bot (or Bot unavailable honestly)
+- [x] No-proxy hosts: zh-CN + en next-step copy before connect and on refresh failure
+- [x] Advisor: `quota_used === 0` or never applied is not waste; unconnected Grok Heavy is not tightest; Vitest for zero usage
+- [x] Unsynced presets show 待连接 / Not connected instead of placeholder totals
+- [x] Version 0.19.0 (package.json + src-tauri + README + docs/RELEASE.md)
+- [ ] Persist Day / Week / Month scale (currently component state only)
+- [ ] Optional heatmap filter by pool
+- [ ] Settings card reorder (next UI package)
+
 ## 0.18.0 — product polish (overview / Recent / no Demo)
 
 - [x] Quota overview stays short + `max-h-16`; sync lines inside the scroll box; title row stays full width

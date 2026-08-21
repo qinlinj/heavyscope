@@ -6,6 +6,19 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-08-21
+
+### Added
+
+- Production web live refresh through the same-origin `/proxy/cursor`, `/proxy/grok`, and `/proxy/grok-cli` paths. Vite (`pnpm dev` / `pnpm preview`) and Vercel (Edge function + `vercel.json` rewrites) both serve those prefixes. The proxy forwards `X-HeavyScope-Cookie` / `X-HeavyScope-Authorization` (and the other liveHttp headers) and never logs tokens.
+- Bilingual next-step copy (`live.webNoProxy`) before connect and on refresh failure when the host has no proxy. The UI does not show only the English `LIVE_CURSOR_CORS_ERROR` string.
+- Honest advisor: `quota_used === 0` or a pool that has never had a successful live/sync apply is `ok` / `unconnected`, never waste. Unconnected Grok Heavy is excluded from the tightest ranking.
+- Unsynced preset pools display **待连接 / Not connected** instead of a fake `0/100` / `0/50` / `0/500` / `0/400` usage bar. Seed rows stay in the DB; numbers appear after a successful apply.
+
+### Changed
+
+- Version 0.19.0 (package.json + src-tauri + README + docs/RELEASE.md). Cursor Spending three-pool mapping is unchanged (Models / Other $400 / Grok Bot, or Bot unavailable honestly).
+
 ## [0.18.0] - 2026-08-21
 
 ### Changed

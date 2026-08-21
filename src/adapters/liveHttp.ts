@@ -10,6 +10,11 @@ import {
   LIVE_CURSOR_CORS_ERROR,
   LIVE_GROK_CORS_ERROR,
 } from "./liveConstants";
+import {
+  LIVE_PROXY_HEADER,
+  LIVE_PROXY_HEADER_VALUE,
+  LIVE_PROXY_PROBE_PATH,
+} from "./liveProxyForward";
 
 export type LiveProviderId = "cursor" | "grok" | "grok-cli";
 
@@ -46,14 +51,6 @@ function asBodyInit(body: Uint8Array | string | undefined): BodyInit | undefined
 
 function corsMessage(provider: LiveProviderId): string {
   return provider === "cursor" ? LIVE_CURSOR_CORS_ERROR : LIVE_GROK_CORS_ERROR;
-}
-
-function canUseDevProxy(): boolean {
-  try {
-    return Boolean(import.meta.env?.DEV);
-  } catch {
-    return false;
-  }
 }
 
 function resolveUrl(provider: LiveProviderId, path: string, transport: "tauri" | "proxy"): string {
@@ -117,9 +114,36 @@ async function readResponse(response: Response, transport: "tauri" | "proxy"): P
   return { status: response.status, bodyText, bodyBytes, headers: responseHeaders(response), transport };
 }
 
+export function responseLooksLikeMissingProxy(opts: {
+  proxyHeader?: string | null;
+  contentType?: string | null;
+  bodyText?: string;
+}): boolean {
+  if (opts.proxyHeader === LIVE_PROXY_HEADER_VALUE) return false;
+  const ct = (opts.contentType ?? "").toLowerCase();
+  if (ct.includes("text/html")) return true;
+  const start = (opts.bodyText ?? "").trimStart().slice(0, 15).toLowerCase();
+  return start.startsWith("<!doctype") || start.startsWith("<html");
+}
+
+/** Same-origin `/proxy/*` probe. Tauri does not need this. */
+export async function probeLiveProxy(): Promise<boolean> {
+  if (isDesktopShell()) return true;
+  try {
+    const response = await fetch(`${CURSOR_PROXY_PREFIX}${LIVE_PROXY_PROBE_PATH}`, {
+      method: "GET",
+      cache: "no-store",
+    });
+    return response.headers.get(LIVE_PROXY_HEADER) === LIVE_PROXY_HEADER_VALUE;
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Prefer Tauri HTTP (no CORS). In `pnpm dev`, use the Vite proxy.
- * Production web builds cannot call cursor.com / grok.com directly.
+ * Prefer Tauri HTTP (no CORS). On the web, use the same-origin `/proxy/*`
+ * path (Vite dev / preview, or the Vercel edge rewrite in production).
+ * A pure static host has no proxy — return cors so the UI can show next steps.
  */
 export async function liveFetch(req: LiveHttpRequest): Promise<LiveHttpResponse | LiveHttpError> {
   const tauriUrl = resolveUrl(req.provider, req.path, "tauri");
@@ -132,16 +156,23 @@ export async function liveFetch(req: LiveHttpRequest): Promise<LiveHttpResponse 
     }
   }
 
-  if (!canUseDevProxy()) {
-    return { ok: false, status: 0, code: "cors", message: corsMessage(req.provider) };
-  }
-
   try {
     const response = await fetch(resolveUrl(req.provider, req.path, "proxy"), {
       method: req.method,
       headers: proxyHeaders(req),
       body: asBodyInit(req.body),
     });
+    const headers = responseHeaders(response);
+    const preview = await response.clone().text();
+    if (
+      responseLooksLikeMissingProxy({
+        proxyHeader: headers[LIVE_PROXY_HEADER],
+        contentType: headers["content-type"],
+        bodyText: preview,
+      })
+    ) {
+      return { ok: false, status: 0, code: "cors", message: corsMessage(req.provider) };
+    }
     return await readResponse(response, "proxy");
   } catch {
     return { ok: false, status: 0, code: "network", message: `Network error calling ${req.provider}` };

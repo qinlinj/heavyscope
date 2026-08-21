@@ -31,5 +31,8 @@ export function formatAdvisorLine(
   if (tightest.risk === "waste") {
     return t("tray.lineWaste", { pool: name, percent });
   }
+  if (tightest.risk === "unconnected") {
+    return t("advisor.noneConnected");
+  }
   return t("tray.lineOnPace", { pool: name, percent });
 }

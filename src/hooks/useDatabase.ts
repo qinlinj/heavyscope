@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { applyAdapterResult } from "@/adapters/apply";
+import { applyAdapterResult, resolvePoolId } from "@/adapters/apply";
 import { adapterSignature, hashSignature } from "@/adapters/hash";
 import { fetchCursorUsage, fetchGrokCredits } from "@/adapters/liveClient";
 import { applyLiveSnapshot } from "@/adapters/liveSync";
@@ -51,6 +51,11 @@ import {
   SETTING_SYNC_LAST_STATUS,
   SETTING_SYNC_SOURCE,
 } from "@/lib/settings";
+import {
+  mergeAppliedPoolIds,
+  parseAppliedPoolIds,
+  SETTING_APPLIED_POOL_IDS,
+} from "@/lib/poolSyncState";
 import { applyTheme, parseTheme, SETTING_THEME, THEME_STORAGE_KEY } from "@/lib/theme";
 import { useSync } from "./useSync";
 
@@ -91,6 +96,16 @@ function writeSyncMeta(store: HeavyScopeDB, status: string, message: string): vo
   store.setSetting(SETTING_SYNC_LAST_MESSAGE, message);
 }
 
+function rememberAppliedPools(store: HeavyScopeDB, hints: string[]): void {
+  const pools = store.listPools();
+  const ids = hints
+    .map((hint) => resolvePoolId(hint, pools))
+    .filter((id): id is string => Boolean(id));
+  if (ids.length === 0) return;
+  const current = parseAppliedPoolIds(store.getSetting(SETTING_APPLIED_POOL_IDS));
+  store.setSetting(SETTING_APPLIED_POOL_IDS, JSON.stringify(mergeAppliedPoolIds(current, ids)));
+}
+
 function writeCursorLiveMeta(
   store: HeavyScopeDB,
   result: LiveProviderResult,
@@ -102,6 +117,11 @@ function writeCursorLiveMeta(
     store.setSetting(SETTING_CURSOR_SYNC_SOURCE, source === "session" ? "session" : "api");
     store.setSetting(SETTING_CURSOR_CONNECTED, "true");
     store.setSetting(SETTING_CURSOR_SYNC_MESSAGE, result.message);
+    if (result.botUnavailable) {
+      store.setSetting(SETTING_GROK_BOT_LIVE, "unavailable");
+    } else if (result.pools.some((item) => item.poolHint === "grok_bot")) {
+      store.setSetting(SETTING_GROK_BOT_LIVE, "ok");
+    }
     writeSyncMeta(store, "ok", result.message);
     return;
   }
@@ -164,8 +184,8 @@ function liveApplyDeps(store: HeavyScopeDB) {
   };
 }
 
-function idleLiveReport(message: string): LiveApplyReport {
-  return { updated: 0, recordsAdded: 0, unmatched: [], skipped: true, message };
+function idleLiveReport(message: string, code?: LiveApplyReport["code"]): LiveApplyReport {
+  return { updated: 0, recordsAdded: 0, unmatched: [], skipped: true, message, code };
 }
 
 async function runCursorLive(
@@ -179,8 +199,12 @@ async function runCursorLive(
   const result = await fetchCursorUsage(token);
   writeCursorLiveMeta(store, result, result.ok ? source : "error");
   if (!result.ok) {
-    return idleLiveReport(result.message);
+    return idleLiveReport(result.message, result.code);
   }
+  rememberAppliedPools(
+    store,
+    result.pools.map((item) => item.poolHint),
+  );
   return applyLiveSnapshot(result, liveApplyDeps(store));
 }
 
@@ -191,8 +215,12 @@ async function runGrokLive(store: HeavyScopeDB, session: string, bearer: string)
   const result = await fetchGrokCredits({ sessionCookie: session, bearerToken: bearer });
   writeGrokLiveMeta(store, result);
   if (!result.ok) {
-    return idleLiveReport(result.message);
+    return idleLiveReport(result.message, result.code);
   }
+  rememberAppliedPools(
+    store,
+    result.pools.map((item) => item.poolHint),
+  );
   return applyLiveSnapshot(result, liveApplyDeps(store));
 }
 
@@ -233,6 +261,10 @@ async function runCursorApply(
     setQuotaTotal: (id, total) => store.setQuotaTotal(id, total),
   });
   store.setSetting(SETTING_CURSOR_SNAPSHOT_HASH, hash);
+  rememberAppliedPools(
+    store,
+    result.records.map((item) => item.poolHint),
+  );
   writeSyncMeta(store, "ok", report.message);
   return report;
 }
@@ -419,6 +451,7 @@ function useDatabaseState(): DatabaseApi {
         unmatched: reports.flatMap((item) => item.unmatched),
         skipped: reports.every((item) => item.skipped),
         message: reports.map((item) => item.message).join(" "),
+        code: reports.find((item) => item.code === "cors")?.code ?? reports.find((item) => item.code)?.code,
       };
     },
     [db, refresh],

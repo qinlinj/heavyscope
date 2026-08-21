@@ -20,6 +20,7 @@ type Props = {
   advice?: PoolAdvice;
   expanded: boolean;
   highlighted?: boolean;
+  unsynced?: boolean;
   warnPercent?: number;
   critPercent?: number;
   onToggle: (poolId: string) => void;
@@ -31,6 +32,7 @@ export function TrayPoolRow({
   advice,
   expanded,
   highlighted = false,
+  unsynced = false,
   warnPercent,
   critPercent,
   onToggle,
@@ -64,14 +66,19 @@ export function TrayPoolRow({
         <span
           className={cn(
             "shrink-0 text-xs font-semibold tabular-nums",
-            tone === "ok" && "text-emerald-600 dark:text-emerald-400",
-            tone === "warn" && "text-amber-600 dark:text-amber-400",
-            tone === "crit" && "text-red-600 dark:text-red-400",
+            unsynced && "text-muted-foreground",
+            !unsynced && tone === "ok" && "text-emerald-600 dark:text-emerald-400",
+            !unsynced && tone === "warn" && "text-amber-600 dark:text-amber-400",
+            !unsynced && tone === "crit" && "text-red-600 dark:text-red-400",
           )}
         >
-          {view.percent.toFixed(0)}%
+          {unsynced ? t("pool.awaitingConnect") : `${view.percent.toFixed(0)}%`}
         </span>
       </div>
+      {unsynced ? (
+        <p className="mt-1.5 text-[11px] leading-tight text-muted-foreground">{t("live.notConnected")}</p>
+      ) : (
+        <>
       <Progress
         value={view.percent}
         className={cn(
@@ -87,11 +94,15 @@ export function TrayPoolRow({
         </span>
         <span className="shrink-0 tabular-nums">{formatCountdown(view.resetAt, i18n.language)}</span>
       </div>
+        </>
+      )}
 
       {expanded ? (
         <div className="mt-1.5 space-y-1 border-t border-foreground/10 pt-1.5 text-[11px]">
           <p className="tabular-nums text-foreground">
-            {formatAmount(pool.quota_used, pool.unit)} / {formatAmount(pool.quota_total, pool.unit)}
+            {unsynced
+              ? t("pool.awaitingConnect")
+              : `${formatAmount(pool.quota_used, pool.unit)} / ${formatAmount(pool.quota_total, pool.unit)}`}
           </p>
           {advice ? (
             <p className="text-muted-foreground">
@@ -112,7 +123,9 @@ export function TrayPoolRow({
                   ? t("advisor.riskOverspend")
                   : advice.risk === "waste"
                     ? t("advisor.riskWaste")
-                    : t("advisor.riskOk")}
+                    : advice.risk === "unconnected"
+                      ? t("pool.awaitingConnect")
+                      : t("advisor.riskOk")}
               </span>
             </p>
           ) : null}

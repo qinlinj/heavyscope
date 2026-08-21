@@ -58,6 +58,7 @@ https://github.com/qinlinj/heavyscope
 - 0.16.0 — web title + Full/Tall cards fill the grid (done)
 - 0.17.0 — Apple-style live tile displacement while dragging in Edit mode
 - 0.18.0 — short Quota Overview, scrollable Recent Records, Demo removed from the product
+- 0.19.0 — production web same-origin live proxy + honest advisor / not-connected display
 
 ## Commits
 

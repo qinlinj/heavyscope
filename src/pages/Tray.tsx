@@ -19,7 +19,10 @@ import { useDatabase } from "@/hooks/useDatabase";
 import { useTileDragPreview } from "@/hooks/useTileDragPreview";
 import { useWidgetLayout } from "@/hooks/useWidgetLayout";
 import { formatAdvisorLine } from "@/lib/advisorLine";
+import { useLiveProxyAvailable } from "@/hooks/useLiveProxy";
 import { advisePool, crossPoolAdvice, tightestAdvice } from "@/lib/burnRate";
+import { liveUserMessage } from "@/lib/liveFlash";
+import { hasSuccessfulApply, isUnsyncedPreset } from "@/lib/poolSyncState";
 import { chartRecords } from "@/lib/charts";
 import { hiddenTiles, visibleTiles, type LayoutTile } from "@/lib/dashboardLayout";
 import { formatDateTime } from "@/lib/format";
@@ -63,11 +66,17 @@ export function TrayPage() {
   const [expandedPoolId, setExpandedPoolId] = useState<string | null>(null);
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncFlash, setSyncFlash] = useState<string | null>(null);
+  const proxyAvailable = useLiveProxyAvailable();
 
   const liveRecords = useMemo(() => chartRecords(records), [records]);
   const advices = useMemo(
-    () => pools.map((pool) => advisePool(pool, liveRecords)),
-    [pools, liveRecords],
+    () =>
+      pools.map((pool) =>
+        advisePool(pool, liveRecords, new Date(), {
+          hasSuccessfulApply: hasSuccessfulApply(pool.id, liveRecords, settings),
+        }),
+      ),
+    [pools, liveRecords, settings],
   );
   const tightest = useMemo(() => tightestAdvice(advices), [advices]);
   const switchAdvice = useMemo(() => crossPoolAdvice(advices), [advices]);
@@ -113,7 +122,13 @@ export function TrayPage() {
     setSyncBusy(true);
     try {
       const report = await runTrayRefresh(refreshLiveProviders);
-      setSyncFlash(report.message);
+      setSyncFlash(
+        liveUserMessage(t, {
+          message: report.message,
+          code: report.code,
+          proxyAvailable,
+        }),
+      );
     } finally {
       setSyncBusy(false);
     }
@@ -293,6 +308,7 @@ export function TrayPage() {
                       advice={advices.find((item) => item.poolId === pool.id)}
                       expanded={expandedPoolId === pool.id}
                       highlighted={highlightedIds.has(pool.id)}
+                      unsynced={isUnsyncedPreset(pool, liveRecords, settings)}
                       warnPercent={thresholds.warn}
                       critPercent={thresholds.crit}
                       onToggle={(id) => setExpandedPoolId((current) => toggleExpandedPoolId(current, id))}
@@ -324,6 +340,7 @@ export function TrayPage() {
                     ? ` — ${providerSync.grok.expired ? t("live.expired") : providerSync.grok.message}`
                     : ""}
                 </p>
+                {proxyAvailable === false ? <p className="text-amber-600 dark:text-amber-400">{t("live.webNoProxy")}</p> : null}
                 {syncFlash ? <p>{syncFlash}</p> : null}
               </div>
 
@@ -357,6 +374,7 @@ export function TrayPage() {
         warnPercent={thresholds.warn}
         critPercent={thresholds.crit}
         compact={tile.size === "sm"}
+        unsynced={isUnsyncedPreset(pool, liveRecords, settings)}
         showActions={false}
         showRecent={false}
         showAdvice={false}

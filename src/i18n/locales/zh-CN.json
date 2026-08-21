@@ -60,6 +60,7 @@
     "intervalMinutes": "{{count}} 分钟",
     "connected": "已连接",
     "notConnected": "未连接",
+    "webNoProxy": "当前网页构建无法实时刷新。请使用桌面应用，或运行 `pnpm dev`。",
     "expired": "已断开 / 已过期",
     "tokenStored": "令牌已保存在本机。粘贴新值即可替换。",
     "lastSynced": "上次同步",
@@ -91,7 +92,8 @@
     "percent": "使用率",
     "preset": "预置",
     "custom": "自定义",
-    "recent": "最近记录"
+    "recent": "最近记录",
+    "awaitingConnect": "待连接"
   },
   "presets": {
     "preset-grok-heavy": "Grok Heavy 每周共享池",
@@ -232,7 +234,8 @@
     "riskOverspend": "超支风险",
     "switchTitle": "切换建议",
     "switchSuggestion": "{{from}} 消耗过快。把新任务切到仍有余量的 {{to}}。",
-    "noReset": "未设置重置"
+    "noReset": "未设置重置",
+    "noneConnected": "还没有已连接的额度池，暂不排名。"
   },
   "charts": {
     "title": "用量趋势",

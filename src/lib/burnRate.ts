@@ -3,7 +3,7 @@ import { remaining, usagePercent } from "@/lib/format";
 
 export const MIN_DAY_FRACTION = 1 / 24;
 
-export type RiskLevel = "overspend" | "waste" | "ok";
+export type RiskLevel = "overspend" | "waste" | "ok" | "unconnected";
 
 export type CrossPoolAdvice = {
   fromPoolId: string;
@@ -68,6 +68,7 @@ export function risk(input: {
   timeElapsedFraction: number;
   daysLeft: number;
 }): RiskLevel {
+  if (input.usedFraction <= 0) return "ok";
   if (input.averageDaily > input.recommendedDaily * 1.05) return "overspend";
   if (input.usedFraction < 0.4 * input.timeElapsedFraction && input.daysLeft > 2) {
     return "waste";
@@ -118,6 +119,7 @@ export function advisePool(
   pool: Pool,
   records: UsageRecord[],
   now: Date = new Date(),
+  opts?: { hasSuccessfulApply?: boolean },
 ): PoolAdvice {
   const daysLeft = daysUntilReset(pool.reset_at, now);
   const daysElapsed = daysElapsedInCycle(pool.reset_at, pool.reset_cycle, now, pool.created_at);
@@ -128,6 +130,24 @@ export function advisePool(
   const cycleLength = daysElapsed + daysLeft;
   const usedFraction = pool.quota_total > 0 ? pool.quota_used / pool.quota_total : 0;
   const timeElapsedFraction = cycleLength > 0 ? daysElapsed / cycleLength : 1;
+  const applied =
+    opts?.hasSuccessfulApply ??
+    records.some(
+      (row) =>
+        row.pool_id === pool.id && (row.source === "sync" || row.source === "import") && row.amount > 0,
+    );
+  const level: RiskLevel =
+    !applied || pool.quota_used === 0
+      ? applied
+        ? "ok"
+        : "unconnected"
+      : risk({
+          averageDaily: avgDaily,
+          recommendedDaily: recDaily,
+          usedFraction,
+          timeElapsedFraction,
+          daysLeft,
+        });
   return {
     poolId: pool.id,
     daysLeft,
@@ -136,25 +156,24 @@ export function advisePool(
     todayUsedAmount: usedToday,
     todaySafeRemaining: todaySafeRemaining(recDaily, usedToday),
     averageDaily: avgDaily,
-    risk: risk({
-      averageDaily: avgDaily,
-      recommendedDaily: recDaily,
-      usedFraction,
-      timeElapsedFraction,
-      daysLeft,
-    }),
+    risk: level,
     projectionAtReset: projectionAtReset(pool.quota_used, avgDaily, daysLeft),
     usagePercent: usagePercent(pool),
     remaining: leftover,
   };
 }
 
+function connectedAdvices(advices: readonly PoolAdvice[]): PoolAdvice[] {
+  return advices.filter((item) => item.risk !== "unconnected");
+}
+
 export function crossPoolAdvice(advices: PoolAdvice[]): CrossPoolAdvice | null {
-  const stressed = advices.find(
+  const usable = connectedAdvices(advices);
+  const stressed = usable.find(
     (item) => item.risk === "overspend" || item.usagePercent >= 80,
   );
   if (!stressed) return null;
-  const target = advices.find(
+  const target = usable.find(
     (item) => item.poolId !== stressed.poolId && item.usagePercent < 60 && item.remaining > 0,
   );
   if (!target) return null;
@@ -173,13 +192,14 @@ export function compareAdviceTightness(a: PoolAdvice, b: PoolAdvice): number {
 }
 
 export function tightestAdvice(advices: PoolAdvice[]): PoolAdvice | null {
-  if (advices.length === 0) return null;
-  return [...advices].sort(compareAdviceTightness)[0];
+  const usable = connectedAdvices(advices);
+  if (usable.length === 0) return null;
+  return [...usable].sort(compareAdviceTightness)[0];
 }
 
 /** Tightest pools first, capped at `limit` (tray collapsed highlight uses 1–2). */
 export function tightestAdvices(advices: PoolAdvice[], limit = 2): PoolAdvice[] {
-  return [...advices].sort(compareAdviceTightness).slice(0, Math.max(0, limit));
+  return connectedAdvices(advices).sort(compareAdviceTightness).slice(0, Math.max(0, limit));
 }
 
 export function riskTone(level: RiskLevel): "ok" | "warn" | "crit" {

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { UsageRecord } from "@/db/schema";
+import type { Pool, UsageRecord } from "@/db/schema";
 import {
   MIN_DAY_FRACTION,
+  advisePool,
   crossPoolAdvice,
   daysUntilReset,
   projectionAtReset,
@@ -144,6 +145,18 @@ describe("risk", () => {
       }),
     ).toBe("ok");
   });
+
+  it("does not flag waste when usage is zero", () => {
+    expect(
+      risk({
+        averageDaily: 0,
+        recommendedDaily: 20,
+        usedFraction: 0,
+        timeElapsedFraction: 0.4,
+        daysLeft: 5,
+      }),
+    ).toBe("ok");
+  });
 });
 
 describe("crossPoolAdvice", () => {
@@ -197,5 +210,54 @@ describe("tightestAdvices", () => {
 
   it("returns an empty list when there are no pools", () => {
     expect(tightestAdvices([], 2)).toEqual([]);
+  });
+});
+
+describe("advisePool", () => {
+  it("does not call zero usage waste on a new unsynced database", () => {
+    const now = new Date("2026-08-21T12:00:00.000Z");
+    const pool: Pool = {
+      id: "preset-grok-heavy",
+      name: "Grok Heavy Weekly Shared Pool",
+      type: "credits",
+      quota_total: 100,
+      quota_used: 0,
+      reset_at: "2026-08-24T00:00:00.000Z",
+      reset_cycle: "weekly",
+      unit: "credits",
+      color: "#38bdf8",
+      is_preset: 1,
+      created_at: "2026-08-21T00:00:00.000Z",
+      updated_at: "2026-08-21T00:00:00.000Z",
+    };
+    const unsynced = advisePool(pool, [], now, { hasSuccessfulApply: false });
+    expect(unsynced.risk).toBe("unconnected");
+    expect(unsynced.risk).not.toBe("waste");
+    const syncedZero = advisePool(pool, [], now, { hasSuccessfulApply: true });
+    expect(syncedZero.risk).toBe("ok");
+  });
+});
+
+describe("tightestAdvices extra", () => {
+  it("does not rank an unconnected Grok Heavy pool as tightest", () => {
+    const ranked = tightestAdvices(
+      [
+        advice({
+          poolId: "preset-grok-heavy",
+          risk: "unconnected",
+          usagePercent: 0,
+          todaySafeRemaining: 20,
+        }),
+        advice({ poolId: "preset-cursor-models", risk: "ok", usagePercent: 12, todaySafeRemaining: 40 }),
+      ],
+      2,
+    );
+    expect(ranked.map((item) => item.poolId)).toEqual(["preset-cursor-models"]);
+    expect(tightestAdvice(ranked)?.poolId).toBe("preset-cursor-models");
+    expect(
+      tightestAdvice([
+        advice({ poolId: "preset-grok-heavy", risk: "unconnected", usagePercent: 0 }),
+      ]),
+    ).toBeNull();
   });
 });

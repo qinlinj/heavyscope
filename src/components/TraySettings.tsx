@@ -11,6 +11,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useDatabase } from "@/hooks/useDatabase";
+import { useLiveProxyAvailable } from "@/hooks/useLiveProxy";
+import { liveUserMessage } from "@/lib/liveFlash";
 import { isMacDesktop, readCursorSessionTokenFromApp } from "@/lib/desktop";
 import { formatGrokProductLine } from "@/adapters/grokLive";
 import { formatDateTime } from "@/lib/format";
@@ -64,6 +66,7 @@ export function TraySettings() {
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
   const [parsedOpen, setParsedOpen] = useState(false);
+  const proxyAvailable = useLiveProxyAvailable();
 
   const interval = String(parseSyncInterval(settings[SETTING_SYNC_INTERVAL_MIN]));
   const enabled = settings[SETTING_SYNC_ENABLED] === "true";
@@ -78,7 +81,7 @@ export function TraySettings() {
     setBusy(true);
     try {
       const report = await connectCursor(cursorToken, sourceHint);
-      setFlash(report.message);
+      setFlash(liveUserMessage(t, { message: report.message, code: report.code, proxyAvailable }));
       if (!report.skipped) setCursorToken("");
     } finally {
       setBusy(false);
@@ -95,7 +98,7 @@ export function TraySettings() {
       }
       setCursorToken(token);
       const report = await connectCursor(token, "session");
-      setFlash(report.message);
+      setFlash(liveUserMessage(t, { message: report.message, code: report.code, proxyAvailable }));
       if (!report.skipped) setCursorToken("");
     } finally {
       setBusy(false);
@@ -106,7 +109,7 @@ export function TraySettings() {
     setBusy(true);
     try {
       const report = await connectGrok(grokCookie, grokBearer);
-      setFlash(report.message);
+      setFlash(liveUserMessage(t, { message: report.message, code: report.code, proxyAvailable }));
       if (!report.skipped) {
         setGrokCookie("");
         setGrokBearer("");
@@ -120,7 +123,7 @@ export function TraySettings() {
     setBusy(true);
     try {
       const report = await runTrayRefresh(refreshLiveProviders);
-      setFlash(report.message);
+      setFlash(liveUserMessage(t, { message: report.message, code: report.code, proxyAvailable }));
     } finally {
       setBusy(false);
     }
@@ -129,6 +132,9 @@ export function TraySettings() {
   return (
     <div className="min-w-0 space-y-3 overflow-x-auto text-xs">
       <p className="leading-snug text-muted-foreground">{t("tray.settingsHint")}</p>
+      {proxyAvailable === false ? (
+        <p className="leading-snug text-amber-600 dark:text-amber-400">{t("live.webNoProxy")}</p>
+      ) : null}
 
       <section className="space-y-2 rounded-lg border border-foreground/10 p-2">
         <div className="flex items-center justify-between gap-2">
