@@ -103,9 +103,20 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] Advisor: `quota_used === 0` or never applied is not waste; unconnected Grok Heavy is not tightest; Vitest for zero usage
 - [x] Unsynced presets show 待连接 / Not connected instead of placeholder totals
 - [x] Version 0.19.0 (package.json + src-tauri + README + docs/RELEASE.md)
+- [x] Settings card reorder (0.20.0: Data sources first)
 - [ ] Persist Day / Week / Month scale (currently component state only)
 - [ ] Optional heatmap filter by pool
-- [ ] Settings card reorder (next UI package)
+
+## 0.20.0 — first-run Settings jump + Refresh-primary toolbar
+
+- [x] Disconnected Cursor: dashboard subtitle is an explicit next step (paste WorkosCursorSessionToken, then refresh Models / Other / Grok Bot) with an Open Settings link
+- [x] Settings opens with Data sources first; language / theme / alert thresholds below
+- [x] Connected Cursor restores the short local-remaining-quota subtitle
+- [x] Normal-mode toolbar: Refresh now is primary; Edit is outline; Record usage / Add pool are in More
+- [x] Empty Recent keeps the block and shows one empty-state sentence
+- [x] Version 0.20.0 (package.json + src-tauri + README + docs/RELEASE.md)
+- [ ] Persist Day / Week / Month scale (currently component state only)
+- [ ] Optional heatmap filter by pool
 
 ## 0.18.0 — product polish (overview / Recent / no Demo)
 

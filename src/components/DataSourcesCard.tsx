@@ -191,7 +191,7 @@ export function DataSourcesCard() {
           : t("settings.lastSyncNever");
 
   return (
-    <Card size="sm">
+    <Card size="sm" id="data-sources">
       <CardHeader>
         <CardTitle>{t("settings.dataSources")}</CardTitle>
         <CardDescription>{t("settings.dataSourcesHint")}</CardDescription>

@@ -11,6 +11,9 @@
   "dashboard": {
     "title": "Quota overview",
     "subtitle": "Local remaining quota.",
+    "subtitleConnect": "Go to Settings, paste WorkosCursorSessionToken, then refresh Models / Other / Grok Bot.",
+    "openSettings": "Open Settings",
+    "moreActions": "More",
     "addPool": "Add pool",
     "recordUsage": "Record usage",
     "empty": "No pools yet. Add one to get started."
@@ -93,6 +96,7 @@
     "preset": "Preset",
     "custom": "Custom",
     "recent": "Recent records",
+    "recentEmpty": "Increments appear after you connect.",
     "awaitingConnect": "Not connected"
   },
   "presets": {

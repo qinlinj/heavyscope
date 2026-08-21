@@ -6,6 +6,20 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-08-21
+
+### Added
+
+- Disconnected first-run: the dashboard subtitle is an explicit next step (zh-CN + en) — go to Settings, paste `WorkosCursorSessionToken`, then refresh Models / Other / Grok Bot. An **Open Settings** control links to `/settings#data-sources`.
+- PoolCard Recent stays visible when empty and shows one empty-state line (increments appear after you connect).
+
+### Changed
+
+- Settings opens with **Data sources** first. Language, theme, and alert thresholds sit below it.
+- Normal-mode toolbar: **Refresh now** is the only primary button. Edit is outline. Record usage and Add pool sit in a More menu. Layout grip / drag handle stays Edit-only.
+- When Cursor is connected, the dashboard subtitle is the short local-remaining-quota line again.
+- Version 0.20.0 (package.json + src-tauri + README + docs/RELEASE.md). No adapter, liveHttp, burn-rate, heatmap, drag, tray, or pie-visibility changes.
+
 ## [0.19.0] - 2026-08-21
 
 ### Added

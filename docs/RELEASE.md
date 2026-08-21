@@ -2,6 +2,15 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.20.0
+
+- First-run (Cursor not connected): dashboard subtitle tells you to open Settings, paste `WorkosCursorSessionToken`, then refresh Models / Other / Grok Bot. **Open Settings** jumps to Data sources.
+- Settings opens with Data sources at the top. Language, theme, and alert thresholds are below.
+- Connected Cursor keeps the short local remaining-quota subtitle.
+- Normal-mode toolbar: Refresh now is the primary action. Edit is secondary. Record usage and Add pool are in More. No grip in normal mode.
+- Empty Recent lists show one empty-state sentence instead of hiding the block.
+- Version 0.20.0.
+
 ## v0.19.0
 
 - Production web live refresh via same-origin `/proxy/cursor`, `/proxy/grok`, `/proxy/grok-cli` (Vite + Vercel Edge rewrite). Forwards `X-HeavyScope-Cookie` / `X-HeavyScope-Authorization`. Tokens are never logged.
