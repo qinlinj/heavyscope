@@ -1,4 +1,4 @@
-/** Deterministic demo usage so charts and the advisor look alive. */
+/** Test fixture only. The product UI and first-open seed must not write these rows. */
 
 import type { UsageRecord } from "@/db/schema";
 import { PRESET_POOL_IDS } from "@/lib/poolName";
@@ -6,11 +6,6 @@ import { SETTING_DEMO_SEEDED } from "@/lib/settings";
 
 export const DEMO_SEEDED_VALUE = "1";
 export const DEMO_SEED_DAYS = 10;
-
-export type DemoSeedReport = {
-  skipped: boolean;
-  inserted: number;
-};
 
 type PoolPattern = {
   id: (typeof PRESET_POOL_IDS)[number];

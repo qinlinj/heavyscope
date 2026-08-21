@@ -47,6 +47,13 @@ export function formatAmount(value: number, unit: string): string {
   return `${formatted} ${unit}`;
 }
 
+/** Recent-record amounts: plus for increases, still routed through formatAmount. */
+export function formatSignedAmount(value: number, unit: string): string {
+  const formatted = formatAmount(value, unit);
+  if (value > 0) return `+${formatted}`;
+  return formatted;
+}
+
 export function formatCountdown(resetAt: string | null, locale: string): string {
   if (!resetAt) return "—";
   const target = new Date(resetAt).getTime();

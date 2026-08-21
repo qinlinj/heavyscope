@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { defaultPools } from "@/db/defaults";
 import { PRESET_POOL_IDS } from "@/lib/poolName";
 import {
   DEMO_SEED_DAYS,
@@ -60,5 +61,13 @@ describe("shouldApplyDemoSeed", () => {
     expect(shouldApplyDemoSeed(null)).toBe(true);
     expect(shouldApplyDemoSeed("1")).toBe(false);
     expect(shouldApplyDemoSeed("1", true)).toBe(true);
+  });
+});
+
+describe("first-open pools", () => {
+  it("do not include demo usage — presets start at zero used", () => {
+    const pools = defaultPools();
+    expect(pools.every((pool) => pool.quota_used === 0)).toBe(true);
+    expect(pools.map((pool) => pool.id).sort()).toEqual([...PRESET_POOL_IDS].sort());
   });
 });

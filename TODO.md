@@ -95,6 +95,17 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Verify Grok Bot auto-track on a real Bearer (`Api 11%` → Bot) without manual calibrate
 - [x] Do not start macOS tray 1.5x / horizontal-scroll work here (moved to 0.13.0)
 
+## 0.18.0 — product polish (overview / Recent / no Demo)
+
+- [x] Quota overview stays short + `max-h-16`; sync lines inside the scroll box; title row stays full width
+- [x] Recent records use `formatSignedAmount` / `formatAmount`; PoolCard list is a fixed ~4–6 row scroller
+- [x] Remove Load demo data from Settings; first-open does not write demo rows; `demoSeed.ts` stays a test fixture
+- [x] Charts / History default still exclude `source=demo`
+- [x] Normal mode has no grip / size / hide; PoolCard actions only when `editingLayout`
+- [x] Version 0.18.0 (package.json + src-tauri + README + docs/RELEASE.md)
+- [ ] Persist Day / Week / Month scale (currently component state only)
+- [ ] Optional heatmap filter by pool
+
 ## 0.17.0 — live tile displacement in Edit mode
 
 - [x] While dragging in `editingLayout`, compute insert index from pointer (first half = before, second half = after, or the gap)

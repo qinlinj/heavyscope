@@ -146,7 +146,7 @@ export function History() {
                       </span>
                     </td>
                     <td className="px-4 py-3 tabular-nums">
-                      {pool ? formatAmount(record.amount, pool.unit) : record.amount}
+                      {formatAmount(record.amount, pool?.unit ?? "")}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {t(`history.sources.${record.source}`)}

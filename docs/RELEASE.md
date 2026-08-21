@@ -2,6 +2,14 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.18.0
+
+- Quota overview stays short and scrollable (`max-h-16`). Sync status lines stay in that box. The title row stays full width.
+- Recent records amounts go through `formatAmount` (max two decimals; integers / request counts use 0). The list is a fixed ~4–6 row scroller and does not grow the card.
+- Demo is gone from the product: no Settings “Load demo data”, no first-open demo seed. Charts / History still hide leftover `source=demo` rows unless History filters for Demo. `demoSeed.ts` remains a test fixture.
+- Normal mode has no grip / size / hide. PoolCard edit / delete only in Edit mode.
+- Version 0.18.0.
+
 ## v0.17.0
 
 - Edit-mode widget drag uses a live insertion slot: other cards slide aside while the pointer is down. Top / first half of a card inserts before it; bottom / second half inserts after. Drop writes `dashboard_layout`; Escape or leaving the window cancels.

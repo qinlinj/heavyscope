@@ -1,4 +1,4 @@
-import { ClipboardPaste, Copy, Download, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { ClipboardPaste, Copy, Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -31,7 +31,6 @@ import {
   parseBackup,
   type BackupMode,
 } from "@/lib/backup";
-import { isDemoSeeded } from "@/lib/demoSeed";
 import { formatAmount, usagePercent } from "@/lib/format";
 import { displayPoolName } from "@/lib/poolName";
 import {
@@ -66,7 +65,6 @@ export function Settings() {
     thresholds,
     exportLocalBackup,
     importLocalBackup,
-    applyDemoSeed,
     settings,
   } = useDatabase();
   const [formOpen, setFormOpen] = useState(false);
@@ -77,10 +75,8 @@ export function Settings() {
   const [backupMode, setBackupMode] = useState<BackupMode>("merge");
   const [backupFlash, setBackupFlash] = useState<string | null>(null);
   const [copyFlash, setCopyFlash] = useState<string | null>(null);
-  const [demoFlash, setDemoFlash] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Pool | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
-  const [demoOpen, setDemoOpen] = useState(false);
   const [backupOpen, setBackupOpen] = useState(false);
   const [replaceOpen, setReplaceOpen] = useState(false);
 
@@ -152,23 +148,6 @@ export function Settings() {
       window.clearTimeout(timeoutId);
       setBackupFlash(t("settings.backupPasteFailed"));
     }
-  }
-
-  function runDemoSeed(force: boolean) {
-    const report = applyDemoSeed(force);
-    if (report.skipped) {
-      setDemoFlash(t("settings.demoSkipped"));
-      return;
-    }
-    setDemoFlash(t("settings.demoApplied", { count: report.inserted }));
-  }
-
-  function handleDemoSeed() {
-    if (isDemoSeeded(settings)) {
-      setDemoOpen(true);
-      return;
-    }
-    runDemoSeed(false);
   }
 
   async function onBackupFile(event: ChangeEvent<HTMLInputElement>) {
@@ -401,15 +380,6 @@ export function Settings() {
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">{t("settings.demoHint")}</p>
-            <Button size="sm" disabled={!ready} onClick={handleDemoSeed}>
-              <Sparkles data-icon="inline-start" />
-              {t("settings.demoLoad")}
-            </Button>
-            {demoFlash && <p className="text-xs text-foreground/80">{demoFlash}</p>}
-          </div>
-
-          <div className="space-y-2">
             <p className="text-sm text-muted-foreground">{t("settings.backupExportHint")}</p>
             <div className="flex flex-wrap gap-2">
               <Button size="sm" disabled={!ready} onClick={handleExport}>
@@ -544,14 +514,6 @@ export function Settings() {
         destructive
         onOpenChange={setResetOpen}
         onConfirm={resetLocalData}
-      />
-      <ConfirmDialog
-        open={demoOpen}
-        title={t("settings.demoTitle")}
-        description={t("settings.demoConfirmAgain")}
-        confirmLabel={t("settings.demoLoad")}
-        onOpenChange={setDemoOpen}
-        onConfirm={() => runDemoSeed(true)}
       />
       <ConfirmDialog
         open={backupOpen}
