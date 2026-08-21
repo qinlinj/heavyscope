@@ -6,6 +6,20 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-08-21
+
+### Added
+
+- Cursor Spending live sync from unofficial dashboard endpoints (same `WorkosCursorSessionToken` as usage-summary). Refresh now and the interval tick can fill **three** pools from a Cursor session alone: Grok Bot (`grok_bot` → `preset-grok-bot`), Cursor Models (`cursor_models` → `preset-cursor-models`), and Cursor Other $400 (`cursor_other` → `preset-cursor-other`).
+- `POST /api/dashboard/get-current-period-usage` for cycle limits (`autoPercentUsed`, `planUsage.totalSpend` / `limit` in cents). `POST /api/dashboard/get-aggregated-usage-events` (and filtered events if needed) for a conservative Grok Bot / Grok API / Agents SKU row. `GET /api/usage-summary` remains a Models % fallback.
+- zh-CN / en `live.cursorExpired` when the Cursor session returns HTTP 401/403.
+
+### Changed
+
+- Cursor Other is a **USD** pool (`planUsage.totalSpend` / `limit`, default total $400). It is no longer mapped from `apiPercentUsed` as 0–100%.
+- Grok Bot from Cursor spending is omitted unless a real Bot/API/Agents row exists. Composer, Cursor Grok chat models, and Heavy are never used as Bot. Grok.com proto / CLI billing stays as a supplement.
+- Version 0.14.0 (package.json + src-tauri). Tokens stay local; backups still redact the session token. Vite `/proxy/cursor` sends `Origin: https://cursor.com` for dashboard POSTs.
+
 ## [0.13.0] - 2026-08-20
 
 ### Fixed

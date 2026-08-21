@@ -95,6 +95,22 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Verify Grok Bot auto-track on a real Bearer (`Api 11%` → Bot) without manual calibrate
 - [x] Do not start macOS tray 1.5x / horizontal-scroll work here (moved to 0.13.0)
 
+## 0.14.0 — Cursor Spending live sync
+
+- [x] `POST /api/dashboard/get-current-period-usage` + aggregations/events + usage-summary fallback
+- [x] Cursor Models stays a request/% pool from `autoPercentUsed` (`quotaTotal=100`)
+- [x] Cursor Other is USD from `planUsage.totalSpend` / `limit` (default $400); stop mapping `apiPercentUsed` as 0–100%
+- [x] Grok Bot from a conservative Bot/API/Agents SKU row only; omit (unavailable) when missing; do not invent a weekly cap
+- [x] Exclude Composer, Cursor Grok chat models, and Heavy from `grok_bot`
+- [x] HTTP 401/403 → `code: "expired"` + zh-CN/en `live.cursorExpired`
+- [x] Grok.com proto / CLI billing stays as a supplement
+- [x] Reuse `liveFetch` / Vite proxy / Tauri `plugin-http` + `cursorCookieHeader`
+- [x] `applyAbsoluteUsage` unchanged (absolute used/total; `source=sync` only when used rises)
+- [x] Backup redaction still omits the session token
+- [x] Vitest fixtures: three pools, missing Grok, Other USD, 401/403
+- [x] Version 0.14.0 (package.json + src-tauri)
+- [ ] Verify three-pool Refresh now on a real Cursor session (Spending dashboard)
+
 ## 0.13.0 — tray product polish
 
 - [x] Default `/tray` lists every visible `tray_layout` pool (scroll); no hard cap of 2. Tightest 1–2 stay highlighted. Hidden stay hidden; new pools appear; deleted drop

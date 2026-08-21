@@ -3,8 +3,10 @@ export { cursorAdapter, parseCursorInput } from "./cursor";
 export {
   cursorCookieHeader,
   deriveCursorSessionTokenFromJwt,
+  isCursorGrokBotSku,
   mapCursorUsageResponse,
   mapCursorUsageSummary,
+  mergeCursorSpendingSources,
   normalizeCursorSessionToken,
 } from "./cursorLive";
 export { grokAdapter } from "./grok";

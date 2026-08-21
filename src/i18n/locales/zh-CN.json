@@ -41,7 +41,8 @@
   },
   "live": {
     "cursorTitle": "Cursor 实时连接",
-    "cursorHint": "登录 cursor.com 后，从 Cookie 复制 WorkosCursorSessionToken。只保存在本地设置表，不会写入日志。",
+    "cursorHint": "登录 cursor.com 后，从 Cookie 复制 WorkosCursorSessionToken。立即刷新和定时同步会从 Spending 仪表盘写入 Grok Bot、Cursor 模型池和 Cursor 其他模型 $400。只保存在本地设置表，不会写入日志。",
+    "cursorExpired": "Cursor 会话已过期。请从 cursor.com Cookie 重新粘贴 WorkosCursorSessionToken。",
     "cursorToken": "WorkosCursorSessionToken",
     "cursorTokenPlaceholder": "粘贴 Cookie 值…",
     "cursorReadApp": "从 Cursor 应用读取（Mac）",

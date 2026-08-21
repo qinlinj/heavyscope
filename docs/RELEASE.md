@@ -2,6 +2,13 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.14.0
+
+- Cursor Spending live sync: a saved `WorkosCursorSessionToken` can fill Grok Bot, Cursor Models, and Cursor Other $400 without a Grok cookie/bearer.
+- Other is USD (`planUsage.totalSpend` / `limit`, default $400), not `apiPercentUsed` as 0–100%. Models stay a % pool from `autoPercentUsed`.
+- Grok Bot is mapped only from a real Bot/API/Agents SKU row. Missing row → unavailable. Composer / Cursor Grok / Heavy are excluded. Grok.com connect stays as a supplement.
+- HTTP 401/403 marks the Cursor session expired. Version 0.14.0.
+
 ## v0.13.0
 
 - macOS `/tray` product polish: every Layout-visible pool appears in the default list (scroll; no 1–2 cap). Tightest 1–2 stay highlighted. Hidden tiles stay hidden.

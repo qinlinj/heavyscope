@@ -4,7 +4,7 @@ Local-first multi-quota monitoring panel for SuperGrok Heavy and Cursor Ultra.
 
 HeavyScope helps you see how fast you are burning weekly or monthly quotas, when a pool will reset, and whether you should switch work to a pool with more headroom. The same React UI runs as a web app and inside a Tauri 2 desktop shell. Quota data stays on your machine. There is no HeavyScope cloud account.
 
-Current product version is **0.13.0**.
+Current product version is **0.14.0**.
 
 ## Features
 
@@ -97,13 +97,16 @@ The cookie is often `user_01…%3A%3AeyJ…` (URL-encoded `::`). Raw `user_01…
 
 On a **real Mac** desktop build you can use **Read from Cursor app (Mac)**. That command only reads `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb` key `cursorAuth/accessToken` and derives `sub::jwt`. It never writes the database. Linux CI compiles a stub. See [docs/MACOS.md](docs/MACOS.md).
 
-Live mapping (unofficial `GET https://cursor.com/api/usage-summary`, same two-pool model used by AIUsageBar / cursor-stats):
+Live mapping (unofficial Cursor Spending endpoints, same cookie as [cursor.com/dashboard/spending](https://cursor.com/dashboard/spending)). A saved `WorkosCursorSessionToken` alone can fill three pools:
 
-- `preset-cursor-models` = Cursor Models (Auto/Composer) from `individualUsage.plan.autoPercentUsed`. Stored as `quota_total=100`, `quota_used=autoPercentUsed`, unit `%`.
-- `preset-cursor-other` = Other Models from `apiPercentUsed`. If that field is missing and on-demand has a numeric limit, on-demand % may be used. When on-demand is enabled with a numeric limit, the pool note can also show $ used/limit.
-- `reset_at` = `billingCycleEnd` for both pools. `reset_cycle` = monthly.
+- `preset-cursor-models` = Cursor Models (Auto / Composer / Cursor Grok) from `planUsage.autoPercentUsed` on `POST /api/dashboard/get-current-period-usage`, falling back to `GET /api/usage-summary` `individualUsage.plan.autoPercentUsed`. Stored as `quota_total=100`, `quota_used=autoPercentUsed`, unit `%`.
+- `preset-cursor-other` = Other Models as a **USD** pool from `planUsage.totalSpend` / `planUsage.limit` (cents → dollars). If the limit is missing or 0, the default total is **$400**. `individualUsage.onDemand.used/limit` (cents) is accepted when plan spend is missing. Other is **not** mapped from `apiPercentUsed` as 0–100%.
+- `preset-grok-bot` = only a real Grok Bot / Grok API / Agents SKU row from `POST /api/dashboard/get-aggregated-usage-events` (`aggregations[].modelIntent`) or `get-filtered-usage-events`. Composer, Cursor Grok chat models (`cursor-grok`, `grok-2/3/4`), and Heavy are excluded. If no matching row exists the pool stays unavailable — no invented number. If the row has used+limit those are written; cents-only used is written as USD and **no weekly cap is invented**.
+- `reset_at` = `billingCycleEnd` (ISO or epoch ms). Cursor Models / Other use `reset_cycle` = monthly. Grok Bot stays weekly when mapped.
 
-Auto-refresh uses the existing `sync_enabled` / `sync_interval_min` / `sync_source` settings. Default interval is **5 minutes** (1–60). `sync_source` can be `cursor`, `grok`, or `both` so both live connectors can run on one ticker. Live values are **absolute**: `quota_used`, `quota_total`, and `reset_at` are written even when used goes down (cycle reset). A `source=sync` record is inserted only when used increased; a lower used number still updates the pool and does not write a negative usage bar. A 401 marks the connector expired and does not wipe pools. Refresh now is on the dashboard, Settings, and the `/tray` header.
+Grok.com proto / CLI billing remains a supplement for Heavy and Bot. It is not required for the three Cursor-session pools.
+
+Auto-refresh uses the existing `sync_enabled` / `sync_interval_min` / `sync_source` settings. Default interval is **5 minutes** (1–60). `sync_source` can be `cursor`, `grok`, or `both` so both live connectors can run on one ticker. Live values are **absolute**: `quota_used`, `quota_total`, and `reset_at` are written even when used goes down (cycle reset). A `source=sync` record is inserted only when used increased; a lower used number still updates the pool and does not write a negative usage bar. A 401/403 marks the Cursor session expired and does not wipe pools. Refresh now is on the dashboard, Settings, and the `/tray` header.
 
 These endpoints are unofficial and may change.
 
