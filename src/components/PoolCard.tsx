@@ -70,8 +70,8 @@ export function PoolCard({
   if (compact) {
     const view = compactPoolView(pool);
     return (
-      <Card size="sm" className="h-full min-h-0 overflow-hidden bg-card/90 backdrop-blur">
-        <CardContent className="flex h-full min-h-0 flex-col justify-center space-y-1.5 py-1.5">
+      <Card size="sm" className="h-full w-full min-h-0 min-w-0 overflow-hidden bg-card/90 backdrop-blur">
+        <CardContent className="flex h-full min-h-0 min-w-0 flex-col justify-center space-y-1.5 py-1.5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-1.5">
               <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: pool.color }} />
@@ -113,7 +113,7 @@ export function PoolCard({
   }
 
   return (
-    <Card size="sm" className="h-full min-h-0 overflow-hidden bg-card/90 backdrop-blur">
+    <Card size="sm" className="h-full w-full min-h-0 min-w-0 overflow-hidden bg-card/90 backdrop-blur">
       <CardHeader>
         <CardTitle className={cn("flex items-center gap-2", showActions && "pr-16")}>
           <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: pool.color }} />

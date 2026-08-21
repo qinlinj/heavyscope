@@ -157,67 +157,67 @@ export function Dashboard() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0 max-w-xl border-b border-foreground/10 pb-2 sm:border-0 sm:pb-0">
-          <h2 className="font-heading text-xl font-semibold">{t("dashboard.title")}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{t("dashboard.subtitle")}</p>
-          <div className="mt-1 max-h-16 space-y-0.5 overflow-y-auto text-xs text-muted-foreground">
-            {cursorConfigured ? (
-              <p>
-                {t("live.lastSyncedCursor")}:{" "}
-                {settings[SETTING_CURSOR_LAST_SYNCED_AT]
-                  ? formatDateTime(settings[SETTING_CURSOR_LAST_SYNCED_AT], i18n.language)
-                  : t("live.lastSyncedNever")}
-                {cursorNext ? ` · ${t("live.nextSync")}: ${formatDateTime(cursorNext, i18n.language)}` : ""}
-              </p>
-            ) : null}
-            {grokConfigured ? (
-              <p>
-                {t("live.lastSyncedGrok")}:{" "}
-                {settings[SETTING_GROK_LAST_SYNCED_AT]
-                  ? formatDateTime(settings[SETTING_GROK_LAST_SYNCED_AT], i18n.language)
-                  : t("live.lastSyncedNever")}
-                {grokNext ? ` · ${t("live.nextSync")}: ${formatDateTime(grokNext, i18n.language)}` : ""}
-                {settings[SETTING_GROK_SYNC_MESSAGE] ? ` — ${settings[SETTING_GROK_SYNC_MESSAGE]}` : ""}
-              </p>
-            ) : null}
-            {!cursorConfigured && !grokConfigured ? (
-              <p>
-                {t("live.lastSynced")}: {t("live.lastSyncedNever")}
-              </p>
-            ) : null}
-            {syncFlash ? <p>{syncFlash}</p> : null}
+      <div className="w-full min-w-0 space-y-1">
+        <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <h2 className="min-w-0 font-heading text-xl font-semibold">{t("dashboard.title")}</h2>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={editingLayout ? "default" : "outline"}
+              onClick={() => setEditingLayout((current) => !current)}
+            >
+              {editingLayout ? <Check data-icon="inline-start" /> : <Pencil data-icon="inline-start" />}
+              {editingLayout ? t("layout.done") : t("layout.edit")}
+            </Button>
+            <Button
+              variant="outline"
+              disabled={!ready || syncBusy || (!cursorConfigured && !grokConfigured)}
+              onClick={() => void handleRefreshNow()}
+            >
+              <RefreshCw data-icon="inline-start" />
+              {t("live.refreshNow")}
+            </Button>
+            <Button variant="outline" onClick={() => setUsageOpen(true)} disabled={pools.length === 0}>
+              <ScrollText data-icon="inline-start" />
+              {t("dashboard.recordUsage")}
+            </Button>
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
+            >
+              <Plus data-icon="inline-start" />
+              {t("dashboard.addPool")}
+            </Button>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant={editingLayout ? "default" : "outline"}
-            onClick={() => setEditingLayout((current) => !current)}
-          >
-            {editingLayout ? <Check data-icon="inline-start" /> : <Pencil data-icon="inline-start" />}
-            {editingLayout ? t("layout.done") : t("layout.edit")}
-          </Button>
-          <Button
-            variant="outline"
-            disabled={!ready || syncBusy || (!cursorConfigured && !grokConfigured)}
-            onClick={() => void handleRefreshNow()}
-          >
-            <RefreshCw data-icon="inline-start" />
-            {t("live.refreshNow")}
-          </Button>
-          <Button variant="outline" onClick={() => setUsageOpen(true)} disabled={pools.length === 0}>
-            <ScrollText data-icon="inline-start" />
-            {t("dashboard.recordUsage")}
-          </Button>
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
-          >
-            <Plus data-icon="inline-start" />
-            {t("dashboard.addPool")}
-          </Button>
+        <p className="text-sm text-muted-foreground">{t("dashboard.subtitle")}</p>
+        <div className="max-h-16 space-y-0.5 overflow-y-auto text-xs text-muted-foreground">
+          {cursorConfigured ? (
+            <p>
+              {t("live.lastSyncedCursor")}:{" "}
+              {settings[SETTING_CURSOR_LAST_SYNCED_AT]
+                ? formatDateTime(settings[SETTING_CURSOR_LAST_SYNCED_AT], i18n.language)
+                : t("live.lastSyncedNever")}
+              {cursorNext ? ` · ${t("live.nextSync")}: ${formatDateTime(cursorNext, i18n.language)}` : ""}
+            </p>
+          ) : null}
+          {grokConfigured ? (
+            <p>
+              {t("live.lastSyncedGrok")}:{" "}
+              {settings[SETTING_GROK_LAST_SYNCED_AT]
+                ? formatDateTime(settings[SETTING_GROK_LAST_SYNCED_AT], i18n.language)
+                : t("live.lastSyncedNever")}
+              {grokNext ? ` · ${t("live.nextSync")}: ${formatDateTime(grokNext, i18n.language)}` : ""}
+              {settings[SETTING_GROK_SYNC_MESSAGE] ? ` — ${settings[SETTING_GROK_SYNC_MESSAGE]}` : ""}
+            </p>
+          ) : null}
+          {!cursorConfigured && !grokConfigured ? (
+            <p>
+              {t("live.lastSynced")}: {t("live.lastSyncedNever")}
+            </p>
+          ) : null}
+          {syncFlash ? <p>{syncFlash}</p> : null}
         </div>
       </div>
 

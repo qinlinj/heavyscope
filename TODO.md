@@ -95,6 +95,17 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Verify Grok Bot auto-track on a real Bearer (`Api 11%` → Bot) without manual calibrate
 - [x] Do not start macOS tray 1.5x / horizontal-scroll work here (moved to 0.13.0)
 
+## 0.16.0 — web title + Full/Tall cards fill the grid
+
+- [x] Title row (h2 + action buttons) is full content width; drop `max-w-xl` from the title bar
+- [x] Quota overview stays short and scrollable (`max-h-16`)
+- [x] PoolCard / AdvisorPanel / ChartCard / PiesPanel roots: `h-full w-full min-w-0`; remove Advisor `max-w-3xl`
+- [x] Same-row stretch; card edges flush with the tile; `sm` stays 1 column
+- [x] Edit chrome only when `editingLayout`
+- [x] Version 0.16.0 (package.json + src-tauri + README + docs/RELEASE.md)
+- [ ] Persist Day / Week / Month scale (currently component state only)
+- [ ] Optional heatmap filter by pool
+
 ## 0.15.0 — web Daily Activity heatmap + pie polish
 
 - [x] Heatmap first paint never uses 0px cells (fallback / last-good box)

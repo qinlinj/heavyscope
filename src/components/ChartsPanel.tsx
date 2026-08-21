@@ -85,7 +85,7 @@ export function ChartsPanel({
   if (!showHeatmap && !showTrend) return null;
 
   return (
-    <section className="flex h-full min-h-0 flex-col gap-2.5">
+    <section className="flex h-full w-full min-h-0 min-w-0 flex-col gap-2.5">
       {showHeading ? (
         <div>
           <h3 className="font-heading text-base font-semibold">{t("charts.title")}</h3>
@@ -93,7 +93,7 @@ export function ChartsPanel({
         </div>
       ) : null}
 
-      <div className="grid min-h-0 flex-1 gap-3">
+      <div className="grid min-h-0 w-full min-w-0 flex-1 gap-3">
         {showHeatmap && (
           <ChartCard title={t("charts.heatmap")} hint={t("charts.heatmapHint")} size={size}>
             <ActivityHeatmap records={liveRecords} pools={pools} compact={compact} size={size} />
@@ -232,7 +232,7 @@ function ChartCard({
   children: ReactNode;
 }) {
   return (
-    <Card className={`flex h-full min-h-0 flex-col overflow-hidden bg-card/90 ring-1 ring-foreground/10 backdrop-blur ${className ?? ""}`}>
+    <Card className={`flex h-full w-full min-h-0 min-w-0 flex-col overflow-hidden bg-card/90 ring-1 ring-foreground/10 backdrop-blur ${className ?? ""}`}>
       <CardHeader className={action ? "gap-2" : undefined}>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{hint}</CardDescription>

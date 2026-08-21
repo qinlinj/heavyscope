@@ -44,7 +44,7 @@ export function AdvisorPanel({
 
   if (compact) {
     return (
-      <Card size="sm" className="h-full min-h-0 overflow-hidden bg-card/90 backdrop-blur">
+      <Card size="sm" className="h-full w-full min-h-0 min-w-0 overflow-hidden bg-card/90 backdrop-blur">
         <CardContent className="py-1">
           <p className="text-[11px] leading-snug text-muted-foreground">{line ?? t("dashboard.empty")}</p>
         </CardContent>
@@ -54,7 +54,7 @@ export function AdvisorPanel({
 
   if (!tightest || !pool || pools.length === 0) {
     return (
-      <Card className="h-full min-h-0 min-w-0 max-w-3xl overflow-hidden bg-card/90 ring-1 ring-foreground/10 backdrop-blur">
+      <Card className="h-full w-full min-h-0 min-w-0 overflow-hidden bg-card/90 ring-1 ring-foreground/10 backdrop-blur">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Gauge className="size-4" />
@@ -77,8 +77,8 @@ export function AdvisorPanel({
     : undefined;
 
   return (
-    <div className="flex h-full min-w-0 max-w-3xl flex-col gap-2.5 overflow-hidden">
-      <Card className="min-h-0 min-w-0 overflow-hidden bg-card/90 ring-1 ring-foreground/10 backdrop-blur">
+    <div className="flex h-full w-full min-h-0 min-w-0 flex-col gap-2.5 overflow-hidden">
+      <Card className="min-h-0 min-w-0 w-full flex-1 overflow-hidden bg-card/90 ring-1 ring-foreground/10 backdrop-blur">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Gauge className="size-4" />
