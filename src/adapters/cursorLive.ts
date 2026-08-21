@@ -113,22 +113,28 @@ function recordFrom(value: unknown): Record<string, unknown> | null {
   return isRecord(value) ? value : null;
 }
 
+/** Decode a pasted `%3A%3A` pair to `::`. Both cookie shapes work live; store the decoded value. */
+function decodeCursorTokenSeparator(value: string): string {
+  return value.replace(/%3A%3A/gi, "::");
+}
+
 /** Accept pasted cookie values, `sub::jwt`, `sub%3A%3Ajwt`, or a bare JWT. */
 export function normalizeCursorSessionToken(raw: string): string {
   let value = raw.trim().replace(/^["']|["']$/g, "");
   const prefix = /^WorkosCursorSessionToken=/i;
   if (prefix.test(value)) value = value.replace(prefix, "");
   if (!value) return "";
-  if (value.includes("%3A%3A") || value.includes("::")) return value;
+  value = decodeCursorTokenSeparator(value);
+  if (value.includes("::")) return value;
   const sub = decodeJwtSub(value);
   if (!sub) return value;
   return `${sub}::${value}`;
 }
 
 export function deriveCursorSessionTokenFromJwt(jwt: string): string | null {
-  const trimmed = jwt.trim();
+  const trimmed = decodeCursorTokenSeparator(jwt.trim());
   if (!trimmed) return null;
-  if (trimmed.includes("%3A%3A") || trimmed.includes("::")) return trimmed;
+  if (trimmed.includes("::")) return trimmed;
   const sub = decodeJwtSub(trimmed);
   if (!sub) return null;
   return `${sub}::${trimmed}`;
@@ -547,8 +553,47 @@ export function mergeCursorSpendingSources(sources: CursorSpendingSources): Live
   };
 }
 
-export function mapCursorHttpStatus(status: number, label: string): LiveProviderResult | null {
+/**
+ * Live get-filtered-usage-events returns HTTP 401
+ * `{"error":{"message":"Team ID is required",...}}` even with a valid session.
+ * That is not a dead cookie — do not map it to expired.
+ */
+export function isCursorTeamIdRequiredBody(body?: string): boolean {
+  if (!body) return false;
+  if (body.includes("Team ID is required")) return true;
+  return body.includes("ERROR_UNAUTHORIZED") && /team\s*id/i.test(body);
+}
+
+/** True only for a real auth rejection. 405 and Team-ID 401/403 are not expired. */
+export function isCursorSessionExpired(status: number, body?: string): boolean {
+  if (status === 405) return false;
+  if (status !== 401 && status !== 403) return false;
+  if (isCursorTeamIdRequiredBody(body)) return false;
+  return true;
+}
+
+export function mapCursorHttpStatus(
+  status: number,
+  label: string,
+  body?: string,
+): LiveProviderResult | null {
+  if (status === 405) {
+    return {
+      ok: false,
+      code: "http",
+      message: `${label} failed with HTTP 405 (Method not allowed)`,
+      pools: [],
+    };
+  }
   if (status === 401 || status === 403) {
+    if (!isCursorSessionExpired(status, body)) {
+      return {
+        ok: false,
+        code: "http",
+        message: `${label} failed with HTTP ${status}`,
+        pools: [],
+      };
+    }
     return {
       ok: false,
       code: "expired",
@@ -567,12 +612,43 @@ export function mapCursorHttpStatus(status: number, label: string): LiveProvider
   return null;
 }
 
+export type CursorJsonParse = { ok: true; value: unknown } | LiveProviderResult;
+
+/**
+ * Finish a Cursor live refresh after optional filtered-usage-events.
+ * When period / summary / aggregations already parsed, a 401/403/405 on
+ * events must not abort the merge — skip events and keep Models + Other.
+ */
+export function finishCursorLiveRefresh(args: {
+  period?: unknown;
+  summary?: unknown;
+  aggregations?: unknown;
+  eventsParsed?: CursorJsonParse;
+}): LiveProviderResult {
+  const hasPrior =
+    args.period !== undefined || args.summary !== undefined || args.aggregations !== undefined;
+  let events: unknown;
+  if (args.eventsParsed) {
+    if ("value" in args.eventsParsed) {
+      events = args.eventsParsed.value;
+    } else if (!hasPrior && args.eventsParsed.code === "expired") {
+      return args.eventsParsed;
+    }
+  }
+  return mergeCursorSpendingSources({
+    period: args.period,
+    aggregations: args.aggregations,
+    events,
+    summary: args.summary,
+  });
+}
+
 export function parseCursorJsonBody(
   status: number,
   body: string,
   label: string,
-): { ok: true; value: unknown } | LiveProviderResult {
-  const statusError = mapCursorHttpStatus(status, label);
+): CursorJsonParse {
+  const statusError = mapCursorHttpStatus(status, label, body);
   if (statusError) return statusError;
   const trimmed = body.trim();
   if (!trimmed) {

@@ -6,6 +6,25 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-08-21
+
+### Fixed
+
+- Live Cursor refresh no longer aborts the whole apply when `POST /api/dashboard/get-filtered-usage-events` returns HTTP 401 `{"error":{"message":"Team ID is required",...}}`. That body is **not** a dead session (verified live with a valid cookie). Period (`POST /api/dashboard/get-current-period-usage` 200) and usage-summary (`GET /api/usage-summary` 200) already map Models % + Other $400; aggregations (`POST get-aggregated-usage-events` 200) on this account have no conservative grok-bot SKU (`cursor-grok-4.6-high-fast` is rejected). Filtered 401/403/405 now skip events and merge what we have (`botUnavailable: true` when Bot is missing).
+- `mapCursorHttpStatus` / `isCursorSessionExpired`: HTTP 405 is `http` (Method not allowed), never `expired`. 401/403 are `expired` only when the body looks like a real auth rejection. `Team ID is required` (or `ERROR_UNAUTHORIZED` + Team ID) is `http`. Empty 401/403 without that phrase stay `expired`.
+- `normalizeCursorSessionToken` decodes a pasted `%3A%3A` pair to `::` (both shapes worked live). Conservative `isCursorGrokBotSku` is unchanged.
+
+### Honest / not claimed
+
+- This account’s Cursor aggregations have no Grok Bot / grok-api / agents row. Bot numbers were not invented.
+- grok.com `GetGrokCreditsConfig` proto Heavy `credit_usage_percent` was 12%. Product field 7 is enum varints, not string names.
+- `GET https://cli-chat-proxy.grok.com/v1/billing?format=credits` with cookie only is 403 — OAuth2 bearer required (not provided).
+- `https://api2.cursor.sh/api/...` is 404; host stays `cursor.com`. GET on dashboard period/aggregated/filtered routes is 405.
+
+### Changed
+
+- Version 0.23.0 (package.json + src-tauri + README + docs/RELEASE.md). Heatmap / pies / trend / Recent / tray chrome, proxy geometry, applyAbsoluteUsage, and backup redact are unchanged.
+
 ## [0.22.0] - 2026-08-21
 
 ### Changed

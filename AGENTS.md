@@ -62,6 +62,7 @@ https://github.com/qinlinj/heavyscope
 - 0.20.0 — first-run Settings jump, Refresh-primary toolbar, Recent empty state
 - 0.21.0 — complete macOS menubar /tray daily-loop migration
 - 0.22.0 — honest tray connect / empty copy (no four-pools nag)
+- 0.23.0 — live Cursor refresh no longer aborts on filtered-usage-events 401 Team ID
 
 ## Commits
 
