@@ -65,6 +65,7 @@ https://github.com/qinlinj/heavyscope
 - 0.23.0 — live Cursor refresh no longer aborts on filtered-usage-events 401 Team ID
 - 0.24.0 — Cursor Grok Bot weekly pool from get-sand-usage-status
 - 0.25.0 — web Dashboard polish (trend hover format, heatmap fill, pie stroke, Recent ×2)
+- 0.26.0 — macOS menubar /tray polish (transparent panel, sticky header, compact heatmap, honest copy)
 
 ## Commits
 

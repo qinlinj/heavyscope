@@ -4,7 +4,7 @@ Local-first multi-quota monitoring panel for SuperGrok Heavy and Cursor Ultra.
 
 HeavyScope helps you see how fast you are burning weekly or monthly quotas, when a pool will reset, and whether you should switch work to a pool with more headroom. The same React UI runs as a web app and inside a Tauri 2 desktop shell. Quota data stays on your machine. There is no HeavyScope cloud account.
 
-Current product version is **0.25.0**.
+Current product version is **0.26.0**.
 
 ## Features
 
@@ -15,7 +15,7 @@ Current product version is **0.25.0**.
 - **Live Cursor + Grok sync** — connect your own accounts in web Settings → Data sources **or** in the menu-bar `/tray` Settings pane. Saving a Cursor session token or Grok session/bearer puts that provider on the timer immediately (1 / 5 / 15 / 30 / 60 min, default 5). Dashboard, Settings, and `/tray` show last synced + next tick per provider. A failed Grok tick is shown and does not skip later ticks. Snapshot import stays as a Cursor fallback when no session token is stored.
 - **Cursor snapshot import** — paste a Cursor usage snapshot (JSON or CSV) in Settings → Data sources. Optional auto-sync re-applies the last import when live Cursor is not connected.
 - **JSON backup export / copy / import** — Settings → Local data downloads `heavyscope-backup.json`, copies the same payload to the clipboard, or accepts a file / paste (table dump, not a wasm / binary file). Merge is the default; replace-all is optional.
-- **Tauri 2 tray** — system tray / macOS menu-bar shell around the same web UI and sql.js database. On macOS the shell is an **Accessory** (no Dock icon); the popup is **~380×780** under the status item. `/tray` is the daily loop: in-popover Settings (Cursor + Grok tokens, interval, Refresh now), a one-step **Go to Settings** CTA on unsynced pools, one advisor sentence, expandable pool rows (used/total, remaining, reset, 1–2 increments; one open at a time), last-sync lines, and an optional square heatmap whose week count comes from width (`fitTrayHeatmap`, 8–10px, never a 10-month strip). Browser `/tray` can finish that loop without a Mac. Layout Edit / Done stays secondary. Linux/Windows keep a 980×720 tray window. Close hides to tray. Use Quit to exit. **Verify the menu-bar accessory on a real Mac** — see [docs/MACOS.md](docs/MACOS.md). UNVERIFIED on device.
+- **Tauri 2 tray** — system tray / macOS menu-bar shell around the same web UI and sql.js database. On macOS the shell is an **Accessory** (no Dock icon); the popup is a transparent window with **one ~400×660** panel (radius 12, no drop shadow) under the status item. `/tray` is the daily loop: sticky header (title, Day/Week/Month scale, Refresh, Settings), a one-step **Go to Settings** line when neither token is pasted, a hero remaining number when it can be computed, hairline pool rows, and a compact square heatmap that fills the panel width (week count from width, ~20–26, product purple — not GitHub green). Browser `/tray` can finish that loop without a Mac. Layout Edit / Done is an icon; Done does not drop visible tiles. Linux/Windows keep a 980×720 tray window. Close hides to tray. Use Quit to exit. **Verify the menu-bar accessory on a real Mac** — see [docs/MACOS.md](docs/MACOS.md). UNVERIFIED on device.
 - **In-app confirm dialogs** — delete pool, reset local database, import, and import replace-all use in-app AlertDialogs with zh-CN / en titles and actions. Native `window.confirm` is not used.
 - **Cycle rollover** — when a pool `reset_at` is past, quota used resets to 0, the next weekly/monthly date is set, and a Cycle reset usage note is stored. History is not deleted.
 
@@ -81,7 +81,7 @@ pnpm tauri build
 
 `src-tauri` wraps the existing Vite React app. Identifier is `com.heavyscope.app`. Product name is HeavyScope.
 
-**macOS menu-bar is Accessory; verify on a real Mac.** `Info.plist` already has `LSUIElement`. Rust adds `ActivationPolicy::Accessory` and anchors a ~380×780 panel under the status item on top of that — the Linux window stays 980×720 `center: true`. This Linux/web environment cannot produce those binaries. Build with `pnpm tauri build` on a Mac, then walk through the checklist and size measurements in [docs/MACOS.md](docs/MACOS.md). Linux `.deb` installers can be built locally. There is no Windows installer yet.
+**macOS menu-bar is Accessory; verify on a real Mac.** `Info.plist` already has `LSUIElement`. Rust adds `ActivationPolicy::Accessory` and anchors a ~400×660 transparent panel under the status item on top of that — the Linux window stays 980×720 `center: true`. This Linux/web environment cannot produce those binaries. Build with `pnpm tauri build` on a Mac, then walk through the checklist and size measurements in [docs/MACOS.md](docs/MACOS.md). Linux `.deb` installers can be built locally. There is no Windows installer yet.
 
 Generate bundle icons from `src-tauri/app-icon.svg` with the Tauri icon command before shipping if you change the mark. The menu-bar glyph is the monochrome template `src-tauri/icons/tray-template.png`.
 

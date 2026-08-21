@@ -2,12 +2,17 @@ import { describe, expect, it, vi } from "vitest";
 import type { Pool, UsageRecord } from "@/db/schema";
 import type { PoolAdvice } from "@/lib/burnRate";
 import type { LayoutTile } from "@/lib/dashboardLayout";
-import { clampSquareCellPx, squareCellPx } from "@/lib/heatmap";
+import { defaultTrayLayout } from "@/lib/dashboardLayout";
+import { clampSquareCellPx, squareCellPx, weeksFromWidth } from "@/lib/heatmap";
 import en from "@/i18n/locales/en.json";
 import zhCN from "@/i18n/locales/zh-CN.json";
 import {
+  applyTrayEditDone,
+  defaultTrayVisibilityLayout,
   fitTrayHeatmap,
+  hideTrayTileGuarded,
   highlightedTrayPoolIds,
+  isProtectedTrayDefaultId,
   LINUX_DESKTOP_WINDOW,
   MACOS_TRAY_PANEL,
   parseTrayPane,
@@ -19,11 +24,16 @@ import {
   shouldShowTraySettingsCta,
   toggleExpandedPoolId,
   trayExpandFacts,
+  trayHeatFill,
   trayHeatmapCellPx,
+  trayHeatmapWeeksForScale,
+  trayHeroRemaining,
   trayProviderSync,
+  TRAY_DEFAULT_POOL_IDS,
   TRAY_HEATMAP_MAX_CELL_PX,
   TRAY_HEATMAP_MIN_CELL_PX,
   TRAY_HEATMAP_WEEKS,
+  TRAY_PROTECTED_DEFAULT_IDS,
   visiblePoolIds,
 } from "./trayView";
 
@@ -138,12 +148,12 @@ describe("trayExpandFacts", () => {
 });
 
 describe("macOS tray panel size", () => {
-  it("encodes 380×780 and does not use the Linux 980×720 window", () => {
+  it("encodes about 400×660 and does not use the Linux 980×720 window", () => {
     expect(MACOS_TRAY_PANEL).toEqual({
-      width: 380,
-      height: 780,
+      width: 400,
+      height: 660,
       maxWidth: 420,
-      maxHeight: 820,
+      maxHeight: 700,
     });
     expect(LINUX_DESKTOP_WINDOW).toEqual({ width: 980, height: 720 });
     expect(MACOS_TRAY_PANEL.width).not.toBe(LINUX_DESKTOP_WINDOW.width);
@@ -250,16 +260,107 @@ describe("trayHeatmapCellPx", () => {
 });
 
 describe("fitTrayHeatmap", () => {
-  it("derives week count from width and never emits a 10-month strip", () => {
+  it("derives week count from width (~20–26), not a fixed 10", () => {
     const narrow = fitTrayHeatmap(80);
     const panel = fitTrayHeatmap(MACOS_TRAY_PANEL.width);
     const wide = fitTrayHeatmap(800);
+    const fromWidth = weeksFromWidth(MACOS_TRAY_PANEL.width, TRAY_HEATMAP_MIN_CELL_PX);
     expect(narrow.weeks).toBeLessThan(panel.weeks);
-    expect(panel.weeks).toBeLessThanOrEqual(TRAY_HEATMAP_WEEKS);
+    expect(panel.weeks).toBe(Math.min(TRAY_HEATMAP_WEEKS, fromWidth));
+    expect(panel.weeks).toBeGreaterThan(10);
+    expect(panel.weeks).toBeGreaterThanOrEqual(20);
+    expect(panel.weeks).toBeLessThanOrEqual(26);
+    expect(panel.weeks).not.toBe(10);
     expect(wide.weeks).toBe(TRAY_HEATMAP_WEEKS);
     expect(wide.weeks).toBeLessThan(40);
+    expect(TRAY_HEATMAP_WEEKS).not.toBe(10);
     expect(narrow.cell).toBeGreaterThanOrEqual(TRAY_HEATMAP_MIN_CELL_PX);
     expect(panel.cell).toBeLessThanOrEqual(TRAY_HEATMAP_MAX_CELL_PX);
+  });
+
+  it("maps ChartsPanel Day/Week/Month onto the width-fit increment window", () => {
+    const fitted = fitTrayHeatmap(MACOS_TRAY_PANEL.width).weeks;
+    expect(trayHeatmapWeeksForScale("day", fitted)).toBe(fitted);
+    expect(trayHeatmapWeeksForScale("week", fitted)).toBe(Math.min(fitted, 8));
+    expect(trayHeatmapWeeksForScale("month", fitted)).toBe(Math.min(fitted, 26));
+  });
+});
+
+describe("tray edit Done does not drop tiles", () => {
+  const poolIds = [...TRAY_DEFAULT_POOL_IDS];
+
+  it("keeps the heatmap visible when Done is pressed with no visibility change", () => {
+    const entered = defaultTrayVisibilityLayout(poolIds);
+    expect(entered.tiles.find((tile) => tile.type === "heatmap")?.visible).toBe(true);
+    const after = applyTrayEditDone(entered, entered);
+    expect(after.tiles.find((tile) => tile.type === "heatmap")?.visible).toBe(true);
+    expect(after.tiles.filter((tile) => tile.visible).map((tile) => tile.id)).toEqual(
+      entered.tiles.filter((tile) => tile.visible).map((tile) => tile.id),
+    );
+  });
+
+  it("cannot hide all default four pools + heatmap with one accidental hide", () => {
+    let layout = defaultTrayLayout(poolIds);
+    const before = layout.tiles.filter((tile) => isProtectedTrayDefaultId(tile.id) && tile.visible);
+    expect(before.length).toBe(5);
+
+    layout = hideTrayTileGuarded(layout, "heatmap");
+    expect(layout.tiles.find((tile) => tile.id === "heatmap")?.visible).toBe(false);
+    expect(layout.tiles.some((tile) => tile.visible && isProtectedTrayDefaultId(tile.id))).toBe(true);
+
+    for (const id of TRAY_PROTECTED_DEFAULT_IDS) {
+      layout = hideTrayTileGuarded(layout, id);
+    }
+    const stillVisible = layout.tiles.filter((tile) => tile.visible && isProtectedTrayDefaultId(tile.id));
+    expect(stillVisible.length).toBeGreaterThan(0);
+    expect(stillVisible.length).toBe(1);
+  });
+});
+
+describe("trayHeroRemaining", () => {
+  it("uses remaining of the tightest connected pool", () => {
+    const hero = trayHeroRemaining(
+      [
+        advice({ poolId: "preset-grok-heavy", risk: "unconnected", remaining: 100, usagePercent: 0 }),
+        advice({ poolId: "preset-cursor-models", risk: "overspend", remaining: 42, usagePercent: 91 }),
+        advice({ poolId: "preset-cursor-other", risk: "ok", remaining: 200, usagePercent: 20 }),
+      ],
+      [
+        { id: "preset-grok-heavy", unit: "credits", quota_total: 100 },
+        { id: "preset-cursor-models", unit: "requests", quota_total: 500 },
+        { id: "preset-cursor-other", unit: "USD", quota_total: 400 },
+      ],
+    );
+    expect(hero).toEqual({ poolId: "preset-cursor-models", remaining: 42, unit: "requests" });
+  });
+
+  it("does not draw a hero or invent a number when remaining is unknown", () => {
+    expect(
+      trayHeroRemaining(
+        [advice({ poolId: "preset-grok-heavy", risk: "unconnected", remaining: 100 })],
+        [{ id: "preset-grok-heavy", unit: "credits", quota_total: 100 }],
+      ),
+    ).toBeNull();
+    expect(
+      trayHeroRemaining(
+        [advice({ poolId: "hot", risk: "ok", remaining: 12 })],
+        [{ id: "hot", unit: "%", quota_total: 0 }],
+      ),
+    ).toBeNull();
+    expect(
+      trayHeroRemaining(
+        [advice({ poolId: "hot", risk: "ok", remaining: Number.NaN })],
+        [{ id: "hot", unit: "%", quota_total: 100 }],
+      ),
+    ).toBeNull();
+    expect(trayHeroRemaining([], [])).toBeNull();
+  });
+});
+
+describe("trayHeatFill", () => {
+  it("mixes product purple into the panel, not GitHub greens", () => {
+    expect(trayHeatFill(4)).toContain("var(--primary)");
+    expect(trayHeatFill(0)).not.toMatch(/#0e4429|#39d353|#9be9a8|#216e39/i);
   });
 });
 

@@ -19,12 +19,25 @@ export function ThemeToggle({ compact = false }: Props) {
   const { settings, setSetting } = useDatabase();
   const current = parseTheme(settings.theme ?? readStoredTheme());
 
+  if (compact) {
+    const next = THEMES[(THEMES.indexOf(current) + 1) % THEMES.length] ?? "system";
+    const Icon = ICONS[current];
+    return (
+      <button
+        type="button"
+        onClick={() => persistTheme(next, setSetting)}
+        title={t(`settings.theme${capitalize(current)}`)}
+        aria-label={t("settings.theme")}
+        className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      >
+        <Icon className="size-3.5" />
+      </button>
+    );
+  }
+
   return (
     <div
-      className={cn(
-        "inline-flex items-center rounded-xl bg-card/80 ring-1 ring-foreground/10 backdrop-blur",
-        compact ? "p-0.5" : "p-1",
-      )}
+      className={cn("inline-flex items-center rounded-xl bg-card/80 p-1 ring-1 ring-foreground/10 backdrop-blur")}
       role="group"
       aria-label={t("settings.theme")}
     >
@@ -40,14 +53,13 @@ export function ThemeToggle({ compact = false }: Props) {
             aria-label={t(`settings.theme${capitalize(value)}`)}
             aria-pressed={active}
             className={cn(
-              "rounded-lg font-medium transition-colors",
-              compact ? "p-1" : "p-1.5",
+              "rounded-lg p-1.5 font-medium transition-colors",
               active
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
-            <Icon className={compact ? "size-3" : "size-3.5"} />
+            <Icon className="size-3.5" />
           </button>
         );
       })}

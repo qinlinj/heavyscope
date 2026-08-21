@@ -46,12 +46,7 @@ export function TrayPoolRow({
   const showCta = shouldShowTraySettingsCta(unsynced);
 
   return (
-    <div
-      className={cn(
-        "w-full rounded-lg border bg-card/90 px-2.5 py-1.5 text-left text-xs backdrop-blur",
-        highlighted ? "border-primary/50 ring-1 ring-primary/30" : "border-foreground/10",
-      )}
-    >
+    <div className="w-full border-b border-foreground/10 px-0.5 py-1.5 text-left text-xs last:border-b-0">
       <button
         type="button"
         aria-expanded={expanded}
@@ -64,7 +59,7 @@ export function TrayPoolRow({
             <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: pool.color }} />
             <span className="truncate text-xs font-medium">{displayPoolName(pool, t)}</span>
             {highlighted ? (
-              <span className="shrink-0 text-[11px] font-medium text-primary">{t("tray.tightest")}</span>
+              <span className="shrink-0 text-[11px] font-medium text-muted-foreground">{t("tray.tightest")}</span>
             ) : null}
           </span>
           <span
@@ -79,14 +74,12 @@ export function TrayPoolRow({
             {unsynced ? t("pool.awaitingConnect") : `${percent.toFixed(0)}%`}
           </span>
         </div>
-        {unsynced ? (
-          <p className="mt-1.5 text-[11px] leading-tight text-muted-foreground">{t("live.notConnected")}</p>
-        ) : (
+        {unsynced ? null : (
           <>
             <Progress
               value={percent}
               className={cn(
-                "mt-1.5 h-1.5",
+                "mt-1.5 h-1 bg-foreground/10",
                 tone === "ok" && "[&_[data-slot=progress-indicator]]:bg-emerald-500",
                 tone === "warn" && "[&_[data-slot=progress-indicator]]:bg-amber-500",
                 tone === "crit" && "[&_[data-slot=progress-indicator]]:bg-red-500",
@@ -103,9 +96,8 @@ export function TrayPoolRow({
       </button>
 
       {showCta && onOpenSettings ? (
-        <div className="mt-1.5">
-          <p className="text-[11px] leading-tight text-muted-foreground">{t("tray.connectHint")}</p>
-          <Button type="button" size="xs" className="mt-1" onClick={onOpenSettings}>
+        <div className="mt-1">
+          <Button type="button" size="xs" variant="ghost" className="h-6 px-1.5" onClick={onOpenSettings}>
             {t("tray.goToSettings")}
           </Button>
         </div>

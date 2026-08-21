@@ -1,7 +1,12 @@
 import type { Pool, UsageRecord } from "@/db/schema";
-import { tightestAdvices, type PoolAdvice } from "@/lib/burnRate";
-import { chartRecords } from "@/lib/charts";
-import type { LayoutTile } from "@/lib/dashboardLayout";
+import { tightestAdvice, tightestAdvices, type PoolAdvice } from "@/lib/burnRate";
+import { chartRecords, type ChartScale } from "@/lib/charts";
+import {
+  defaultTrayLayout,
+  hideTile,
+  type DashboardLayout,
+  type LayoutTile,
+} from "@/lib/dashboardLayout";
 import {
   HEATMAP_CELL_GAP_PX,
   HEATMAP_WEEKDAY_COL_PX,
@@ -23,17 +28,36 @@ import {
 
 export type TrayPane = "dashboard" | "settings";
 
-export const TRAY_HEATMAP_WEEKS = 10;
-export const TRAY_HEATMAP_MIN_CELL_PX = 8;
-export const TRAY_HEATMAP_MAX_CELL_PX = 10;
+/** Width-fit week cap. About 20–26; never a hardcoded 10-week / 10-month strip. */
+export const TRAY_HEATMAP_WEEKS = 26;
+export const TRAY_HEATMAP_MIN_CELL_PX = 10;
+export const TRAY_HEATMAP_MAX_CELL_PX = 16;
 export const TRAY_HIGHLIGHT_LIMIT = 2;
+export const TRAY_PANEL_RADIUS_PX = 12;
+export const TRAY_OPEN_MS = 180;
+
+/** Four preset pools + heatmap. A single hide cannot wipe the whole default set. */
+export const TRAY_DEFAULT_POOL_IDS = [
+  "preset-grok-heavy",
+  "preset-grok-bot",
+  "preset-cursor-models",
+  "preset-cursor-other",
+] as const;
+
+export const TRAY_PROTECTED_DEFAULT_IDS = [
+  "heatmap",
+  ...TRAY_DEFAULT_POOL_IDS.map((id) => `pool:${id}`),
+] as const;
+
+/** Product purple mixed into the tray panel — not GitHub greens. */
+export const TRAY_HEAT_PRIMARY_MIX = [8, 22, 40, 62, 86] as const;
 
 /** macOS Accessory popover. Must match `apply_macos_accessory_window` in src-tauri. */
 export const MACOS_TRAY_PANEL = {
-  width: 380,
-  height: 780,
+  width: 400,
+  height: 660,
   maxWidth: 420,
-  maxHeight: 820,
+  maxHeight: 700,
 } as const;
 
 /** Linux/Windows tray window only. Never use these numbers on macOS. */
@@ -102,8 +126,9 @@ export function shouldShowTrayHeatmap(opts: {
 }
 
 /**
- * Compact tray heatmap: week count from available width, cells 8–10px
- * squares. Cap at 10 weeks so a 380px strip never becomes a 10-month grid.
+ * Compact tray heatmap: week count from available width (~20–26), not a
+ * fixed 10-week / 10-month strip. Cells stay 1:1; the compact path paints
+ * them with flex columns (`width: 100%` + `aspect-ratio: 1/1`).
  */
 export function fitTrayHeatmap(
   width: number,
@@ -117,6 +142,98 @@ export function fitTrayHeatmap(
   );
   const cell = clampSquareCellPx(raw, TRAY_HEATMAP_MIN_CELL_PX, TRAY_HEATMAP_MAX_CELL_PX);
   return { weeks: Math.max(1, weeks), cell: cell > 0 ? cell : TRAY_HEATMAP_MIN_CELL_PX };
+}
+
+/** ChartsPanel Day/Week/Month increment window — no invented token series. */
+export function trayHeatmapWeeksForScale(scale: ChartScale, fittedWeeks: number): number {
+  const fitted = Math.max(1, Math.trunc(fittedWeeks));
+  if (scale === "week") return Math.min(fitted, 8);
+  if (scale === "month") return Math.min(fitted, 26);
+  return fitted;
+}
+
+export function trayHeatFill(
+  level: 0 | 1 | 2 | 3 | 4,
+  panel = "var(--tray-panel)",
+): string {
+  return `color-mix(in srgb, var(--primary) ${TRAY_HEAT_PRIMARY_MIX[level]}%, ${panel})`;
+}
+
+export function isProtectedTrayDefaultId(id: string): boolean {
+  return (TRAY_PROTECTED_DEFAULT_IDS as readonly string[]).includes(id);
+}
+
+export function trayDefaultProtectedTileIds(): readonly string[] {
+  return TRAY_PROTECTED_DEFAULT_IDS;
+}
+
+export function trayVisibilityById(tiles: readonly LayoutTile[]): Record<string, boolean> {
+  return Object.fromEntries(tiles.map((tile) => [tile.id, tile.visible]));
+}
+
+export function sameTrayVisibility(a: DashboardLayout, b: DashboardLayout): boolean {
+  const ids = new Set([...a.tiles.map((tile) => tile.id), ...b.tiles.map((tile) => tile.id)]);
+  for (const id of ids) {
+    const left = a.tiles.find((tile) => tile.id === id)?.visible ?? false;
+    const right = b.tiles.find((tile) => tile.id === id)?.visible ?? false;
+    if (left !== right) return false;
+  }
+  return true;
+}
+
+/**
+ * Done is a mode toggle. No visibility edits → same tiles as when entering
+ * edit (heatmap stays visible if it was). Intentional hides persist.
+ */
+export function applyTrayEditDone(entered: DashboardLayout, current: DashboardLayout): DashboardLayout {
+  if (sameTrayVisibility(entered, current)) return entered;
+  return current;
+}
+
+function visibleProtectedDefaultCount(layout: DashboardLayout): number {
+  const protectedIds = new Set<string>(TRAY_PROTECTED_DEFAULT_IDS);
+  return layout.tiles.filter((tile) => protectedIds.has(tile.id) && tile.visible).length;
+}
+
+/**
+ * Hide one tile. Refuses a hide that would conceal every default pool +
+ * heatmap at once. Add-cards restore remains the explicit path back.
+ */
+export function hideTrayTileGuarded(layout: DashboardLayout, id: string): DashboardLayout {
+  const next = hideTile(layout, id);
+  if (visibleProtectedDefaultCount(next) === 0 && visibleProtectedDefaultCount(layout) > 0) {
+    return layout;
+  }
+  return next;
+}
+
+export function defaultTrayVisibilityLayout(
+  poolIds: readonly string[] = TRAY_DEFAULT_POOL_IDS,
+): DashboardLayout {
+  return defaultTrayLayout([...poolIds]);
+}
+
+export type TrayHeroRemaining = {
+  poolId: string;
+  remaining: number;
+  unit: string;
+};
+
+/**
+ * Remaining of the tightest *connected* pool. Returns null when remaining
+ * cannot be computed — never invents a number.
+ */
+export function trayHeroRemaining(
+  advices: readonly PoolAdvice[],
+  pools: readonly Pick<Pool, "id" | "unit" | "quota_total">[],
+): TrayHeroRemaining | null {
+  const tightest = tightestAdvice([...advices]);
+  if (!tightest || tightest.risk === "unconnected") return null;
+  const pool = pools.find((item) => item.id === tightest.poolId);
+  if (!pool) return null;
+  if (!(pool.quota_total > 0)) return null;
+  if (!Number.isFinite(tightest.remaining)) return null;
+  return { poolId: pool.id, remaining: tightest.remaining, unit: pool.unit };
 }
 
 /**
