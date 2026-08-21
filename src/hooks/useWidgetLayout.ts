@@ -57,5 +57,5 @@ export function useWidgetLayout(
 
   const show = useCallback((id: string) => persist(showTile(layout, id)), [layout, persist]);
 
-  return { layout, reorder, setSize, hide, show };
+  return { layout, reorder, setSize, hide, show, commitLayout: persist };
 }

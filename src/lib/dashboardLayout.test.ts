@@ -6,6 +6,7 @@ import {
   hideTile,
   migrateFromChartPrefs,
   parseLayout,
+  previewReorderTiles,
   pruneMissingPools,
   reorderTiles,
   resolveLayout,
@@ -149,6 +150,58 @@ describe("reorder / size / hide", () => {
     expect(moved.tiles.find((tile) => tile.id === "heatmap")?.visible).toBe(false);
     expect(reorderTiles(base, "advisor", "advisor").tiles.map((tile) => tile.id)).toEqual(
       base.tiles.map((tile) => tile.id),
+    );
+  });
+
+  it("keeps hidden tiles when previewing a visible insert index", () => {
+    const hidden = hideTile(base, "heatmap");
+    const ids = (tiles: { id: string }[]) => tiles.map((tile) => tile.id);
+
+    expect(ids(previewReorderTiles(hidden.tiles, "pool:p1", 1))).toEqual([
+      "advisor",
+      "heatmap",
+      "pool:p1",
+      "trend",
+      "pies",
+      "pool:p2",
+    ]);
+    expect(previewReorderTiles(hidden.tiles, "pool:p1", 1).find((tile) => tile.id === "heatmap")?.visible).toBe(
+      false,
+    );
+
+    expect(ids(previewReorderTiles(hidden.tiles, "pool:p1", 0))).toEqual([
+      "pool:p1",
+      "advisor",
+      "heatmap",
+      "trend",
+      "pies",
+      "pool:p2",
+    ]);
+    expect(ids(previewReorderTiles(hidden.tiles, "pool:p1", 4))).toEqual([
+      "advisor",
+      "heatmap",
+      "trend",
+      "pies",
+      "pool:p2",
+      "pool:p1",
+    ]);
+    expect(ids(previewReorderTiles(hidden.tiles, "pool:p1", 99))).toEqual([
+      "advisor",
+      "heatmap",
+      "trend",
+      "pies",
+      "pool:p2",
+      "pool:p1",
+    ]);
+    expect(ids(previewReorderTiles(hidden.tiles, "missing", 1))).toEqual(ids(hidden.tiles));
+    expect(previewReorderTiles(hidden.tiles, "pool:p1", 1)).not.toBe(hidden.tiles);
+  });
+
+  it("does not drop hidden tiles when the dragged card returns to its original slot", () => {
+    const hidden = hideTile(base, "heatmap");
+    // visible others: advisor, trend, pies, pool:p2 — original pool:p1 slot is index 3
+    expect(previewReorderTiles(hidden.tiles, "pool:p1", 3).map((tile) => tile.id)).toEqual(
+      hidden.tiles.map((tile) => tile.id),
     );
   });
 

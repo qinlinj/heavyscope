@@ -2,6 +2,12 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.17.0
+
+- Edit-mode widget drag uses a live insertion slot: other cards slide aside while the pointer is down. Top / first half of a card inserts before it; bottom / second half inserts after. Drop writes `dashboard_layout`; Escape or leaving the window cancels.
+- The grip is still the drag handle. Normal mode is not draggable. Hidden tiles stay in the layout array. No new drag dependency.
+- Version 0.17.0. No adapter, heatmap algorithm, pie-logic, size-span, or default `/tray` layout changes.
+
 ## v0.16.0
 
 - Web dashboard title row (h2 + action buttons) stretches to the same width as the widget grid. Quota overview stays short and scrollable (`max-h-16`). The old `max-w-xl` wrapper no longer cuts the title to the left half.
