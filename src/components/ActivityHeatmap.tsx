@@ -18,6 +18,8 @@ import {
   heatmapFallbackBox,
   heatmapGrid,
   heatmapLevel,
+  heatmapMonthLabels,
+  heatmapWeekOffsetPx,
   squareCellPx,
 } from "@/lib/heatmap";
 import { fitTrayHeatmap } from "@/lib/trayView";
@@ -67,7 +69,7 @@ export function ActivityHeatmap({
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const [tip, setTip] = useState<{ cell: HeatmapCell; anchor: DOMRect } | null>(null);
   const weekdays = useMemo(() => weekdayLabels(locale), [locale]);
-  const months = useMemo(() => monthLabels(grid.cells, grid.weeks, locale), [grid, locale]);
+  const months = useMemo(() => heatmapMonthLabels(grid.cells, grid.weeks, locale), [grid, locale]);
   const today = useMemo(() => localTodayKey(), []);
   const maxValue = grid.intensityMetric === "amount" ? grid.maxAmount : grid.maxCount;
   const minCell = minCellPx ?? (compact ? 8 : undefined);
@@ -101,16 +103,16 @@ export function ActivityHeatmap({
         <>
           <div aria-hidden="true" />
           <div
-            className={cn("mb-1 grid text-[9px] leading-none text-muted-foreground", compact && "mb-0.5")}
-            style={{
-              gridTemplateColumns: `repeat(${grid.weeks}, ${safeCell}px)`,
-              columnGap: gap,
-              width: gridW,
-            }}
+            className={cn("relative mb-1 overflow-visible", compact && "mb-0.5")}
+            style={{ width: gridW, height: HEATMAP_MONTH_ROW_PX }}
           >
-            {Array.from({ length: grid.weeks }, (_, weekIndex) => (
-              <span key={weekIndex} className="min-w-0 truncate">
-                {months.get(weekIndex) ?? ""}
+            {[...months.entries()].map(([weekIndex, label]) => (
+              <span
+                key={weekIndex}
+                className="absolute top-0 whitespace-nowrap text-[10px] leading-none text-muted-foreground"
+                style={{ left: heatmapWeekOffsetPx(weekIndex, safeCell, gap) }}
+              >
+                {label}
               </span>
             ))}
           </div>
@@ -165,45 +167,62 @@ export function ActivityHeatmap({
     </div>
   );
 
+  const stats = (
+    <div
+      className={cn(
+        "flex min-w-[9rem] flex-1 items-center justify-between gap-2 text-xs text-muted-foreground",
+        compact && "mt-1.5 w-full",
+        !compact && "min-h-4",
+      )}
+    >
+      <span className="min-h-4 min-w-0 truncate tabular-nums">
+        {t("charts.heatmapPeriod", {
+          weeks: grid.weeks,
+          metric:
+            grid.intensityMetric === "amount"
+              ? t("charts.heatmapMetricAmount")
+              : t("charts.heatmapMetricCount"),
+        })}
+      </span>
+      <span className="flex shrink-0 items-center gap-1">
+        <span>{t("charts.less")}</span>
+        {HEAT_LEVELS.map((level) => (
+          <span
+            key={level}
+            className="size-2.5 rounded-[2px]"
+            style={{
+              backgroundColor: `var(--heat-${level})`,
+              boxShadow: "inset 0 0 0 1px var(--heat-outline)",
+            }}
+          />
+        ))}
+        <span>{t("charts.more")}</span>
+      </span>
+    </div>
+  );
+
   return (
-    <div className={cn("flex w-full flex-col", !compact && "h-full min-h-0")}>
-      <OverflowStrip
-        wheel="x"
-        viewportRef={boxRef}
-        className={cn("w-full", !compact && "min-h-0 flex-1")}
-      >
-        <div className="flex w-max min-h-0 justify-start">{plot}</div>
-      </OverflowStrip>
-      <div
-        className={cn(
-          "mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground",
-          compact && "mt-1.5",
-        )}
-      >
-        <span className="min-h-4 min-w-0 truncate tabular-nums">
-          {t("charts.heatmapPeriod", {
-            weeks: grid.weeks,
-            metric:
-              grid.intensityMetric === "amount"
-                ? t("charts.heatmapMetricAmount")
-                : t("charts.heatmapMetricCount"),
-          })}
-        </span>
-        <span className="flex shrink-0 items-center gap-1">
-          <span>{t("charts.less")}</span>
-          {HEAT_LEVELS.map((level) => (
-            <span
-              key={level}
-              className="size-2.5 rounded-[2px]"
-              style={{
-                backgroundColor: `var(--heat-${level})`,
-                boxShadow: "inset 0 0 0 1px var(--heat-outline)",
-              }}
-            />
-          ))}
-          <span>{t("charts.more")}</span>
-        </span>
-      </div>
+    <div
+      className={cn("flex w-full", compact ? "flex-col" : "h-full min-h-0 flex-col")}
+    >
+      {compact ? (
+        <>
+          <OverflowStrip wheel="x" viewportRef={boxRef} className="w-full">
+            <div className="flex w-max min-h-0 justify-start">{plot}</div>
+          </OverflowStrip>
+          {stats}
+        </>
+      ) : (
+        <div
+          ref={boxRef}
+          className="flex min-h-0 w-full flex-1 flex-wrap content-end items-end gap-x-3 gap-y-2"
+        >
+          <OverflowStrip wheel="x" className="min-w-0 shrink-0">
+            <div className="flex w-max min-h-0 justify-start">{plot}</div>
+          </OverflowStrip>
+          {stats}
+        </div>
+      )}
       {tip ? <HeatmapHoverTip cell={tip.cell} anchor={tip.anchor} pools={pools ?? []} /> : null}
     </div>
   );
@@ -359,19 +378,3 @@ function weekdayLabels(locale: string): string[] {
   });
 }
 
-function monthLabels(cells: HeatmapCell[], weeks: number, locale: string): Map<number, string> {
-  const labels = new Map<number, string>();
-  for (let weekIndex = 0; weekIndex < weeks; weekIndex += 1) {
-    const sunday = cells.find((cell) => cell.weekIndex === weekIndex && cell.weekday === 0);
-    if (!sunday) continue;
-    const prev = cells.find((cell) => cell.weekIndex === weekIndex - 1 && cell.weekday === 0);
-    if (weekIndex === 0 || prev?.date.slice(0, 7) !== sunday.date.slice(0, 7)) {
-      const [year, month] = sunday.date.split("-").map(Number);
-      labels.set(
-        weekIndex,
-        new Date(year ?? 0, (month ?? 1) - 1, 1).toLocaleDateString(locale, { month: "short" }),
-      );
-    }
-  }
-  return labels;
-}

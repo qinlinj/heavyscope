@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAmount, formatSignedAmount } from "@/lib/format";
+import { formatAmount, formatAtMostDecimals, formatSignedAmount, formatTrendHoverValue } from "@/lib/format";
 
 describe("formatAmount", () => {
   it("uses 0 fraction digits for integers and request counts", () => {
@@ -29,5 +29,26 @@ describe("formatSignedAmount", () => {
     expect(formatSignedAmount(0, "credits")).toBe("0 credits");
     expect(formatSignedAmount(-1.239, "USD")).toMatch(/-.*1\.24|−.*1\.24/);
     expect(formatSignedAmount(-1.239, "USD")).not.toMatch(/1\.239/);
+  });
+});
+
+describe("formatTrendHoverValue", () => {
+  it("formats USD hover amounts with exactly 2 decimal places", () => {
+    expect(formatTrendHoverValue(40, "USD")).toBe("+40.00");
+    expect(formatTrendHoverValue(12.3, "$")).toBe("+12.30");
+    expect(formatTrendHoverValue(12.345, "USD")).toBe("+12.35");
+    expect(formatTrendHoverValue(12.345, "USD")).not.toMatch(/12\.345/);
+  });
+
+  it("caps percent hover values at 2 decimal places and strips a long tail", () => {
+    expect(formatTrendHoverValue(21.473078, "%")).toBe("+21.47");
+    expect(formatTrendHoverValue(21.473078, "percent")).not.toMatch(/21\.473078/);
+    expect(formatTrendHoverValue(11.2, "%")).toBe("+11.2");
+    expect(formatTrendHoverValue(21, "pct")).toBe("+21");
+  });
+
+  it("never dumps a raw float for other units", () => {
+    expect(formatTrendHoverValue(1 / 3, "credits")).toBe("+0.33");
+    expect(formatAtMostDecimals(21.473078, 2)).toBe("21.47");
   });
 });

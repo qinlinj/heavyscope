@@ -24,6 +24,7 @@ import {
 } from "@/lib/format";
 import { displayPoolName } from "@/lib/poolName";
 import { compactPoolView } from "@/lib/poolView";
+import { dashboardRecentListHeightPx, dashboardRecentRecords } from "@/lib/recentRecords";
 import type { PoolSyncBadge } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 
@@ -69,6 +70,7 @@ export function PoolCard({
   const percent = usagePercent(pool);
   const tone = usageTone(percent, warnPercent, critPercent);
   const left = remaining(pool);
+  const recent = dashboardRecentRecords(records);
 
   if (compact) {
     const view = compactPoolView(pool);
@@ -241,9 +243,12 @@ export function PoolCard({
       {showRecent && (
         <CardFooter className="shrink-0 flex-col items-stretch gap-2">
           <p className="text-xs text-muted-foreground">{t("pool.recent")}</p>
-          {records.length > 0 ? (
-            <ul className="h-[7.5rem] space-y-1 overflow-y-auto overscroll-contain pr-1">
-              {records.slice(0, 30).map((record) => (
+          <ul
+            className="space-y-1 overflow-hidden"
+            style={{ height: dashboardRecentListHeightPx() }}
+          >
+            {recent.length > 0 ? (
+              recent.map((record) => (
                 <li key={record.id} className="flex justify-between gap-2 text-xs leading-5">
                   <span className="min-w-0 truncate text-muted-foreground">
                     {new Date(record.recorded_at).toLocaleString(i18n.language)}
@@ -252,11 +257,11 @@ export function PoolCard({
                     {formatSignedAmount(record.amount, pool.unit)}
                   </span>
                 </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-xs text-muted-foreground">{t("pool.recentEmpty")}</p>
-          )}
+              ))
+            ) : (
+              <li className="text-xs leading-5 text-muted-foreground">{t("pool.recentEmpty")}</li>
+            )}
+          </ul>
         </CardFooter>
       )}
     </Card>

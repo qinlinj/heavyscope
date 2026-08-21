@@ -31,6 +31,7 @@ import {
   seriesHasUsage,
 } from "@/lib/charts";
 import type { TileSize } from "@/lib/dashboardLayout";
+import { formatTrendHoverValue } from "@/lib/format";
 import { displayPoolName } from "@/lib/poolName";
 
 type Props = {
@@ -57,6 +58,13 @@ const SCALES: ChartScale[] = ["day", "week", "month"];
 
 function shortKey(value: string): string {
   return value.length > 7 ? value.slice(5) : value;
+}
+
+function trendHoverFormatter(pools: Pool[]) {
+  return (value: unknown, _name: unknown, item?: { dataKey?: unknown }): [string, undefined] => {
+    const pool = pools.find((entry) => entry.id === String(item?.dataKey ?? ""));
+    return [formatTrendHoverValue(Number(value ?? 0), pool?.unit ?? ""), undefined];
+  };
 }
 
 export function ChartsPanel({
@@ -135,7 +143,7 @@ export function ChartsPanel({
                         contentStyle={TOOLTIP_STYLE}
                         labelStyle={TOOLTIP_LABEL}
                         cursor={{ stroke: GRID }}
-                        formatter={(value) => [`+${Number(value ?? 0)}`, undefined]}
+                        formatter={trendHoverFormatter(pools)}
                       />
                       <Legend />
                       {pools.map((pool) => (
@@ -160,7 +168,7 @@ export function ChartsPanel({
                         contentStyle={TOOLTIP_STYLE}
                         labelStyle={TOOLTIP_LABEL}
                         cursor={{ fill: "color-mix(in oklch, var(--foreground) 8%, transparent)" }}
-                        formatter={(value) => [`+${Number(value ?? 0)}`, undefined]}
+                        formatter={trendHoverFormatter(pools)}
                       />
                       <Legend />
                       {pools.map((pool) => (

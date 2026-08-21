@@ -62,6 +62,9 @@ export function pieChartHeight(size: TileSize): number {
   return 220;
 }
 
+/** Dashboard pies only: no Recharts default white sector stroke (dark-mode halo). */
+export const DASHBOARD_PIE_SECTOR_STROKE = "none";
+
 function tileContentMinH(size: TileSize): string {
   if (size === "sm") return "min-h-[168px]";
   if (size === "md") return "min-h-[200px]";
@@ -189,7 +192,7 @@ function PieBlock({
       {legend !== "none" ? <p className="mb-2 text-xs font-medium">{title}</p> : null}
       <div ref={boxRef} className="min-h-0 w-full" style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
+          <PieChart className="[&_.recharts-sector]:stroke-none">
             <Pie
               data={slices}
               dataKey="value"
@@ -198,9 +201,10 @@ function PieBlock({
               outerRadius={outer}
               paddingAngle={2}
               label={false}
+              stroke={DASHBOARD_PIE_SECTOR_STROKE}
             >
               {slices.map((slice) => (
-                <Cell key={slice.id} fill={slice.color} />
+                <Cell key={slice.id} fill={slice.color} stroke={DASHBOARD_PIE_SECTOR_STROKE} />
               ))}
             </Pie>
             <Tooltip
