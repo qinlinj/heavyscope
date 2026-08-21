@@ -240,6 +240,62 @@ export function ensureAllPools(
   return { version: LAYOUT_VERSION, tiles: [...layout.tiles, ...extras] };
 }
 
+/**
+ * Move `fromId` so that among remaining *visible* tiles it sits at `visibleInsertIndex`
+ * (0 = before the first remaining visible tile; `visibleOthers.length` = after the last).
+ * Hidden tiles stay in the array and keep their relative place next to neighboring tiles.
+ */
+export function previewReorderTiles(
+  tiles: readonly LayoutTile[],
+  fromId: string,
+  visibleInsertIndex: number,
+): LayoutTile[] {
+  const fromIndex = tiles.findIndex((tile) => tile.id === fromId);
+  if (fromIndex < 0) return [...tiles];
+  const moved = tiles[fromIndex];
+  if (!moved) return [...tiles];
+
+  const without = tiles.filter((tile) => tile.id !== fromId);
+  const visibleOthers = without.filter((tile) => tile.visible);
+  const max = visibleOthers.length;
+  const index = Number.isFinite(visibleInsertIndex)
+    ? Math.min(Math.max(0, Math.trunc(visibleInsertIndex)), max)
+    : max;
+
+  if (visibleOthers.length === 0) {
+    without.splice(Math.min(fromIndex, without.length), 0, moved);
+    return without;
+  }
+
+  if (index >= max) {
+    const lastVisible = visibleOthers[visibleOthers.length - 1];
+    if (!lastVisible) {
+      without.splice(without.length, 0, moved);
+      return without;
+    }
+    const lastIdx = without.findIndex((tile) => tile.id === lastVisible.id);
+    without.splice(lastIdx < 0 ? without.length : lastIdx + 1, 0, moved);
+    return without;
+  }
+
+  const target = visibleOthers[index];
+  if (!target) {
+    without.splice(without.length, 0, moved);
+    return without;
+  }
+  const insertAt = without.findIndex((tile) => tile.id === target.id);
+  without.splice(insertAt < 0 ? without.length : insertAt, 0, moved);
+  return without;
+}
+
+export function previewReorderLayout(
+  layout: DashboardLayout,
+  fromId: string,
+  visibleInsertIndex: number,
+): DashboardLayout {
+  return { version: LAYOUT_VERSION, tiles: previewReorderTiles(layout.tiles, fromId, visibleInsertIndex) };
+}
+
 /** Insert `fromId` before `toId`. Hidden tiles stay in the array. */
 export function reorderTiles(layout: DashboardLayout, fromId: string, toId: string): DashboardLayout {
   if (fromId === toId) return { version: LAYOUT_VERSION, tiles: [...layout.tiles] };

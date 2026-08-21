@@ -95,6 +95,17 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Verify Grok Bot auto-track on a real Bearer (`Api 11%` → Bot) without manual calibrate
 - [x] Do not start macOS tray 1.5x / horizontal-scroll work here (moved to 0.13.0)
 
+## 0.17.0 — live tile displacement in Edit mode
+
+- [x] While dragging in `editingLayout`, compute insert index from pointer (first half = before, second half = after, or the gap)
+- [x] Visible cards slide aside immediately (CSS `order` + FLIP transform); hidden tiles stay in the layout array
+- [x] Persist `dashboard_layout` only on drop; Esc / leave window cancels and restores the pre-drag order
+- [x] Drag only from the grip when `editingLayout`; normal mode is not draggable
+- [x] No size-span / heatmap / pie / adapter / default tray layout changes; tray Edit may follow via shared `WidgetTile`
+- [x] Vitest for insert index + preview array; version 0.17.0 (package.json + src-tauri + README + docs/RELEASE.md)
+- [ ] Persist Day / Week / Month scale (currently component state only)
+- [ ] Optional heatmap filter by pool
+
 ## 0.16.0 — web title + Full/Tall cards fill the grid
 
 - [x] Title row (h2 + action buttons) is full content width; drop `max-w-xl` from the title bar

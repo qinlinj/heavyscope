@@ -16,6 +16,7 @@ import { WidgetGrid } from "@/components/WidgetGrid";
 import { WidgetTile } from "@/components/WidgetTile";
 import { Button } from "@/components/ui/button";
 import { useDatabase } from "@/hooks/useDatabase";
+import { useTileDragPreview } from "@/hooks/useTileDragPreview";
 import { useWidgetLayout } from "@/hooks/useWidgetLayout";
 import { formatAdvisorLine } from "@/lib/advisorLine";
 import { advisePool, crossPoolAdvice, tightestAdvice } from "@/lib/burnRate";
@@ -43,14 +44,22 @@ export function TrayPage() {
   const { ready, error, pools, records, settings, setSetting, thresholds, refreshLiveProviders } =
     useDatabase();
   const poolIds = useMemo(() => pools.map((pool) => pool.id), [pools]);
-  const { layout, reorder, setSize, hide, show } = useWidgetLayout(settings, poolIds, setSetting, "tray");
-  const shown = useMemo(() => visibleTiles(layout), [layout]);
+  const { layout, setSize, hide, show, commitLayout } = useWidgetLayout(
+    settings,
+    poolIds,
+    setSetting,
+    "tray",
+  );
+  const shownBase = useMemo(() => visibleTiles(layout), [layout]);
   const hidden = useMemo(() => hiddenTiles(layout), [layout]);
   const [pane, setPane] = useState<TrayPane>(() => {
     if (typeof window === "undefined") return "dashboard";
     return parseTrayPane(new URLSearchParams(window.location.search).get("pane"));
   });
   const [editingLayout, setEditingLayout] = useState(false);
+  const drag = useTileDragPreview(layout, editingLayout, commitLayout);
+  const previewShown = useMemo(() => visibleTiles(drag.displayLayout), [drag.displayLayout]);
+  const shown = drag.draggingId ? shownBase : previewShown;
   const [expandedPoolId, setExpandedPoolId] = useState<string | null>(null);
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncFlash, setSyncFlash] = useState<string | null>(null);
@@ -202,14 +211,36 @@ export function TrayPage() {
               {shown.length === 0 ? (
                 <p className="text-xs text-muted-foreground">{t("tray.empty")}</p>
               ) : (
-                <WidgetGrid columns={2} editing>
+                <WidgetGrid
+                  columns={2}
+                  editing
+                  dragging={Boolean(drag.draggingId)}
+                  gridRef={drag.gridRef}
+                  onDragOver={(event) => {
+                    if (!drag.draggingId) return;
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                    drag.updateFromPointer(event.clientX, event.clientY);
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    drag.commit();
+                  }}
+                >
                   {shown.map((tile) => (
                     <WidgetTile
                       key={tile.id}
                       tile={tile}
                       columns={2}
                       editing
-                      onReorder={reorder}
+                      dragging={drag.draggingId === tile.id}
+                      order={
+                        drag.draggingId
+                          ? previewShown.findIndex((item) => item.id === tile.id)
+                          : undefined
+                      }
+                      onDragStart={drag.begin}
+                      onDragEnd={drag.end}
                       onSize={setSize}
                       onHide={hide}
                       sizes={["sm", "md", "lg"]}

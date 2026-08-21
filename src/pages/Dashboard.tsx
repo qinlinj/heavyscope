@@ -17,6 +17,7 @@ import { advisePool, crossPoolAdvice, tightestAdvice } from "@/lib/burnRate";
 import { chartRecords } from "@/lib/charts";
 import { hiddenTiles, visibleTiles, type LayoutTile } from "@/lib/dashboardLayout";
 import { useDatabase } from "@/hooks/useDatabase";
+import { useTileDragPreview } from "@/hooks/useTileDragPreview";
 import { useWidgetLayout } from "@/hooks/useWidgetLayout";
 import { formatDateTime } from "@/lib/format";
 import { displayPoolName } from "@/lib/poolName";
@@ -69,15 +70,18 @@ export function Dashboard() {
     refreshLiveProviders,
   } = useDatabase();
   const poolIds = useMemo(() => pools.map((pool) => pool.id), [pools]);
-  const { layout, reorder, setSize, hide, show } = useWidgetLayout(
+  const { layout, setSize, hide, show, commitLayout } = useWidgetLayout(
     settings,
     poolIds,
     setSetting,
     "dashboard",
   );
-  const shown = useMemo(() => visibleTiles(layout), [layout]);
-  const hidden = useMemo(() => hiddenTiles(layout), [layout]);
   const [editingLayout, setEditingLayout] = useState(false);
+  const drag = useTileDragPreview(layout, editingLayout, commitLayout);
+  const persistedShown = useMemo(() => visibleTiles(layout), [layout]);
+  const previewShown = useMemo(() => visibleTiles(drag.displayLayout), [drag.displayLayout]);
+  const shown = drag.draggingId ? persistedShown : previewShown;
+  const hidden = useMemo(() => hiddenTiles(layout), [layout]);
   const [formOpen, setFormOpen] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
   const [editing, setEditing] = useState<Pool | null>(null);
@@ -230,14 +234,36 @@ export function Dashboard() {
       {shown.length === 0 && !editingLayout ? (
         <p className="text-sm text-muted-foreground">{t("layout.allHidden")}</p>
       ) : (
-        <WidgetGrid columns={4} editing={editingLayout}>
+        <WidgetGrid
+          columns={4}
+          editing={editingLayout}
+          dragging={Boolean(drag.draggingId)}
+          gridRef={drag.gridRef}
+          onDragOver={(event) => {
+            if (!drag.draggingId) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "move";
+            drag.updateFromPointer(event.clientX, event.clientY);
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            drag.commit();
+          }}
+        >
           {shown.map((tile) => (
             <WidgetTile
               key={tile.id}
               tile={tile}
               columns={4}
               editing={editingLayout}
-              onReorder={reorder}
+              dragging={drag.draggingId === tile.id}
+              order={
+                drag.draggingId
+                  ? previewShown.findIndex((item) => item.id === tile.id)
+                  : undefined
+              }
+              onDragStart={drag.begin}
+              onDragEnd={drag.end}
               onSize={setSize}
               onHide={hide}
             >

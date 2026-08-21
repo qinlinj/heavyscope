@@ -56,6 +56,7 @@ https://github.com/qinlinj/heavyscope
 - 0.14.0 — Cursor Spending live sync (three pools from a session token)
 - 0.15.0 — web Daily Activity heatmap + pie polish (done)
 - 0.16.0 — web title + Full/Tall cards fill the grid (done)
+- 0.17.0 — Apple-style live tile displacement while dragging in Edit mode
 
 ## Commits
 

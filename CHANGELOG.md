@@ -6,6 +6,18 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-08-21
+
+### Added
+
+- Edit-mode tile drag shows a live insertion slot: neighbors slide aside before mouse-up (Apple Home Screen style). Pointer on a card's top / first half inserts before it; bottom / second half inserts after it. Gaps between cards also open a slot. Hidden tiles stay in the layout array.
+- Vitest coverage for `insertIndexFromPointer` / `pointerInsertSide` and `previewReorderTiles`.
+
+### Changed
+
+- `dashboard_layout` (and tray edit, if used) is written only on drop. Escape or dragging out of the window cancels and restores the pre-drag order. The grip is still the only drag handle; normal mode is not draggable.
+- Version 0.17.0 (package.json + src-tauri + README + docs/RELEASE.md). No new drag library. Size spans, heatmap, pies, adapters, and the default `/tray` stack are unchanged.
+
 ## [0.16.0] - 2026-08-21
 
 ### Fixed

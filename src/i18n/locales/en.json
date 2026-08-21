@@ -18,7 +18,7 @@
   "layout": {
     "edit": "Edit",
     "done": "Done",
-    "editHint": "Drag the handle to reorder. Resize or hide a card — hiding a pool widget does not delete the pool.",
+    "editHint": "Drag the handle to reorder — other cards slide aside to show the drop slot. Resize or hide a card — hiding a pool widget does not delete the pool.",
     "dragHandle": "Drag to reorder",
     "sizeGroup": "Card size",
     "size": {

@@ -1,8 +1,8 @@
 import { EyeOff, GripVertical } from "lucide-react";
-import { useState, type DragEvent, type ReactNode } from "react";
+import type { DragEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { readTileDrag, writeTileDrag } from "@/lib/chartDnD";
+import { writeTileDrag } from "@/lib/chartDnD";
 import { TILE_SIZES, type LayoutTile, type TileSize } from "@/lib/dashboardLayout";
 import { cn } from "@/lib/utils";
 
@@ -10,8 +10,11 @@ type Props = {
   tile: LayoutTile;
   columns: 2 | 4;
   editing: boolean;
+  dragging?: boolean;
+  order?: number;
   sizes?: readonly TileSize[];
-  onReorder: (fromId: string, toId: string) => void;
+  onDragStart?: (id: string) => void;
+  onDragEnd?: () => void;
   onSize: (id: string, size: TileSize) => void;
   onHide: (id: string) => void;
   children: ReactNode;
@@ -21,50 +24,43 @@ export function WidgetTile({
   tile,
   columns,
   editing,
+  dragging = false,
+  order,
   sizes = TILE_SIZES,
-  onReorder,
+  onDragStart,
+  onDragEnd,
   onSize,
   onHide,
   children,
 }: Props) {
   const { t } = useTranslation();
-  const [over, setOver] = useState(false);
 
   function handleDragOver(event: DragEvent) {
     if (!editing) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
-    setOver(true);
-  }
-
-  function handleDrop(event: DragEvent) {
-    event.preventDefault();
-    setOver(false);
-    if (!editing) return;
-    const fromId = readTileDrag(event);
-    if (!fromId) return;
-    onReorder(fromId, tile.id);
   }
 
   return (
     <div
       data-tile-id={tile.id}
       data-tile-size={tile.size}
+      data-dragging={dragging ? "true" : "false"}
+      draggable={false}
+      style={order == null ? undefined : { order }}
       className={cn(
         "relative h-full min-h-0 min-w-0 w-full",
         spanClass(tile.size, columns),
         tile.size === "xl" && "min-h-80",
       )}
       onDragOver={handleDragOver}
-      onDragLeave={() => setOver(false)}
-      onDrop={handleDrop}
     >
       <div
         className={cn(
           "relative flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-xl",
           !editing && "transition duration-150 hover:-translate-y-0.5 hover:shadow-md",
           editing && "ring-2 ring-dashed ring-primary/30",
-          over && "ring-2 ring-primary/60",
+          dragging && "opacity-40 ring-2 ring-primary/55",
         )}
       >
         {editing ? (
@@ -72,7 +68,11 @@ export function WidgetTile({
             <button
               type="button"
               draggable
-              onDragStart={(event) => writeTileDrag(event, tile.id)}
+              onDragStart={(event) => {
+                writeTileDrag(event, tile.id);
+                onDragStart?.(tile.id);
+              }}
+              onDragEnd={() => onDragEnd?.()}
               className="inline-flex size-6 cursor-grab items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing"
               aria-label={t("layout.dragHandle")}
             >
