@@ -279,7 +279,7 @@ export function TrayPage() {
                       : t("live.lastSyncedNever")
                     : t("live.notConnected")}
                   {providerSync.cursor.expired || providerSync.cursor.message
-                    ? ` — ${providerSync.cursor.expired ? t("live.expired") : providerSync.cursor.message}`
+                    ? ` — ${providerSync.cursor.expired ? t("live.cursorExpired") : providerSync.cursor.message}`
                     : ""}
                 </p>
                 <p>

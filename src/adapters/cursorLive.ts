@@ -1,4 +1,9 @@
-import { LIVE_PERCENT_TOTAL, LIVE_PERCENT_UNIT } from "./liveConstants";
+import {
+  CURSOR_OTHER_DEFAULT_USD,
+  LIVE_PERCENT_TOTAL,
+  LIVE_PERCENT_UNIT,
+  LIVE_USD_UNIT,
+} from "./liveConstants";
 import type { LivePoolUpdate, LiveProviderResult } from "./liveTypes";
 
 export type CursorUsageSummary = {
@@ -23,6 +28,13 @@ export type CursorUsageSummary = {
   };
 };
 
+export type CursorSpendingSources = {
+  period?: unknown;
+  aggregations?: unknown;
+  events?: unknown;
+  summary?: unknown;
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -37,13 +49,35 @@ function asFiniteNumber(value: unknown): number | null {
 }
 
 function asIso(value: unknown): string | null {
-  if (typeof value !== "string" || !value.trim()) return null;
-  const time = Date.parse(value);
-  return Number.isNaN(time) ? null : new Date(time).toISOString();
+  if (typeof value === "string" && value.trim()) {
+    if (/^\d+$/.test(value.trim())) return asIso(Number(value.trim()));
+    const time = Date.parse(value);
+    return Number.isNaN(time) ? null : new Date(time).toISOString();
+  }
+  const ms = asEpochMs(value);
+  return ms == null ? null : new Date(ms).toISOString();
 }
 
-function centsToUsd(cents: number): string {
+/** Accept ISO strings, epoch ms, or epoch seconds. Never invents a date. */
+export function asEpochMs(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    if (value < 1e11) return Math.round(value * 1000);
+    return Math.round(value);
+  }
+  if (typeof value === "string" && value.trim()) {
+    if (/^\d+$/.test(value.trim())) return asEpochMs(Number(value.trim()));
+    const time = Date.parse(value);
+    return Number.isNaN(time) ? null : time;
+  }
+  return null;
+}
+
+function centsToUsdLabel(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
+}
+
+function centsToUsdAmount(cents: number): number {
+  return cents / 100;
 }
 
 function parsePercentFromDisplay(message: unknown): number | null {
@@ -52,6 +86,31 @@ function parsePercentFromDisplay(message: unknown): number | null {
   if (!match) return null;
   const value = Number(match[1]);
   return Number.isFinite(value) ? value : null;
+}
+
+function asRecordArray(value: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord);
+}
+
+function unwrapCursorPayload(input: unknown): Record<string, unknown> | null {
+  if (!isRecord(input)) return null;
+  const nested = isRecord(input.data) ? input.data : null;
+  if (
+    nested &&
+    input.planUsage == null &&
+    input.aggregations == null &&
+    input.usageEventsDisplay == null &&
+    input.individualUsage == null &&
+    input.autoPercentUsed == null
+  ) {
+    return nested;
+  }
+  return input;
+}
+
+function recordFrom(value: unknown): Record<string, unknown> | null {
+  return isRecord(value) ? value : null;
 }
 
 /** Accept pasted cookie values, `sub::jwt`, `sub%3A%3Ajwt`, or a bare JWT. */
@@ -97,88 +156,301 @@ export function cursorCookieHeader(token: string): string {
   return `WorkosCursorSessionToken=${value}`;
 }
 
-function onDemandNote(onDemand: CursorUsageSummary["individualUsage"] extends infer T
-  ? T extends { onDemand?: infer O }
-    ? O
-    : undefined
-  : undefined): string | undefined {
-  if (!onDemand || typeof onDemand !== "object") return undefined;
-  const enabled = Boolean("enabled" in onDemand && onDemand.enabled);
-  const used = asFiniteNumber("used" in onDemand ? onDemand.used : null);
-  const limit = asFiniteNumber("limit" in onDemand ? onDemand.limit : null);
-  if (!enabled || used == null || limit == null) return undefined;
-  return `On-demand ${centsToUsd(used)} / ${centsToUsd(limit)}`;
+function onDemandCents(onDemand: unknown): { used: number; limit: number | null } | null {
+  const rec = recordFrom(onDemand);
+  if (!rec) return null;
+  const used = asFiniteNumber(rec.used);
+  if (used == null) return null;
+  return { used, limit: asFiniteNumber(rec.limit) };
 }
 
 /**
- * Map unofficial GET /api/usage-summary JSON to the two Cursor preset pools.
- * Never throws. Missing required fields become an error result.
+ * True only for a real Grok Bot / Grok API / Agents SKU row.
+ * Cursor Grok chat models, Composer, and Heavy stay out of grok_bot.
+ */
+export function isCursorGrokBotSku(raw: string): boolean {
+  const text = raw.trim().toLowerCase();
+  if (!text) return false;
+  const compact = text.replace(/[_\s]+/g, "-");
+
+  if (compact.includes("composer") || text.includes("composer")) return false;
+  if (compact.includes("cursor-grok") || text.includes("cursor grok")) return false;
+
+  const heavy = /(?:super-)?grok-heavy|\bheavy\b/.test(compact) || /\bheavy\b/.test(text);
+  const grokBotLiteral = /grok-bot/.test(compact) || /grok\s+bot/.test(text);
+  if (heavy && !grokBotLiteral) return false;
+
+  const hasBotApiAgents =
+    /(?:^|[^a-z])(bot|api|agents?)(?:[^a-z]|$)/.test(compact) ||
+    /\b(bot|api|agents?)\b/.test(text);
+  const isCursorChatGrok = /(?:^|[^a-z])grok-[234](?:$|[^a-z0-9])/.test(compact);
+  if (isCursorChatGrok && !hasBotApiAgents) return false;
+
+  if (grokBotLiteral || compact === "grok-bot") return true;
+  if (compact.includes("grok-api") || compact.includes("grok-agents")) return true;
+  if (text.includes("grok") && hasBotApiAgents) return true;
+  return false;
+}
+
+function rowIdentity(row: Record<string, unknown>): string {
+  const keys = [
+    "modelIntent",
+    "model",
+    "product",
+    "kind",
+    "name",
+    "sku",
+    "displayName",
+    "modelName",
+  ];
+  return keys
+    .map((key) => row[key])
+    .filter((value): value is string => typeof value === "string" && Boolean(value.trim()))
+    .join(" ");
+}
+
+type ExtractedUsed = {
+  used: number;
+  total?: number;
+  unit: string;
+};
+
+function tokenSum(row: Record<string, unknown>): number | null {
+  const keys = ["inputTokens", "outputTokens", "cacheReadTokens", "cacheWriteTokens", "totalTokens"];
+  let sum = 0;
+  let any = false;
+  for (const key of keys) {
+    const value = asFiniteNumber(row[key]);
+    if (value == null) continue;
+    sum += value;
+    any = true;
+  }
+  const nested = recordFrom(row.tokenUsage);
+  if (nested) {
+    for (const key of keys) {
+      const value = asFiniteNumber(nested[key]);
+      if (value == null) continue;
+      sum += value;
+      any = true;
+    }
+  }
+  return any ? sum : null;
+}
+
+function extractRowUsed(row: Record<string, unknown>): ExtractedUsed | null {
+  const usedDirect = asFiniteNumber(row.used ?? row.quotaUsed ?? row.usage);
+  const limitDirect = asFiniteNumber(row.limit ?? row.quotaTotal ?? row.quota);
+  const usedCents = asFiniteNumber(
+    row.usedCents ?? row.totalCents ?? row.chargedCents ?? row.costCents,
+  );
+  const limitCents = asFiniteNumber(row.limitCents ?? row.totalLimitCents ?? row.quotaCents);
+  const nested = recordFrom(row.tokenUsage);
+  const nestedCents = nested ? asFiniteNumber(nested.totalCents) : null;
+  const cents = usedCents ?? nestedCents;
+
+  if (usedDirect != null && limitDirect != null && limitDirect > 0) {
+    const unit = typeof row.unit === "string" && row.unit.trim() ? row.unit : "requests";
+    return { used: usedDirect, total: limitDirect, unit };
+  }
+  if (cents != null) {
+    const total = limitCents != null && limitCents > 0 ? centsToUsdAmount(limitCents) : undefined;
+    return { used: centsToUsdAmount(cents), total, unit: LIVE_USD_UNIT };
+  }
+  if (usedDirect != null) {
+    return {
+      used: usedDirect,
+      total: limitDirect != null && limitDirect > 0 ? limitDirect : undefined,
+      unit: typeof row.unit === "string" && row.unit.trim() ? row.unit : "requests",
+    };
+  }
+  const tokens = tokenSum(row);
+  if (tokens != null) {
+    return { used: tokens, unit: "tokens" };
+  }
+  return null;
+}
+
+function collectGrokBotRows(rows: Record<string, unknown>[]): ExtractedUsed | null {
+  const matched: ExtractedUsed[] = [];
+  for (const row of rows) {
+    const identity = rowIdentity(row);
+    if (!isCursorGrokBotSku(identity)) continue;
+    const extracted = extractRowUsed(row);
+    if (extracted) matched.push(extracted);
+  }
+  if (matched.length === 0) return null;
+
+  const usd = matched.filter((item) => item.unit === LIVE_USD_UNIT);
+  const chosen = usd.length > 0 ? usd : matched;
+  const used = chosen.reduce((sum, item) => sum + item.used, 0);
+  const total = chosen.find((item) => item.total != null && item.total > 0)?.total;
+  return { used, total, unit: chosen[0]?.unit ?? LIVE_USD_UNIT };
+}
+
+function grokBotPool(extracted: ExtractedUsed, resetAt: string | null, recordedAt: string): LivePoolUpdate {
+  const pool: LivePoolUpdate = {
+    poolHint: "grok_bot",
+    quotaUsed: extracted.used,
+    resetAt,
+    resetCycle: "weekly",
+    unit: extracted.unit,
+    note: "Cursor spending sync (Grok Bot)",
+    recordedAt,
+  };
+  if (extracted.total != null && extracted.total > 0) {
+    pool.quotaTotal = extracted.total;
+  }
+  return pool;
+}
+
+export function mapCursorGrokBotFromRows(input: unknown, resetAt: string | null, recordedAt: string): LivePoolUpdate | null {
+  const root = unwrapCursorPayload(input);
+  if (!root) return null;
+  const rows = [
+    ...asRecordArray(root.aggregations),
+    ...asRecordArray(root.usageEventsDisplay),
+    ...asRecordArray(root.events),
+  ];
+  const extracted = collectGrokBotRows(rows);
+  return extracted ? grokBotPool(extracted, resetAt, recordedAt) : null;
+}
+
+function planUsageRecord(root: Record<string, unknown> | null): Record<string, unknown> | null {
+  if (!root) return null;
+  const individual = recordFrom(root.individualUsage);
+  return (
+    recordFrom(root.planUsage) ??
+    recordFrom(individual?.plan) ??
+    (typeof root.autoPercentUsed === "number" || typeof root.totalSpend === "number" ? root : null)
+  );
+}
+
+function autoPercentFrom(root: Record<string, unknown> | null, plan: Record<string, unknown> | null): number | null {
+  const fromPlan = plan ? asFiniteNumber(plan.autoPercentUsed) : null;
+  if (fromPlan != null) return fromPlan;
+  if (root) {
+    const top = asFiniteNumber(root.autoPercentUsed);
+    if (top != null) return top;
+    return parsePercentFromDisplay(root.autoModelSelectedDisplayMessage);
+  }
+  return null;
+}
+
+function otherUsdFromPlan(plan: Record<string, unknown> | null): { used: number; total: number } | null {
+  if (!plan) return null;
+  const spendCents = asFiniteNumber(plan.totalSpend ?? plan.used);
+  if (spendCents == null) return null;
+  const limitCents = asFiniteNumber(plan.limit);
+  const total =
+    limitCents != null && limitCents > 0 ? centsToUsdAmount(limitCents) : CURSOR_OTHER_DEFAULT_USD;
+  return { used: centsToUsdAmount(spendCents), total };
+}
+
+function otherUsdFromOnDemand(onDemand: unknown): { used: number; total: number } | null {
+  const cents = onDemandCents(onDemand);
+  if (!cents) return null;
+  const total = cents.limit != null && cents.limit > 0 ? centsToUsdAmount(cents.limit) : CURSOR_OTHER_DEFAULT_USD;
+  return { used: centsToUsdAmount(cents.used), total };
+}
+
+export function resolveCursorBillingWindow(
+  period: unknown,
+  summary: unknown,
+  nowMs = Date.now(),
+): { startMs: number; endMs: number; resetAt: string | null } {
+  const periodRoot = unwrapCursorPayload(period);
+  const summaryRoot = unwrapCursorPayload(summary);
+  const start =
+    asEpochMs(periodRoot?.billingCycleStart) ??
+    asEpochMs(summaryRoot?.billingCycleStart) ??
+    nowMs - 32 * 24 * 60 * 60 * 1000;
+  const end =
+    asEpochMs(periodRoot?.billingCycleEnd) ??
+    asEpochMs(summaryRoot?.billingCycleEnd) ??
+    nowMs;
+  const resetAt =
+    asIso(periodRoot?.billingCycleEnd) ??
+    asIso(summaryRoot?.billingCycleEnd) ??
+    null;
+  return {
+    startMs: Math.min(start, end),
+    endMs: Math.max(start, end),
+    resetAt,
+  };
+}
+
+function modelsPool(percent: number, resetAt: string | null, recordedAt: string): LivePoolUpdate {
+  return {
+    poolHint: "cursor_models",
+    quotaUsed: percent,
+    quotaTotal: LIVE_PERCENT_TOTAL,
+    resetAt,
+    resetCycle: "monthly",
+    unit: LIVE_PERCENT_UNIT,
+    note: "Cursor live sync",
+    recordedAt,
+  };
+}
+
+function otherUsdPool(
+  used: number,
+  total: number,
+  resetAt: string | null,
+  recordedAt: string,
+  extraNote?: string,
+): LivePoolUpdate {
+  return {
+    poolHint: "cursor_other",
+    quotaUsed: used,
+    quotaTotal: total,
+    resetAt,
+    resetCycle: "monthly",
+    unit: LIVE_USD_UNIT,
+    note: extraNote ? `Cursor live sync. ${extraNote}` : "Cursor live sync",
+    recordedAt,
+  };
+}
+
+/**
+ * usage-summary fallback: Models % from autoPercentUsed.
+ * Other is USD from on-demand cents when present — never apiPercentUsed as 0–100%.
  */
 export function mapCursorUsageSummary(input: unknown): LiveProviderResult {
   if (!isRecord(input)) {
     return { ok: false, code: "invalid", message: "Cursor usage-summary is not an object", pools: [] };
   }
 
-  const individual = isRecord(input.individualUsage) ? input.individualUsage : null;
-  const plan = individual && isRecord(individual.plan) ? individual.plan : null;
-  const onDemand = individual && isRecord(individual.onDemand) ? individual.onDemand : undefined;
+  const root = unwrapCursorPayload(input);
+  const individual = root ? recordFrom(root.individualUsage) : null;
+  const plan = individual ? recordFrom(individual.plan) : null;
+  const onDemand = individual?.onDemand;
 
-  let autoPercent = plan ? asFiniteNumber(plan.autoPercentUsed) : null;
-  let apiPercent = plan ? asFiniteNumber(plan.apiPercentUsed) : null;
+  const autoPercent = autoPercentFrom(root, plan);
+  const other = otherUsdFromOnDemand(onDemand);
 
-  if (autoPercent == null) {
-    autoPercent = parsePercentFromDisplay(input.autoModelSelectedDisplayMessage);
-  }
-  if (apiPercent == null) {
-    apiPercent = parsePercentFromDisplay(input.namedModelSelectedDisplayMessage);
-  }
-
-  if (apiPercent == null && onDemand && onDemand.enabled) {
-    const used = asFiniteNumber(onDemand.used);
-    const limit = asFiniteNumber(onDemand.limit);
-    if (used != null && limit != null && limit > 0) {
-      apiPercent = (used / limit) * 100;
-    }
-  }
-
-  if (autoPercent == null && apiPercent == null) {
+  if (autoPercent == null && other == null) {
     return {
       ok: false,
       code: "invalid",
-      message: "Cursor usage-summary is missing autoPercentUsed and apiPercentUsed",
+      message: "Cursor usage-summary is missing autoPercentUsed and on-demand spend",
       pools: [],
     };
   }
 
-  const resetAt = asIso(input.billingCycleEnd);
+  const resetAt = asIso(root?.billingCycleEnd);
   const fetchedAt = new Date().toISOString();
-  const extraNote = onDemandNote(onDemand);
   const pools: LivePoolUpdate[] = [];
 
   if (autoPercent != null) {
-    pools.push({
-      poolHint: "cursor_models",
-      quotaUsed: autoPercent,
-      quotaTotal: LIVE_PERCENT_TOTAL,
-      resetAt,
-      resetCycle: "monthly",
-      unit: LIVE_PERCENT_UNIT,
-      note: "Cursor live sync",
-      recordedAt: fetchedAt,
-    });
+    pools.push(modelsPool(autoPercent, resetAt, fetchedAt));
   }
-
-  if (apiPercent != null) {
-    pools.push({
-      poolHint: "cursor_other",
-      quotaUsed: apiPercent,
-      quotaTotal: LIVE_PERCENT_TOTAL,
-      resetAt,
-      resetCycle: "monthly",
-      unit: LIVE_PERCENT_UNIT,
-      note: extraNote ? `Cursor live sync. ${extraNote}` : "Cursor live sync",
-      recordedAt: fetchedAt,
-    });
+  if (other) {
+    const usedCents = onDemandCents(onDemand);
+    const extra =
+      usedCents && usedCents.limit != null
+        ? `On-demand ${centsToUsdLabel(usedCents.used)} / ${centsToUsdLabel(usedCents.limit)}`
+        : `On-demand ${centsToUsdLabel(other.used * 100)} / $${other.total.toFixed(2)}`;
+    pools.push(otherUsdPool(other.used, other.total, resetAt, fetchedAt, extra));
   }
 
   if (pools.length === 0) {
@@ -191,15 +463,96 @@ export function mapCursorUsageSummary(input: unknown): LiveProviderResult {
     message: "Cursor usage-summary mapped",
     pools,
     resetAt,
+    botUnavailable: true,
   };
 }
 
-export function mapCursorUsageResponse(status: number, body: string): LiveProviderResult {
+export function mapCursorPeriodUsage(
+  input: unknown,
+  recordedAt = new Date().toISOString(),
+): { models: LivePoolUpdate | null; other: LivePoolUpdate | null; resetAt: string | null } {
+  const root = unwrapCursorPayload(input);
+  const plan = planUsageRecord(root);
+  const individual = root ? recordFrom(root.individualUsage) : null;
+  const resetAt = asIso(root?.billingCycleEnd);
+
+  const autoPercent = autoPercentFrom(root, plan);
+  const other = otherUsdFromPlan(plan) ?? otherUsdFromOnDemand(individual?.onDemand);
+
+  return {
+    models: autoPercent != null ? modelsPool(autoPercent, resetAt, recordedAt) : null,
+    other: other
+      ? otherUsdPool(
+          other.used,
+          other.total,
+          resetAt,
+          recordedAt,
+          `Spend $${other.used.toFixed(2)} / $${other.total.toFixed(2)}`,
+        )
+      : null,
+    resetAt,
+  };
+}
+
+/**
+ * Merge current-period-usage + aggregations/events + usage-summary.
+ * Spending Other (USD) wins over the old usage-summary Other-% mapping.
+ * usage-summary is only a Models % fallback when period autoPercent is missing.
+ * Grok Bot is omitted unless a conservative SKU row exists — never invented.
+ */
+export function mergeCursorSpendingSources(sources: CursorSpendingSources): LiveProviderResult {
+  const recordedAt = new Date().toISOString();
+  const window = resolveCursorBillingWindow(sources.period, sources.summary);
+  const period = sources.period != null ? mapCursorPeriodUsage(sources.period, recordedAt) : null;
+  const summary =
+    sources.summary != null && isRecord(sources.summary) ? mapCursorUsageSummary(sources.summary) : null;
+
+  const resetAt = period?.resetAt ?? window.resetAt ?? summary?.resetAt ?? null;
+  const grok =
+    mapCursorGrokBotFromRows(sources.aggregations, resetAt, recordedAt) ??
+    mapCursorGrokBotFromRows(sources.events, resetAt, recordedAt);
+
+  const models =
+    period?.models ??
+    summary?.pools.find((pool) => pool.poolHint === "cursor_models") ??
+    null;
+  const other =
+    period?.other ??
+    summary?.pools.find((pool) => pool.poolHint === "cursor_other") ??
+    null;
+
+  const pools: LivePoolUpdate[] = [];
+  if (models) pools.push({ ...models, resetAt: models.resetAt ?? resetAt, recordedAt });
+  if (other) pools.push({ ...other, resetAt: other.resetAt ?? resetAt, recordedAt });
+  if (grok) pools.push({ ...grok, resetAt: grok.resetAt ?? resetAt, recordedAt });
+
+  if (pools.length === 0) {
+    return {
+      ok: false,
+      code: "invalid",
+      message: "Cursor spending payloads had no mappable pools",
+      pools: [],
+      botUnavailable: true,
+    };
+  }
+
+  const labels = pools.map((pool) => pool.poolHint).join(", ");
+  return {
+    ok: true,
+    code: "ok",
+    message: `Cursor spending mapped (${labels})`,
+    pools,
+    resetAt,
+    botUnavailable: grok == null,
+  };
+}
+
+export function mapCursorHttpStatus(status: number, label: string): LiveProviderResult | null {
   if (status === 401 || status === 403) {
     return {
       ok: false,
       code: "expired",
-      message: "Cursor session expired or was rejected (HTTP " + status + ")",
+      message: `Cursor session expired or was rejected (HTTP ${status}). Paste a new WorkosCursorSessionToken.`,
       pools: [],
     };
   }
@@ -207,19 +560,59 @@ export function mapCursorUsageResponse(status: number, body: string): LiveProvid
     return {
       ok: false,
       code: "http",
-      message: `Cursor usage-summary failed with HTTP ${status}`,
+      message: `${label} failed with HTTP ${status}`,
       pools: [],
     };
   }
+  return null;
+}
+
+export function parseCursorJsonBody(
+  status: number,
+  body: string,
+  label: string,
+): { ok: true; value: unknown } | LiveProviderResult {
+  const statusError = mapCursorHttpStatus(status, label);
+  if (statusError) return statusError;
   const trimmed = body.trim();
   if (!trimmed) {
-    return { ok: false, code: "invalid", message: "Cursor usage-summary response was empty", pools: [] };
+    return { ok: false, code: "invalid", message: `${label} response was empty`, pools: [] };
   }
-  let parsed: unknown;
   try {
-    parsed = JSON.parse(trimmed);
+    return { ok: true, value: JSON.parse(trimmed) };
   } catch {
-    return { ok: false, code: "invalid", message: "Cursor usage-summary was not valid JSON", pools: [] };
+    return { ok: false, code: "invalid", message: `${label} was not valid JSON`, pools: [] };
   }
-  return mapCursorUsageSummary(parsed);
+}
+
+export function mapCursorUsageResponse(status: number, body: string): LiveProviderResult {
+  const parsed = parseCursorJsonBody(status, body, "Cursor usage-summary");
+  if (!("value" in parsed)) return parsed;
+  return mapCursorUsageSummary(parsed.value);
+}
+
+export function mapCursorPeriodResponse(status: number, body: string): LiveProviderResult {
+  const parsed = parseCursorJsonBody(status, body, "Cursor current-period-usage");
+  if (!("value" in parsed)) return parsed;
+  return mergeCursorSpendingSources({ period: parsed.value });
+}
+
+export function mapCursorAggregatedResponse(status: number, body: string): LiveProviderResult {
+  const parsed = parseCursorJsonBody(status, body, "Cursor aggregated-usage-events");
+  if (!("value" in parsed)) return parsed;
+  return mergeCursorSpendingSources({ aggregations: parsed.value });
+}
+
+export function aggregatedUsageRequestBody(startMs: number, endMs: number): string {
+  return JSON.stringify({ teamId: -1, startDate: startMs, endDate: endMs });
+}
+
+export function filteredUsageRequestBody(startMs: number, endMs: number): string {
+  return JSON.stringify({
+    teamId: -1,
+    startDate: startMs,
+    endDate: endMs,
+    page: 1,
+    pageSize: 100,
+  });
 }

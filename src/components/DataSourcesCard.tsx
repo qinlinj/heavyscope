@@ -50,9 +50,10 @@ function connectorLabel(
   connected: string | undefined,
   hasToken: boolean,
   t: (key: string) => string,
+  expiredKey = "live.expired",
 ): string {
   if (!hasToken) return t("live.notConnected");
-  if (connected === "expired") return t("live.expired");
+  if (connected === "expired") return t(expiredKey);
   if (connected === "true") return t("live.connected");
   return t("live.notConnected");
 }
@@ -200,7 +201,7 @@ export function DataSourcesCard() {
               <p className="text-xs text-muted-foreground">{t("live.cursorHint")}</p>
             </div>
             <p className="text-xs text-muted-foreground">
-              {connectorLabel(settings[SETTING_CURSOR_CONNECTED], cursorHasToken, t)}
+              {connectorLabel(settings[SETTING_CURSOR_CONNECTED], cursorHasToken, t, "live.cursorExpired")}
             </p>
           </div>
           <div className="grid gap-1.5">

@@ -34,6 +34,8 @@ export default defineConfig({
           proxy.on("proxyReq", (proxyReq, req) => {
             const cookie = headerValue(req.headers["x-heavyscope-cookie"]);
             if (cookie) proxyReq.setHeader("Cookie", cookie);
+            proxyReq.setHeader("Origin", "https://cursor.com");
+            proxyReq.setHeader("Referer", "https://cursor.com/dashboard/spending");
             proxyReq.setHeader(
               "User-Agent",
               "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",

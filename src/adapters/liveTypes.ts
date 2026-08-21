@@ -5,7 +5,8 @@ export type LiveErrorCode = "ok" | "expired" | "invalid" | "http" | "cors" | "ne
 export type LivePoolUpdate = {
   poolHint: string;
   quotaUsed: number;
-  quotaTotal: number;
+  /** Omit when the payload has used but no real limit — never invent a cap. */
+  quotaTotal?: number;
   resetAt?: string | null;
   resetCycle?: ResetCycle;
   unit?: string;

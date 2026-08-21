@@ -38,9 +38,10 @@ function connectorLabel(
   connected: string | undefined,
   hasToken: boolean,
   t: (key: string) => string,
+  expiredKey = "live.expired",
 ): string {
   if (!hasToken) return t("live.notConnected");
-  if (connected === "expired") return t("live.expired");
+  if (connected === "expired") return t(expiredKey);
   if (connected === "true") return t("live.connected");
   return t("live.notConnected");
 }
@@ -133,7 +134,7 @@ export function TraySettings() {
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-xs font-medium">{t("live.cursorTitle")}</h3>
           <p className="text-xs text-muted-foreground">
-            {connectorLabel(settings[SETTING_CURSOR_CONNECTED], cursorHasToken, t)}
+            {connectorLabel(settings[SETTING_CURSOR_CONNECTED], cursorHasToken, t, "live.cursorExpired")}
           </p>
         </div>
         <Input
