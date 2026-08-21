@@ -340,7 +340,8 @@ describe("trayHeroUsedPercent", () => {
   it("uses used% of the tightest connected pool for All", () => {
     const hero = trayHeroUsedPercent("all", advices, pools);
     expect(hero).toEqual({ poolId: "preset-cursor-models", usedPercent: 91, mode: "all" });
-    expect(hero?.usedPercent).not.toBe(91 + 0);
+    expect(hero?.usedPercent).not.toBe(36);
+    expect(hero?.usedPercent).not.toBe(145.99);
   });
 
   it("shows Other used% as 0 and does not invent totalSpend dollars", () => {
