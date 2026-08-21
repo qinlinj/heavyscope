@@ -94,7 +94,7 @@ export function PiesPanel({ pools, compact = false, size = "lg" }: Props) {
   const height = pieChartHeight(size);
 
   return (
-    <Card className="flex h-full min-h-0 flex-col overflow-hidden bg-card/90 ring-1 ring-foreground/10 backdrop-blur">
+    <Card className="flex h-full w-full min-h-0 min-w-0 flex-col overflow-hidden bg-card/90 ring-1 ring-foreground/10 backdrop-blur">
       <CardHeader>
         <CardTitle>{t("charts.pies")}</CardTitle>
         <CardDescription>{t("charts.piesHint")}</CardDescription>

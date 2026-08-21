@@ -6,6 +6,18 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-08-21
+
+### Fixed
+
+- Web dashboard title row (h2 + action buttons) stretches to the full content width, matching the widget grid. The previous `max-w-xl` wrapper no longer cuts the title to the left half because the quota overview text is short.
+- Full / Tall (`lg` / `xl`) cards fill their grid tiles. PoolCard, AdvisorPanel, ChartCard, and PiesPanel roots use `h-full w-full min-w-0`. Advisor `max-w-3xl` is removed so a full-width tile is no longer a narrow strip with leftover empty space beside or below the card.
+
+### Changed
+
+- Quota overview body stays short and scrollable (`max-h-16`). Widget spans are unchanged (`sm` = 1 col, `md` = 2, `lg`/`xl` = 4). Edit chrome (grip / size / hide) still appears only when `editingLayout` is on.
+- Version 0.16.0 (package.json + src-tauri + README + docs/RELEASE.md).
+
 ## [0.15.0] - 2026-08-21
 
 ### Fixed

@@ -51,7 +51,7 @@ export function WidgetTile({
       data-tile-id={tile.id}
       data-tile-size={tile.size}
       className={cn(
-        "relative min-w-0 min-h-0",
+        "relative h-full min-h-0 min-w-0 w-full",
         spanClass(tile.size, columns),
         tile.size === "xl" && "min-h-80",
       )}
@@ -61,7 +61,7 @@ export function WidgetTile({
     >
       <div
         className={cn(
-          "relative h-full min-h-0 overflow-hidden rounded-xl",
+          "relative flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-xl",
           !editing && "transition duration-150 hover:-translate-y-0.5 hover:shadow-md",
           editing && "ring-2 ring-dashed ring-primary/30",
           over && "ring-2 ring-primary/60",
@@ -105,7 +105,9 @@ export function WidgetTile({
             </Button>
           </div>
         ) : null}
-        <div className="h-full min-h-0 overflow-visible">{children}</div>
+        <div className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-visible [&>*]:h-full [&>*]:min-h-0 [&>*]:w-full [&>*]:min-w-0">
+          {children}
+        </div>
       </div>
     </div>
   );

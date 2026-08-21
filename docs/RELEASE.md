@@ -2,6 +2,18 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.16.0
+
+- Web dashboard title row (h2 + action buttons) stretches to the same width as the widget grid. Quota overview stays short and scrollable (`max-h-16`). The old `max-w-xl` wrapper no longer cuts the title to the left half.
+- Full / Tall cards fill their grid tiles: `h-full w-full min-w-0` on PoolCard, AdvisorPanel, ChartCard, and PiesPanel roots. Advisor `max-w-3xl` is gone so a Full card is no longer a narrow strip. `sm` stays one column; span meaning is unchanged.
+- Same-row `items-stretch` still applies. Card edges sit flush with the tile. Edit chrome (grip / size / hide) stays overlay-only in Edit mode.
+- Version 0.16.0. No adapter, heatmap, pie-logic, drag, or `/tray` changes.
+
+## v0.15.0
+
+- Daily Activity heatmap first paint no longer uses 0×0 cells. Squares stay 1:1; leftover is padding or horizontal scroll. Hover lists every pool that day and portals out of overflow.
+- Pies: `sm`/`md` used pie only; `lg`/`xl` keep used + remaining. Version 0.15.0.
+
 ## v0.14.0
 
 - Cursor Spending live sync: a saved `WorkosCursorSessionToken` can fill Grok Bot, Cursor Models, and Cursor Other $400 without a Grok cookie/bearer.

@@ -54,6 +54,8 @@ https://github.com/qinlinj/heavyscope
 - 0.12.0 — web polish + Grok Bot productUsage (done)
 - 0.13.0 — tray product polish (visible pools, square heatmap, ~380×780)
 - 0.14.0 — Cursor Spending live sync (three pools from a session token)
+- 0.15.0 — web Daily Activity heatmap + pie polish (done)
+- 0.16.0 — web title + Full/Tall cards fill the grid (done)
 
 ## Commits
 
