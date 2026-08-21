@@ -2,11 +2,12 @@ import {
   aggregatedUsageRequestBody,
   cursorCookieHeader,
   filteredUsageRequestBody,
+  finishCursorLiveRefresh,
   mapCursorGrokBotFromRows,
   mapCursorHttpStatus,
-  mergeCursorSpendingSources,
   parseCursorJsonBody,
   resolveCursorBillingWindow,
+  type CursorJsonParse,
 } from "./cursorLive";
 import {
   grokCookieHeader,
@@ -52,10 +53,10 @@ function transportError(response: LiveHttpError): LiveProviderResult {
 function jsonOrError(
   response: LiveHttpResponse | LiveHttpError,
   label: string,
-): { ok: true; value: unknown } | LiveProviderResult {
+): CursorJsonParse {
   if (isLiveHttpError(response)) return transportError(response);
-  const expired = mapCursorHttpStatus(response.status, label);
-  if (expired?.code === "expired") return expired;
+  const statusError = mapCursorHttpStatus(response.status, label, response.bodyText);
+  if (statusError?.code === "expired") return statusError;
   return parseCursorJsonBody(response.status, response.bodyText, label);
 }
 
@@ -101,7 +102,7 @@ export async function fetchCursorUsage(token: string): Promise<LiveProviderResul
   if (!("value" in aggParsed) && aggParsed.code === "expired") return aggParsed;
   const aggregations = "value" in aggParsed ? aggParsed.value : undefined;
 
-  let events: unknown;
+  let eventsParsed: CursorJsonParse | undefined;
   if (!mapCursorGrokBotFromRows(aggregations, window.resetAt, new Date().toISOString())) {
     const eventsRes = await liveFetch({
       provider: "cursor",
@@ -110,12 +111,10 @@ export async function fetchCursorUsage(token: string): Promise<LiveProviderResul
       headers: cursorHeaders(cookie, true),
       body: filteredUsageRequestBody(window.startMs, window.endMs),
     });
-    const eventsParsed = jsonOrError(eventsRes, "Cursor filtered-usage-events");
-    if (!("value" in eventsParsed) && eventsParsed.code === "expired") return eventsParsed;
-    if ("value" in eventsParsed) events = eventsParsed.value;
+    eventsParsed = jsonOrError(eventsRes, "Cursor filtered-usage-events");
   }
 
-  const merged = mergeCursorSpendingSources({ period, aggregations, events, summary });
+  const merged = finishCursorLiveRefresh({ period, summary, aggregations, eventsParsed });
   if (merged.ok) return merged;
 
   if (!("value" in periodParsed) && periodParsed.code !== "invalid") return periodParsed;

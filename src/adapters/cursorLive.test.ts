@@ -2,13 +2,17 @@ import { describe, expect, it } from "vitest";
 import {
   cursorCookieHeader,
   deriveCursorSessionTokenFromJwt,
+  finishCursorLiveRefresh,
   isCursorGrokBotSku,
+  isCursorSessionExpired,
   mapCursorAggregatedResponse,
+  mapCursorHttpStatus,
   mapCursorPeriodResponse,
   mapCursorUsageResponse,
   mapCursorUsageSummary,
   mergeCursorSpendingSources,
   normalizeCursorSessionToken,
+  parseCursorJsonBody,
 } from "./cursorLive";
 
 const SAMPLE_SUMMARY = {
@@ -283,6 +287,7 @@ describe("isCursorGrokBotSku", () => {
     expect(isCursorGrokBotSku("composer-2")).toBe(false);
     expect(isCursorGrokBotSku("cursor-grok")).toBe(false);
     expect(isCursorGrokBotSku("cursor-grok-4")).toBe(false);
+    expect(isCursorGrokBotSku("cursor-grok-4.6-high-fast")).toBe(false);
     expect(isCursorGrokBotSku("Cursor Grok")).toBe(false);
     expect(isCursorGrokBotSku("grok-4")).toBe(false);
     expect(isCursorGrokBotSku("Grok 4")).toBe(false);
@@ -330,12 +335,19 @@ describe("mapCursorUsageResponse", () => {
 });
 
 describe("normalizeCursorSessionToken", () => {
-  it("keeps raw sub::jwt and already-encoded %3A%3A forms", () => {
+  it("keeps raw sub::jwt", () => {
     expect(normalizeCursorSessionToken("user_01ABC::eyJhbGciOiJIUzI1NiJ9.e30.sig")).toBe(
       "user_01ABC::eyJhbGciOiJIUzI1NiJ9.e30.sig",
     );
-    expect(normalizeCursorSessionToken("user_01ABC%3A%3AeyJhbGciOiJIUzI1NiJ9.e30.sig")).toBe(
-      "user_01ABC%3A%3AeyJhbGciOiJIUzI1NiJ9.e30.sig",
+  });
+
+  it("decodes a pasted %3A%3A pair to :: and keeps the rest", () => {
+    expect(normalizeCursorSessionToken("user_01ABC::session-value")).toBe("user_01ABC::session-value");
+    expect(normalizeCursorSessionToken("user_01ABC%3A%3Asession-value")).toBe(
+      "user_01ABC::session-value",
+    );
+    expect(normalizeCursorSessionToken("user_01ABC%3a%3asession-value")).toBe(
+      "user_01ABC::session-value",
     );
   });
 
@@ -351,5 +363,107 @@ describe("normalizeCursorSessionToken", () => {
 
   it("builds the Cookie header without logging the token", () => {
     expect(cursorCookieHeader("user_01ABC::jwt")).toBe("WorkosCursorSessionToken=user_01ABC::jwt");
+  });
+});
+
+const TEAM_ID_REQUIRED_BODY = JSON.stringify({
+  error: {
+    message: "Team ID is required",
+    details: [{ error: "ERROR_UNAUTHORIZED" }],
+  },
+});
+
+const LIVE_LIKE_AGGREGATIONS_NO_BOT = {
+  aggregations: [
+    { modelIntent: "sand-default" },
+    { modelIntent: "cursor-grok-4.6-high-fast" },
+    { modelIntent: "claude-opus-5-low" },
+    { modelIntent: "sand-automation" },
+    { modelIntent: "gemini-2.5-flash" },
+  ],
+};
+
+describe("mapCursorHttpStatus / isCursorSessionExpired", () => {
+  it("does not treat 401 Team ID is required as expired", () => {
+    expect(isCursorSessionExpired(401, TEAM_ID_REQUIRED_BODY)).toBe(false);
+    const mapped = mapCursorHttpStatus(401, "Cursor filtered-usage-events", TEAM_ID_REQUIRED_BODY);
+    expect(mapped?.ok).toBe(false);
+    expect(mapped?.code).toBe("http");
+    expect(mapped?.code).not.toBe("expired");
+    expect(mapCursorUsageResponse(401, TEAM_ID_REQUIRED_BODY).code).toBe("http");
+  });
+
+  it("keeps 401 / 403 without that phrase as expired", () => {
+    expect(isCursorSessionExpired(401, "")).toBe(true);
+    expect(isCursorSessionExpired(401, '{"error":"nope"}')).toBe(true);
+    expect(isCursorSessionExpired(403, "forbidden")).toBe(true);
+    expect(mapCursorHttpStatus(401, "Cursor usage-summary", "")?.code).toBe("expired");
+    expect(mapCursorHttpStatus(403, "Cursor usage-summary", '{"error":"nope"}')?.code).toBe(
+      "expired",
+    );
+  });
+
+  it("maps 405 to http, never expired", () => {
+    const body = JSON.stringify({ error: "Method not allowed" });
+    expect(isCursorSessionExpired(405, body)).toBe(false);
+    const mapped = mapCursorHttpStatus(405, "Cursor current-period-usage", body);
+    expect(mapped?.code).toBe("http");
+    expect(mapped?.message).toMatch(/Method not allowed/);
+    expect(mapCursorPeriodResponse(405, body).code).toBe("http");
+    expect(mapCursorAggregatedResponse(405, body).code).not.toBe("expired");
+  });
+});
+
+describe("finishCursorLiveRefresh", () => {
+  it("merges period Models + Other when aggregations have no bot and filtered is 401 Team ID", () => {
+    const eventsParsed = parseCursorJsonBody(
+      401,
+      TEAM_ID_REQUIRED_BODY,
+      "Cursor filtered-usage-events",
+    );
+    expect("value" in eventsParsed).toBe(false);
+    if (!("value" in eventsParsed)) expect(eventsParsed.code).toBe("http");
+
+    const result = finishCursorLiveRefresh({
+      period: SAMPLE_PERIOD,
+      aggregations: LIVE_LIKE_AGGREGATIONS_NO_BOT,
+      eventsParsed,
+    });
+    expect(result.ok).toBe(true);
+    expect(result.code).toBe("ok");
+    expect(result.botUnavailable).toBe(true);
+    expect(result.pools.find((pool) => pool.poolHint === "cursor_models")).toMatchObject({
+      quotaUsed: 42.5,
+      quotaTotal: 100,
+      unit: "%",
+    });
+    expect(result.pools.find((pool) => pool.poolHint === "cursor_other")).toMatchObject({
+      quotaUsed: 12.5,
+      quotaTotal: 400,
+      unit: "USD",
+    });
+    expect(result.pools.find((pool) => pool.poolHint === "grok_bot")).toBeUndefined();
+  });
+
+  it("does not abort the merge when filtered returns empty 401 and period already parsed", () => {
+    const eventsParsed = parseCursorJsonBody(401, "", "Cursor filtered-usage-events");
+    expect("value" in eventsParsed).toBe(false);
+    if (!("value" in eventsParsed)) expect(eventsParsed.code).toBe("expired");
+
+    const result = finishCursorLiveRefresh({
+      period: SAMPLE_PERIOD,
+      aggregations: LIVE_LIKE_AGGREGATIONS_NO_BOT,
+      eventsParsed,
+    });
+    expect(result.ok).toBe(true);
+    expect(result.code).not.toBe("expired");
+    expect(result.pools.map((pool) => pool.poolHint)).toEqual(["cursor_models", "cursor_other"]);
+  });
+
+  it("still returns expired when filtered 401 is the only payload", () => {
+    const eventsParsed = parseCursorJsonBody(401, "", "Cursor filtered-usage-events");
+    const result = finishCursorLiveRefresh({ eventsParsed });
+    expect(result.ok).toBe(false);
+    expect(result.code).toBe("expired");
   });
 });

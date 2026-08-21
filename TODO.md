@@ -107,6 +107,16 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [ ] Persist Day / Week / Month scale (currently component state only)
 - [ ] Optional heatmap filter by pool
 
+## 0.23.0 — live Cursor refresh does not abort on fake 401
+
+- [x] `isCursorSessionExpired` / `mapCursorHttpStatus(status, label, body?)`: 405 → `http`; 401/403 expired only for a real auth rejection; `Team ID is required` is not expired
+- [x] `finishCursorLiveRefresh` + `fetchCursorUsage`: if period / summary / aggregations already parsed, skip filtered-usage-events 401/403/405 and merge Models + Other (`botUnavailable` when no grok-bot SKU)
+- [x] `normalizeCursorSessionToken` decodes `%3A%3A` → `::`
+- [x] Keep conservative `isCursorGrokBotSku` (`cursor-grok-4.6-high-fast` is not Bot)
+- [x] Synthetic tests: Team ID 401 not expired; empty 401/403 still expired; 405 is http; helper still maps period Models+Other; normalize `%3A%3A`
+- [x] Version 0.23.0 (package.json + src-tauri + README + docs/RELEASE.md)
+- [ ] This account’s Cursor aggregations have no Grok Bot SKU; grok.com proto Heavy=12%; CLI billing needs OAuth bearer (not provided)
+
 ## 0.22.0 — honest tray copy
 
 - [x] `shouldShowTrayConnectBanner` is neither-token only (`!cursor && !grok`). Cursor-only hides the blocking banner; Heavy row CTA is enough

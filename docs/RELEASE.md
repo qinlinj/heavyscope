@@ -2,6 +2,14 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.23.0
+
+- Live Cursor refresh no longer treats `POST /api/dashboard/get-filtered-usage-events` HTTP 401 `Team ID is required` as a dead session. Period + usage-summary already map Models % and Other $400; that 401 is skipped and the merge continues (`botUnavailable` when no grok-bot SKU).
+- HTTP 405 (Method not allowed) is `http`, never `expired`. Empty 401/403 without that phrase still expire.
+- Pasted `WorkosCursorSessionToken` values with `%3A%3A` are stored/sent as `::`.
+- Honest: this account’s Cursor aggregations have no Grok Bot SKU (`cursor-grok-4.6-high-fast` is a chat model, not Bot). grok.com proto Heavy was 12%. CLI billing needs an OAuth bearer (not provided).
+- Version 0.23.0.
+
 ## v0.22.0
 
 - `/tray` first-run banner: go to Settings and paste a Cursor token. Shown only when neither token is pasted. Cursor-only no longer nags about four pools; Heavy uses the existing per-row Go to Settings CTA.
