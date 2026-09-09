@@ -67,13 +67,10 @@ public enum JSONValue: Equatable, Sendable {
             return .array(value.map(wrap))
         case let value as String:
             return .string(value)
-        case let value as NSNumber:
-            if CFGetTypeID(value) == CFBooleanGetTypeID() {
-                return .bool(value.boolValue)
-            }
-            return .number(value.doubleValue)
         case let value as Bool:
             return .bool(value)
+        case let value as NSNumber:
+            return .number(value.doubleValue)
         case let value as Double:
             return .number(value)
         case let value as Int:

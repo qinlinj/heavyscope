@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 public struct LiveHTTPResponse: Equatable, Sendable {
     public var status: Int
@@ -27,7 +30,7 @@ public enum LiveHTTPError: Error, Equatable {
     case network(String)
 }
 
-public struct URLSessionLiveTransport: LiveHTTPTransport, Sendable {
+public struct URLSessionLiveTransport: LiveHTTPTransport, @unchecked Sendable {
     private let session: URLSession
 
     public init(session: URLSession = .shared) {
@@ -47,7 +50,7 @@ public struct URLSessionLiveTransport: LiveHTTPTransport, Sendable {
             request.setValue(value, forHTTPHeaderField: key)
         }
         do {
-            let (data, response) = try await session.data(for: request)
+            let (data, response) = try await data(for: request)
             let http = response as? HTTPURLResponse
             let status = http?.statusCode ?? 0
             var headerMap: [String: String] = [:]
@@ -63,6 +66,27 @@ public struct URLSessionLiveTransport: LiveHTTPTransport, Sendable {
         } catch {
             throw LiveHTTPError.network(error.localizedDescription)
         }
+    }
+
+    private func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+        #if canImport(FoundationNetworking)
+        try await withCheckedThrowingContinuation { continuation in
+            let task = session.dataTask(with: request) { data, response, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                guard let data, let response else {
+                    continuation.resume(throwing: LiveHTTPError.network("Empty response"))
+                    return
+                }
+                continuation.resume(returning: (data, response))
+            }
+            task.resume()
+        }
+        #else
+        try await session.data(for: request)
+        #endif
     }
 }
 

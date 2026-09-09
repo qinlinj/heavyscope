@@ -1,5 +1,9 @@
 import Foundation
+#if canImport(SQLite3)
 import SQLite3
+#else
+import CSQLite
+#endif
 
 public struct QuotaSnapshot: Equatable, Sendable, Identifiable {
     public var id: Int64

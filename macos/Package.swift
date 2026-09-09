@@ -13,8 +13,17 @@ let package = Package(
     ],
     targets: [
         // Business logic is independently testable without loading the macOS UI.
+        .systemLibrary(
+            name: "CSQLite",
+            path: "CSQLite",
+            pkgConfig: "sqlite3",
+            providers: [
+                .apt(["libsqlite3-dev"]),
+            ]
+        ),
         .target(
             name: "HeavyScopeCore",
+            dependencies: ["CSQLite"],
             path: "HeavyScope/Core",
             linkerSettings: [
                 .linkedLibrary("sqlite3"),

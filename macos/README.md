@@ -23,7 +23,7 @@ cd macos
 swift test
 ```
 
-`Package.swift` exposes `HeavyScopeCore` from `HeavyScope/Core`. Tests live in `Tests/HeavyScopeCoreTests`.
+`Package.swift` exposes `HeavyScopeCore` from `HeavyScope/Core`. Tests live in `Tests/HeavyScopeCoreTests`. On Ubuntu 24.04, `swift test` (Swift 5.10.1) passed 24 Core tests after installing `libsqlite3-dev`. `xcodebuild` is not available in Linux CI.
 
 Critical mapping contracts (ported from TypeScript 0.23–0.27):
 

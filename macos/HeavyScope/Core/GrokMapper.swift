@@ -106,7 +106,8 @@ public enum GrokMapper {
                 periodStart = stamp
             } else if field.number == 5, field.wire == 2, let stamp = parseTimestamp(field.bytes) {
                 periodEnd = stamp
-            } else if field.number == 8, field.wire == 2, let period = parseUsagePeriod(field.bytes) {
+            } else if field.number == 8, field.wire == 2 {
+                let period = parseUsagePeriod(field.bytes)
                 if periodStart == nil { periodStart = period.start }
                 if periodEnd == nil { periodEnd = period.end }
             }

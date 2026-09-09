@@ -27,5 +27,7 @@ jobs:
       - uses: swift-actions/setup-swift@v2
         with:
           swift-version: "5.10"
+      - name: SQLite headers
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
       - name: HeavyScopeCore tests
         run: swift test --package-path macos
