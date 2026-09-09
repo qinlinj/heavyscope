@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/proxy/grok-cli/:path*", "destination": "/api/proxy/grok-cli/:path*" },
+    { "source": "/proxy/cursor/:path*", "destination": "/api/proxy/cursor/:path*" },
+    { "source": "/proxy/grok/:path*", "destination": "/api/proxy/grok/:path*" },
+    { "source": "/((?!api/|proxy/).*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/proxy/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+    }
+  ]
+}

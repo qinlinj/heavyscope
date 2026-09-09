@@ -1,0 +1,37 @@
+{
+  "app": {
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "title": "HeavyScope",
+        "label": "main",
+        "width": 400,
+        "height": 660,
+        "minWidth": 400,
+        "minHeight": 660,
+        "maxWidth": 420,
+        "maxHeight": 700,
+        "resizable": false,
+        "fullscreen": false,
+        "visible": false,
+        "center": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "hiddenTitle": true,
+        "titleBarStyle": "Overlay",
+        "shadow": false,
+        "focus": false,
+        "theme": "Dark"
+      }
+    ]
+  },
+  "bundle": {
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "hardenedRuntime": true,
+      "infoPlist": "Info.plist"
+    }
+  }
+}

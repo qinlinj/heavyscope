@@ -1,0 +1,494 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+The format is based on Keep a Changelog, and this project uses Semantic Versioning.
+
+## [Unreleased]
+
+## [0.28.0] - 2026-09-09
+
+### Added
+
+- Native SwiftUI macOS menu-bar app in `macos/` (`LSUIElement`, `MenuBarExtra`). CodexMeter-style UX with HeavyScope data: dual-ring status item, popover bars + reset countdown + pace, Quota History / Daily Activity windows, local heatmap, Settings (Keychain tokens, interval, EN / zh-Hans).
+- `Package.swift` exposes `HeavyScopeCore` for `swift test`. Mapping rules ported from TypeScript 0.23–0.27: Other = `apiPercentUsed` (not `totalSpend`); Bot = SAND `usagePercent`; Models = `autoPercentUsed`; Team-ID 401 and HTTP 405 are `http`, not expired.
+- Local SQLite snapshots (value changes + 15-minute unchanged anchors). Refresh on launch, default 60s, and manual; stale last-good on failure.
+- Docs: `macos/README.md`, `docs/NATIVE_MACOS.md`. Existing Vite + Tauri tray is unchanged. Swift Core aligned to Coding Bot’s 0.27 four-pool table and sibling `docs/NATIVE_MAC_MAPPING.md` (PR #29). No `src/adapters/**` edits.
+- Menu-bar / popover follow the Leader UX: icon = tightest connected remaining% dual ring; popover A–E (hero used%, Models→Other→Bot→Heavy rows, canvas + purple heatmap at bottom). Unconnected = Pending. History/Activity toggles only.
+
+### Honest / not claimed
+
+- This Linux environment cannot run `xcodebuild` or verify the Mac UI. Open `macos/HeavyScope.xcodeproj` on a Mac. No CodexMeter assets or Codex branding were copied.
+
+### Changed
+
+- Version 0.28.0 (package.json + src-tauri + README + docs/RELEASE.md).
+
+## [0.27.0] - 2026-08-21
+
+### Fixed
+
+- Cursor Other Models is **`planUsage.apiPercentUsed`** (spending JS `1govohjdzqjzr.js`: `nV.apiTitle="Other Models"`; `DT.apiPercentage = e.apiPercentUsed??0`; second `DI` bar `{Math.round}% used`). Live **0% used** (unit `%`, total 100). Source label **Included in Ultra / Other Models**. `$400` is included cap copy (`get-plan-info.planInfo.includedAmountCents/100`), not used. `apiSpend` is omitted live — do not invent it.
+- `planUsage.totalSpend` / `limit` (live **$145.99 / $400**, displayMessage “You've used 36% of your included usage”) is the overall included / Auto pool. Spending dual-bar JS **never reads totalSpend**. It is **not** Other. Disabled `onDemand.used=0` is On-Demand, not used Other.
+- Models stay `autoPercentUsed` (live 7.2995 → ~7% used). Grok Bot stays SAND `usagePercent` only (live 36.327845 → ~36% weekly). Leftover Other USD `$145.99 / $400` is rewritten to `0` / `100` / `%` on live apply.
+- Progress bars use each preset’s original accent again (Heavy `#38bdf8`, Bot `#a78bfa`, Models `#34d399`, Other `#fbbf24`). Risk / usage tone stays on the right-side used% text and RiskBadge. Indicator width is used%; the empty track remainder stays visible.
+
+### Changed
+
+- macOS `/tray`: delete Day/Week/Month and `tray chartScale`. Heatmap is always daily cells and is not bound to web Usage week/month/pies.
+- Tray hero is used% (not remaining). Selector is All + each visible pool. All shows the tightest *connected* pool’s used% labeled `全部 · {name}` / `All · {name}`. No number when used% is unknown. Never a combined `$` + `%` figure.
+- Compact tray heatmap: no tooltip / title / footer legend. Hover is opacity or a 1px ring only. Horizontal drag-zoom (min 2 week-columns × 7 daily rows, 1:1 cells); double-click resets. Month labels 8.5px.
+- Compact Advisor strip under the hero: color dot + pool name + RiskBadge + recommendedDaily / todayUsed / daysLeft. Second amber line only when `switchAdvice` exists. Burn-rate math unchanged.
+- Denser tray type and spacing (title 13/600, hero 22/600, pool 11/500, row % 11/600, helper 10/14, header py6 px8, content px8 py6 gap6, bar h4 r2). Hover stays transparent.
+- Version 0.27.0 (package.json + src-tauri + README + docs/RELEASE.md). Web Usage week/month/pies, SAND Bot %, Models `autoPercentUsed`, and `isCursorGrokBotSku` are unchanged. Accessory + zoom UNVERIFIED on a real Mac.
+
+## [0.26.0] - 2026-08-21
+
+### Changed
+
+- macOS `/tray` polish only. Transparent Accessory window with one panel (radius 12, dark `#1f2226` / light `#fff`, 1px hairline, no outer drop shadow). Size **400×660**. Open fade 180ms. One vertical scroll (scrollbar hidden), sticky header. No second horizontal scroll.
+- Header: title + Day/Week/Month (existing ChartsPanel scale / heatmap increment window) + refresh / Settings. Normal mode hides the purple Gauge square, LanguageToggle, and the Layout text row. Theme is a single cycling icon.
+- Normal menubar does not render ChartsPanel / PiesPanel / AdvisorPanel (no week-bars, pies, Requests, or MCP). Layout Done is sticky and does not drop visible tiles; default four pools + heatmap cannot all be hidden by one accidental hide.
+- Honest copy: no hideHint, last-synced essay, advisor essay, or raw syncFlash. Unconnected is one line + Go to Settings.
+- Pool rows are hairline / borderless with a thin bar and no purple glow. Hero remaining (28px tabular-nums + pool name) only when the tightest *connected* pool remaining is known.
+- Compact tray heatmap fills the panel: flex columns, `width: 100%` + `aspect-ratio: 1/1`, first-week-of-month labels, week count from width (~20–26, not a fixed 10). Product purple mixed into the panel background. Less/More legend right-aligned.
+- Version 0.26.0 (package.json + src-tauri + README + docs/RELEASE.md). Web Dashboard, adapters, liveHttp, and SAND are unchanged.
+
+## [0.25.0] - 2026-08-21
+
+### Changed
+
+- Web Dashboard Usage/trend hover formats money at 2 decimal places and percent at most 2dp (no raw float tails such as `21.473078`). Stored amounts are unchanged.
+- Web Daily Activity heatmap fills the panel width: week columns follow available width (GitHub contribution-graph logic, not a hardcoded 10-week / 10-month strip). Cells stay 1:1 squares. Month labels sit on the first week of that month and stay readable (no ellipsis into a thin bar). Leftover space goes to legend / stats.
+- Dashboard pies drop the Recharts outer white sector stroke (dark-mode halo). Light mode has no white halo either.
+- PoolCard Recent shows only the latest 2 rows in a fixed-height box (empty / one / two items do not grow or shrink the list). Older rows stay on History.
+- Version 0.25.0 (package.json + src-tauri + README + docs/RELEASE.md). Adapters, liveHttp, SAND, Tray.tsx, trayView, TrayPoolRow, and menubar chrome are unchanged.
+
+## [0.24.0] - 2026-08-21
+
+### Added
+
+- Live Cursor refresh maps `POST /api/dashboard/get-sand-usage-status` (`{}` body, same Spending cookie/Origin/Referer) onto `preset-grok-bot`. `usagePercent` is weekly used%; remaining% is `clamp(100 - usagePercent, 0, 100)`; `reset_at` prefers `nextResetTimestampUtc`. Display unit is `%`. A 100% basis (`used=usagePercent`, `total=100`) is percent-of-pool only — no invented used/remaining/limit credit counts. `hasAvailableUsage` / `hasNonZeroIncludedLimit` are availability flags, not quota amounts.
+- `finishCursorLiveRefresh` / `fetchCursorUsage` call SAND alongside usage-summary + current-period-usage. Models + Other stay populated when SAND is missing.
+
+### Fixed
+
+- GET / HTTP 405 on the SAND path is `http` (Method not allowed), never session expired. Cursor `Team ID is required` stays `http` (same as 0.23.0). A real SAND 401 marks Bot unavailable and does not wipe Models / Other.
+
+### Honest / not claimed
+
+- grok.com `GetGrokCreditsConfig` `GROK_CHAT` 12% (or any `product_usage` enum) is not Grok Bot. `isCursorGrokBotSku` still rejects `cursor-grok-*` (including `cursor-grok-4.6-high-fast`, which is Cursor Grok chat). Conservative SKU rows remain fallback only. Sister SAND calls (`get-sand-access-status`, `get-sand-trial-claim-status`) are optional and unused; `start-sand-trial` is never called.
+
+### Changed
+
+- Version 0.24.0 (package.json + src-tauri + README + docs/RELEASE.md). Heatmap / pies / trend / Recent / tray chrome / window 380×780, proxy geometry, applyAbsoluteUsage rules, and backup redact are unchanged.
+
+## [0.23.0] - 2026-08-21
+
+### Fixed
+
+- Live Cursor refresh no longer aborts the whole apply when `POST /api/dashboard/get-filtered-usage-events` returns HTTP 401 `{"error":{"message":"Team ID is required",...}}`. That body is **not** a dead session (verified live with a valid cookie). Period (`POST /api/dashboard/get-current-period-usage` 200) and usage-summary (`GET /api/usage-summary` 200) already map Models % + Other $400; aggregations (`POST get-aggregated-usage-events` 200) on this account have no conservative grok-bot SKU (`cursor-grok-4.6-high-fast` is rejected). Filtered 401/403/405 now skip events and merge what we have (`botUnavailable: true` when Bot is missing).
+- `mapCursorHttpStatus` / `isCursorSessionExpired`: HTTP 405 is `http` (Method not allowed), never `expired`. 401/403 are `expired` only when the body looks like a real auth rejection. `Team ID is required` (or `ERROR_UNAUTHORIZED` + Team ID) is `http`. Empty 401/403 without that phrase stay `expired`.
+- `normalizeCursorSessionToken` decodes a pasted `%3A%3A` pair to `::` (both shapes worked live). Conservative `isCursorGrokBotSku` is unchanged.
+
+### Honest / not claimed
+
+- This account’s Cursor aggregations have no Grok Bot / grok-api / agents row. Bot numbers were not invented.
+- grok.com `GetGrokCreditsConfig` proto Heavy `credit_usage_percent` was 12%. Product field 7 is enum varints, not string names.
+- `GET https://cli-chat-proxy.grok.com/v1/billing?format=credits` with cookie only is 403 — OAuth2 bearer required (not provided).
+- `https://api2.cursor.sh/api/...` is 404; host stays `cursor.com`. GET on dashboard period/aggregated/filtered routes is 405.
+
+### Changed
+
+- Version 0.23.0 (package.json + src-tauri + README + docs/RELEASE.md). Heatmap / pies / trend / Recent / tray chrome, proxy geometry, applyAbsoluteUsage, and backup redact are unchanged.
+
+## [0.22.0] - 2026-08-21
+
+### Changed
+
+- `/tray` connect banner is first-run only: it shows when **neither** Cursor nor Grok token is pasted, and tells the user to go to Settings and paste a Cursor token. Cursor-only (Grok empty) no longer blocks the top of the panel — Heavy already has a per-row Go to Settings CTA. Copy never says “four pools” / 四个额度池.
+- `/tray` empty state no longer mentions a web app. zh-CN + en `tray.empty` tell the user to open Layout and restore hidden pools.
+- Version 0.22.0 (package.json + src-tauri + README + docs/RELEASE.md). Cursor Spending mapping, web Dashboard layout/drag/heatmap/pies, production `/proxy/*`, Accessory 380×780, heatmap collapse, and the Open/Quit English tray menu are unchanged.
+
+## [0.21.0] - 2026-08-21
+
+### Added
+
+- Complete `/tray` daily loop: in-popover Settings (Cursor token, Grok token, refresh interval, Refresh now) plus a one-step **Go to Settings** CTA when a source is not connected. Unsynced rows no longer sit empty with no next action.
+- Expanded pool rows show used/total, remaining, reset, and 1–2 increment records (or the Recent empty line). Only one row is open at a time.
+- `fitTrayHeatmap` derives week count from available width (8–10px squares, cap 10 weeks). Narrow `/tray` never paints a 10-month strip.
+- TS + Rust encode the macOS Accessory panel as **380×780** (max 420×820) separately from the Linux 980×720 window. `ActivationPolicy::Accessory` is unchanged.
+
+### Changed
+
+- Version 0.21.0 (package.json + src-tauri + README + docs/RELEASE.md). Cursor Spending three-pool mapping and the production `/proxy/*` path are unchanged. Web dashboard layout, drag, heatmap, and pies are unchanged except the compact tray heatmap now uses `fitTrayHeatmap` when no tile `size` is passed.
+- Browser `/tray` is a 380px-wide daily-loop strip so the web Demo does not become a shrunken 4-column dashboard.
+
+### UNVERIFIED on device
+
+- macOS Accessory: no Dock icon, click tray icon toggles, click outside closes, panel anchors under the status item at ~380×780. This environment cannot run a Mac `.app`.
+
+## [0.20.0] - 2026-08-21
+
+### Added
+
+- Disconnected first-run: the dashboard subtitle is an explicit next step (zh-CN + en) — go to Settings, paste `WorkosCursorSessionToken`, then refresh Models / Other / Grok Bot. An **Open Settings** control links to `/settings#data-sources`.
+- PoolCard Recent stays visible when empty and shows one empty-state line (increments appear after you connect).
+
+### Changed
+
+- Settings opens with **Data sources** first. Language, theme, and alert thresholds sit below it.
+- Normal-mode toolbar: **Refresh now** is the only primary button. Edit is outline. Record usage and Add pool sit in a More menu. Layout grip / drag handle stays Edit-only.
+- When Cursor is connected, the dashboard subtitle is the short local-remaining-quota line again.
+- Version 0.20.0 (package.json + src-tauri + README + docs/RELEASE.md). No adapter, liveHttp, burn-rate, heatmap, drag, tray, or pie-visibility changes.
+
+## [0.19.0] - 2026-08-21
+
+### Added
+
+- Production web live refresh through the same-origin `/proxy/cursor`, `/proxy/grok`, and `/proxy/grok-cli` paths. Vite (`pnpm dev` / `pnpm preview`) and Vercel (Edge function + `vercel.json` rewrites) both serve those prefixes. The proxy forwards `X-HeavyScope-Cookie` / `X-HeavyScope-Authorization` (and the other liveHttp headers) and never logs tokens.
+- Bilingual next-step copy (`live.webNoProxy`) before connect and on refresh failure when the host has no proxy. The UI does not show only the English `LIVE_CURSOR_CORS_ERROR` string.
+- Honest advisor: `quota_used === 0` or a pool that has never had a successful live/sync apply is `ok` / `unconnected`, never waste. Unconnected Grok Heavy is excluded from the tightest ranking.
+- Unsynced preset pools display **待连接 / Not connected** instead of a fake `0/100` / `0/50` / `0/500` / `0/400` usage bar. Seed rows stay in the DB; numbers appear after a successful apply.
+
+### Changed
+
+- Version 0.19.0 (package.json + src-tauri + README + docs/RELEASE.md). Cursor Spending three-pool mapping is unchanged (Models / Other $400 / Grok Bot, or Bot unavailable honestly).
+
+## [0.18.0] - 2026-08-21
+
+### Changed
+
+- Quota overview stays the short copy with the existing `max-h-16` scroll box. Last / next sync and flash lines stay inside that box. The title row remains full width (no `max-w-xl`).
+- Recent records lists go through `formatSignedAmount` → `formatAmount`: at most two decimals; integers and request counts use 0 decimals. The PoolCard list is a fixed `h-[7.5rem]` (~4–6 rows) with `overflow-y-auto` so it does not grow the card.
+- Demo is removed from the product. Settings no longer offers Load demo data. New databases do not seed demo rows on first open. `demoSeed.ts` remains a test fixture. Charts and History still default to excluding `source=demo`; leftover rows stay visible only if History filters for Demo.
+- Version 0.18.0 (package.json + src-tauri + README + docs/RELEASE.md).
+
+### Confirmed
+
+- Normal mode has no grip / size / hide chrome. PoolCard delete / edit still appear only when `editingLayout` (`showActions`).
+
+## [0.17.0] - 2026-08-21
+
+### Added
+
+- Edit-mode tile drag shows a live insertion slot: neighbors slide aside before mouse-up (Apple Home Screen style). Pointer on a card's top / first half inserts before it; bottom / second half inserts after it. Gaps between cards also open a slot. Hidden tiles stay in the layout array.
+- Vitest coverage for `insertIndexFromPointer` / `pointerInsertSide` and `previewReorderTiles`.
+
+### Changed
+
+- `dashboard_layout` (and tray edit, if used) is written only on drop. Escape or dragging out of the window cancels and restores the pre-drag order. The grip is still the only drag handle; normal mode is not draggable.
+- Version 0.17.0 (package.json + src-tauri + README + docs/RELEASE.md). No new drag library. Size spans, heatmap, pies, adapters, and the default `/tray` stack are unchanged.
+
+## [0.16.0] - 2026-08-21
+
+### Fixed
+
+- Web dashboard title row (h2 + action buttons) stretches to the full content width, matching the widget grid. The previous `max-w-xl` wrapper no longer cuts the title to the left half because the quota overview text is short.
+- Full / Tall (`lg` / `xl`) cards fill their grid tiles. PoolCard, AdvisorPanel, ChartCard, and PiesPanel roots use `h-full w-full min-w-0`. Advisor `max-w-3xl` is removed so a full-width tile is no longer a narrow strip with leftover empty space beside or below the card.
+
+### Changed
+
+- Quota overview body stays short and scrollable (`max-h-16`). Widget spans are unchanged (`sm` = 1 col, `md` = 2, `lg`/`xl` = 4). Edit chrome (grip / size / hide) still appears only when `editingLayout` is on.
+- Version 0.16.0 (package.json + src-tauri + README + docs/RELEASE.md).
+
+## [0.15.0] - 2026-08-21
+
+### Fixed
+
+- Daily Activity heatmap no longer paints 0×0 cells on the first layout of a 1/2 or Full tile. `usePlotBox` starts from a fallback box and reuses the last good size; `squareCellPx` never returns 0 when a fallback box exists. Hide then Add is no longer required to see the grid.
+- Heatmap cells stay 1:1 squares with one shared px for all 7 rows. Leftover space is padding or horizontal scroll, never stretched cells. Web `sm` derives week count from width (not a hardcoded 10-week / 10-month strip). Month labels only appear on the first week of a month, and the month row hides when the cell is under 12px.
+- Heatmap hover lists every pool that has usage that day (color · name · `formatAmount`), not a single vague percent. Same-day total sums amounts only when units match; mixed `$` and `%` become a record count.
+- Heatmap and pie hover tips portal to `document.body`, flip top → bottom → left → right, and stay above edit chrome (`z-50`, solid `var(--popover)`, no backdrop-blur).
+
+### Changed
+
+- Pies: `sm` is one percent-used pie (hover only, outer radius ≥ 56px). `md` is still one used pie plus a 10–11px color-dot legend — no remaining pie, no in-slice labels. `lg` / `xl` keep used + remaining side by side with a 12px legend. Zero-value slices stay omitted. Visibility is still Edit hide + Add cards.
+- Version 0.15.0 (package.json + src-tauri).
+
+## [0.14.0] - 2026-08-21
+
+### Added
+
+- Cursor Spending live sync from unofficial dashboard endpoints (same `WorkosCursorSessionToken` as usage-summary). Refresh now and the interval tick can fill **three** pools from a Cursor session alone: Grok Bot (`grok_bot` → `preset-grok-bot`), Cursor Models (`cursor_models` → `preset-cursor-models`), and Cursor Other $400 (`cursor_other` → `preset-cursor-other`).
+- `POST /api/dashboard/get-current-period-usage` for cycle limits (`autoPercentUsed`, `planUsage.totalSpend` / `limit` in cents). `POST /api/dashboard/get-aggregated-usage-events` (and filtered events if needed) for a conservative Grok Bot / Grok API / Agents SKU row. `GET /api/usage-summary` remains a Models % fallback.
+- zh-CN / en `live.cursorExpired` when the Cursor session returns HTTP 401/403.
+
+### Changed
+
+- Cursor Other is a **USD** pool (`planUsage.totalSpend` / `limit`, default total $400). It is no longer mapped from `apiPercentUsed` as 0–100%.
+- Grok Bot from Cursor spending is omitted unless a real Bot/API/Agents row exists. Composer, Cursor Grok chat models, and Heavy are never used as Bot. Grok.com proto / CLI billing stays as a supplement.
+- Version 0.14.0 (package.json + src-tauri). Tokens stay local; backups still redact the session token. Vite `/proxy/cursor` sends `Origin: https://cursor.com` for dashboard POSTs.
+
+## [0.13.0] - 2026-08-20
+
+### Fixed
+
+- Tray default dashboard no longer hard-caps at 1–2 pools. `selectTrayDashboardPools` lists **every visible pool tile** from `tray_layout` (layout order, scroll if needed). Hidden tiles stay hidden. New pools appear; deleted pools drop. Collapsed rows still highlight the tightest 1–2.
+- Compact tray heatmap uses the same `squareCellPx` helper as the 0.12.0 web grid, then clamps to 8–10px squares. Cells never stretch to fill the taller panel. 10-week grid with horizontal overflow scroll + optional prev/next.
+
+### Added
+
+- Horizontal overflow strips (wheel / shift-wheel and prev/next) for heatmap and Settings fields that are wider than the panel.
+
+### Changed
+
+- macOS menu-bar popup is about 1.5× taller: **380×780** (max 420×820). Width stays a plugin-sized strip. Linux/Windows 980×720 window is unchanged. Accessory policy and `App::set_activation_policy` without `?` stay.
+- Default `/tray` stack: advisor one-liner, scrollable pool rows (one expanded at a time), last-sync lines, optional square heatmap. Settings gear is still a second pane in the same window. Layout Edit remains secondary but its visibility is honored on the default dashboard.
+- Unified tray type scale (`text-sm` titles / `text-xs` body) matching the web. Purple primary, dark / light / system unchanged.
+- Version 0.13.0 (package.json + src-tauri). `optimizeDeps.include: ["sql.js"]` stays. Tokens stay local; backups still redact them.
+
+## [0.12.0] - 2026-08-20
+
+### Added
+
+- First-class Grok CLI billing JSON on every tick when a Bearer is saved: `GET /v1/billing?format=credits` maps `productUsage` `Api` → Grok Bot automatically. Cookie-only users still use GetGrokCreditsConfig.
+- GetGrokCreditsConfig proto field 7 `product_usage` (ProductUsage name + percent). Field 12 is prepaid. Heavy stays on `creditUsagePercent` so GrokBuild 0 does not overwrite the shared Heavy meter.
+- Settings / tray parsed-product lines show the mapping (`Api 11% → Grok Bot`). If neither JSON nor proto has Bot/Api, Bot stays unavailable and names are shown without invented numbers.
+- Heatmap `squareCellPx(width, height, weeks)`: cells are perfect squares and do not stretch when the card is wide or short. Leftover space is for the legend + 26-week / intensity hint.
+
+### Changed
+
+- Quota overview copy is shorter. The title block is `max-w-xl`. Advisor metrics, used% bars, and Recent records scroll inside a fixed max height instead of growing the card.
+- Pies: `sm` is a pure pie with tooltip only; `md` uses a short outside legend; `lg` / `xl` keep remaining numbers. No colliding slice labels.
+- Amounts use 0 fraction digits for integers / request counts and at most 2 for % or $.
+- Purple primary works in light and dark. Theme dark / light / system is unchanged.
+- Version 0.12.0 (package.json + src-tauri). No Tauri behavior change. `optimizeDeps.include: ["sql.js"]` and `App::set_activation_policy` without `?` stay.
+
+## [0.11.0] - 2026-08-20
+
+### Added
+
+- Compact `/tray` Settings pane (same 380×520 popup): Cursor `WorkosCursorSessionToken`, Grok session cookie / Bearer, interval 1 / 5 / 15 / 30 / 60, Refresh now, per-provider last sync + error, and a one-line Grok parsed-product toggle. Tokens use the same local settings keys as the web Data sources card.
+- Default tray dashboard is a TokenScope-style stack: Refresh now + Settings gear in the header, one-line advisor, 1–2 tightest visible pools as expandable rows, last-synced lines for Cursor and Grok, and a tiny heatmap only when nothing is expanded.
+- Click a pool row to expand used/total, advice, and the last 1–2 live deltas. Only one row is open at a time.
+
+### Changed
+
+- Edit / Done layout chrome stays, but is secondary to Settings. Normal mode has no grip / size / hide controls.
+- Version 0.11.0 (package.json + src-tauri). Accessory policy, 380×520 panel size, and `optimizeDeps.include: ["sql.js"]` are unchanged.
+
+## [0.10.0] - 2026-08-20
+
+### Added
+
+- Unit-safe pie tiles (`pies`): percent-used pie for every pool, plus a remaining-share pie among comparable absolute units (`$` / token-like). If no shared absolute unit exists, pie B is remaining % of each pool. `sm` shows the percent pie only. Hidden on the default tray layout.
+- History source `demo` plus a default **Live + manual** filter. Demo-seeded rows are hidden from History and from default chart aggregations unless the user opts in.
+- Per-provider last synced + next tick on the Dashboard header and Settings. Interval control is 1 / 5 / 15 / 30 / 60 minutes (default 5).
+- Grok proto diagnostics: Settings shows parsed product names + percents from the last payload. Bot matching covers SuperGrok Bot, API for bots, x.com bots, `PRODUCT_GROK_BOT` / Agents, and a second non-Heavy percent heuristic (never invents Bot usage).
+- Grok billing walk of `GetGrokCreditsConfig` fields 2–6 (`on_demand_cap` / `on_demand_used`, billing window, `history`) plus extra Cent as prepaid. Cents-only history stays in Settings; Heavy % history points seed heatmap/trend deltas.
+- HTTP 200 + gRPC-web `grpc-status` 16 (headers or trailer) is treated as expired / needs Bearer. Cookie-only failures keep the interval running. Optional CLI billing JSON fallback when a Bearer is saved.
+
+### Changed
+
+- Dashboard grid is 1 column below `md`, then a stable 4-column `repeat(4, minmax(0,1fr))`. Span meaning no longer changes at `lg`. Same-row tiles stretch to one height. Edit chrome overlays the card so occupancy does not change. Hover lift is on the card, not the grid item.
+- Compact (`sm` / 1/4) pool cards show name, used%, bar, remaining, reset countdown, and unit. Recent records and long advice stay on `md+`.
+- Auto-refresh membership is credential-based: a stored Cursor session token or Grok session/bearer is enough, including when `sync_enabled` is still false after connect. Membership does not use `sync_source` or a `grokLive` connected flag. A failed Grok tick is shown and does not drop later intervals.
+- Trend chart plots live usage deltas (`+N` per day / week / month bucket) from `source=sync` records after each successful apply.
+- Heatmap default window is 26 weeks on large screens (12 when narrow, 10 compact tray). Intensity uses that day's amount when every contributing record shares one unit; mixed `$` and `%` stay on record count.
+- Demo seed writes `source=demo` and is labeled sample-only. Existing `Demo seed:` import rows migrate on open.
+- Version 0.10.0. Tray feature-parity is next; this release only shares the same grid/sync helpers on `/tray`.
+
+### Fixed
+
+- Edit-mode size chips (`sm` / `md` / `lg` / `xl`) no longer make neighboring cards overlap.
+
+### Changed
+
+- Daily Activity heatmap uses GitHub contribution greens via `--heat-0`…`--heat-4` on `:root` and `.dark`. Cells keep `w-full` + `repeat(weeks, minmax(0, 1fr))` + `aspect-square`, with a 3px gap, 2px radius, and a faint inset outline. Intensity remains daily record count.
+- The always-visible ChartLayoutControls checkbox row is gone. Module visibility and order live in the widget layout.
+- Version 0.9.0.
+
+### Fixed
+
+- macOS compile: `App::set_activation_policy` returns `()` in Tauri 2.11.3, so Accessory setup no longer uses `?`.
+
+## [0.8.0] - 2026-08-19
+
+### Added
+
+- Live Cursor usage sync from unofficial `GET https://cursor.com/api/usage-summary` using a user-pasted `WorkosCursorSessionToken`. Maps Auto/Composer (`autoPercentUsed`) and Other/API (`apiPercentUsed`) onto the two Cursor preset pools as percent-of-100. Live apply writes absolute `quota_used` / `quota_total` / `reset_at` (including a lower used after reset) and inserts a `source=sync` record only when used increased.
+- Live Grok usage sync from unofficial `POST https://grok.com/grok_api_v2.GrokBuildBilling/GetGrokCreditsConfig` (gRPC-web empty body). Maps SuperGrok Heavy `credit_usage_percent`. Grok Bot is updated only when a Bot / Agents product segment is present.
+- Settings → Data sources live connect panels (password fields, Connect / Disconnect / Refresh now) above the existing snapshot importer. Dashboard Refresh now syncs configured providers.
+- Vite dev proxies `/proxy/cursor` and `/proxy/grok`. Tauri desktop uses `@tauri-apps/plugin-http` to bypass CORS.
+- Optional macOS-only, read-only Cursor `state.vscdb` helper. Linux builds compile a stub.
+- JSON backup export omits `cursor_session_token`, `grok_session_token`, and `grok_bearer_token`.
+- Dashboard Daily Activity heatmap (GitHub-style, last 17 weeks on large screens / 12 weeks when narrow). Intensity is daily usage-record **count**, not summed amounts, so Cursor $ and Grok % stay comparable. Tooltip shows date + total count.
+- Day / Week / Month scale toggle on the main stacked usage chart (Recharts area for day, bars for week/month).
+- Per-pool used% bars replace the single mixed-unit pool-share pie.
+- Dashboard module visibility and order for advisor / heatmap / trend. Keys: `chart_show_heatmap`, `chart_show_trend`, `chart_show_advisor` (default on), and `chart_module_order`. Persisted via `setSetting` on the settings table. Up/down buttons on the dashboard header.
+- macOS Tauri 2 shell is a real menu-bar accessory on top of the existing `LSUIElement` Info.plist: Rust `ActivationPolicy::Accessory`, template status-item icon, hide-on-deactivate, and a 380×520 undecorated panel anchored under the tray rectangle (overrides the Linux 980×720 `center` window). Linux/Windows still compile as a normal tray window.
+- Compact `/tray` route (en + zh-CN) for the accessory panel: tightest 1–2 pools plus an advisor one-liner. Browser preview at `/tray`.
+- `docs/MACOS.md` — Mac build (`pnpm tauri build`), Accessory checklist, codesign note, `.app` / `.dmg` size, and the optional Cursor `state.vscdb` helper.
+
+### Changed
+
+- Auto-sync reuses `sync_enabled`, `sync_interval_min` (default **5**, was 30), `sync_last_at` / `sync_last_status` / `sync_last_message`, and `useSync`. `sync_source` is now `none` | `cursor` | `grok` | `both`. A connected session token is the auto-sync path; snapshot re-apply is fallback only.
+- Charts section layout: heatmap stays about one quarter of the charts card when shown beside the trend; used% bars sit below the trend.
+- `src-tauri` release profile now uses LTO, `opt-level = "s"`, and strip to keep the Mac bundle toward the < 50MB target.
+- Version 0.8.0. Snapshot import and manual CRUD stay. `optimizeDeps.include: ["sql.js"]` and `fallbackLng` are unchanged.
+
+## [0.7.6] docs / clipboard follow-up
+
+### Added
+
+- Settings → Local data: Paste JSON fills the import textarea from the clipboard via `navigator.clipboard.readText`. Success and failure flash in zh-CN / en. A pending flash shows immediately; `readText` is raced against a 3s timeout (timeout is treated as failure). Does not auto-apply; the user still clicks Apply backup.
+- Settings → Local data: Copy JSON writes the same backup payload to the clipboard via `navigator.clipboard.writeText`. Success and failure flash in zh-CN / en. Product version stays 0.7.6.
+- Product screenshots for the README: `docs/images/dashboard.png`, `docs/images/dashboard-zh.png`, `docs/images/settings-backup.png`, and `docs/images/confirm-delete.png`.
+
+### Changed
+
+- Confirm dialogs: Radix AlertDialog already traps focus and cancels on Escape; Title/Description supply `aria-labelledby` / `aria-describedby` for Dashboard/Settings delete and reset. Destructive confirm action is `type="button"`.
+
+### Removed
+
+- Temporary screenshot-upload leftovers (`docs/images/parts`, `docs/images/READY`, `docs/images/*.b64`) and the one-shot decoder workflow `.github/workflows/decode-screenshots.yml`.
+
+## [0.7.6] - 2026-08-18
+
+### Changed
+
+- Destructive and data-loss prompts use in-app shadcn AlertDialogs instead of `window.confirm`: delete pool, reset local database, demo re-apply, import, and import replace-all. First-time demo seed applies without an extra confirm. Titles and actions are i18n zh-CN / en.
+- Version 0.7.6.
+
+## [0.7.5] - 2026-08-18
+
+### Added
+
+- Settings → Local data: Load demo data inserts sample `usage_records` for the four preset pools across the last 10 days and bumps `quota_used` so charts and the advisor look alive. English notes. Skips when `demo_seeded=1` unless the user confirms again.
+
+### Changed
+
+- Version 0.7.5.
+
+## [0.7.4] - 2026-08-18
+
+### Added
+
+- JSON export / import of local data from Settings → Local data. Export downloads `heavyscope-backup.json` with `{ version, exportedAt, pools, usage_records, settings }` from the current sql.js tables (not the wasm binary). Import accepts a file or pasted JSON. Default merge: pools upsert by id (imported wins), usage records insert if the id is unknown, settings keys merge (language is left alone unless present). Optional replace-all needs a second confirm and does not run unless the user chooses it.
+
+### Changed
+
+- Version 0.7.4.
+
+## [0.7.3] - 2026-08-18
+
+### Added
+
+- `displayPoolName(pool, t)` plus i18n keys for the four preset pools. Dashboard cards, Settings, History, Advisor, Charts, and dialogs show localized names. Custom pools still use `pool.name`. Stored rows are not rewritten.
+
+### Changed
+
+- Version 0.7.3.
+
+## [0.7.2] - 2026-08-18
+
+### Added
+
+- React class ErrorBoundary around the app. A render crash shows a bilingual fallback (ErrorState + i18n) instead of a blank page. Reset reloads the window.
+- Sample Cursor snapshot at docs/cursor-snapshot.example.json (fake demo numbers, marked SAMPLE ONLY) linked from the README.
+
+### Changed
+
+- Version 0.7.2. Settings About reads Vite __APP_VERSION__ from package.json (no leftover 0.5.0).
+
+## [0.7.1] - 2026-08-18
+
+### Added
+
+- GitHub Actions CI on push/PR to main: Node 22, package manager from the packageManager field, then the test and build scripts.
+- Visible ErrorState when HeavyScopeDB.open() fails, so a database error is not a blank page.
+- Quota cycle rollover in src/lib/rollover.ts: overdue reset_at zeros quota_used, advances the next weekly/monthly reset, and inserts an amount=0 sync usage record with note "Cycle reset". Old usage history is kept for charts.
+
+### Changed
+
+- Version 0.7.1.
+- History date inputs stay type=date (browser locale). An i18n hint explains that.
+
+## [0.7.0] - 2026-08-18
+
+### Added
+
+- Vitest unit tests for burn-rate math, chart series, and Cursor snapshot apply (delta-only + idempotent hash skip).
+- Complete English README covering features, stack, develop, desktop packaging, snapshot format, and privacy.
+- MIT license and v0.7.0 release notes in docs/RELEASE.md.
+
+### Changed
+
+- Version 0.7.0.
+
+## [0.6.0] - 2026-08-18
+
+### Added
+
+- Usage adapter layer (`manual`, `cursor`, `grok`) with a shared `UsageAdapter` interface.
+- Cursor snapshot import (documented JSON or `pool,amount,note` CSV) from Settings.
+- Idempotent snapshot apply: only the positive delta vs current `quota_used` is recorded as `source=sync`.
+- Auto-sync interval (default 30 minutes) that re-applies the last imported Cursor snapshot.
+- Reserved Grok adapter shown as Coming soon. Manual records stay when adapters fail.
+
+### Changed
+
+- Version 0.6.0.
+
+## [0.5.0] - 2026-08-18
+
+### Added
+
+- Tauri 2 desktop shell around the existing Vite React app (src-tauri).
+- System tray / menu-bar icon with Open and Quit. Left-click shows the window.
+- Hide-to-tray on window close. macOS LSUIElement + macOSPrivateApi config for menu-bar style.
+- Tray tooltip/title can show the hottest pool percent from local sql.js data.
+
+### Changed
+
+- Version 0.5.0. Web scripts are unchanged (dev / build / preview).
+
+## [0.4.0] - 2026-08-18
+
+### Added
+
+- Settings now include pool management (add / edit / delete) and alert thresholds.
+- Header language toggle (EN / 中文) plus language persisted in localStorage and the settings table.
+- Default settings seed: `language=zh-CN`, `warn_percent=70`, `crit_percent=90`.
+
+### Changed
+
+- `usageTone` reads warn / crit thresholds from settings instead of hardcoded 70 / 90.
+- Denser dashboard cards, tighter section headers, and version read from `package.json`.
+
+## [0.3.0] - 2026-08-18
+
+### Added
+
+- Daily stacked area chart (last 14 days) and weekly stacked bar chart (last 8 weeks).
+- Pool share donut based on `quota_used`.
+- Usage history page at `/history` with pool, date range, and source filters.
+- Dashboard / History / Settings navigation.
+
+### Fixed
+
+- Prebundle `sql.js` in Vite (`optimizeDeps.include`) so the dev app boots instead of a blank page.
+
+## [0.2.0] - 2026-08-18
+
+### Added
+
+- Burn Rate Advisor with pure helpers in `src/lib/burnRate.ts`.
+- Recommended daily quota, today used, and today-still-safe remaining.
+- Average daily vs recommended pace, plus waste / overspend risk badges.
+- Cross-pool switch suggestion when one pool is hot and another has headroom.
+- Advisor summary above the dashboard pool grid and compact per-pool advisor lines.
+
+## [0.1.0] - 2026-08-18
+
+### Added
+
+- Vite + React + TypeScript web app with Tailwind CSS v4 and shadcn/ui.
+- Local SQLite schema for pools, usage_records, and settings, running on sql.js.
+- Four preset quota pools: Grok Heavy weekly shared, Grok Bot weekly, Cursor Models, Cursor Other Models ($400).
+- Pool create / edit / delete and manual usage recording.
+- Dark dashboard with progress bars, remaining quota, reset countdown, and usage-tone colors.
+- zh-CN / en i18n with localStorage persistence.
+- Dashboard and Settings routes.
+- Production build succeeds.

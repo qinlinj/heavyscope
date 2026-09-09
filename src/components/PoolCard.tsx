@@ -1,0 +1,277 @@
+import { Pencil, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import type { Pool, UsageRecord } from "@/db/schema";
+import { riskTone, type PoolAdvice } from "@/lib/burnRate";
+import {
+  formatAmount,
+  formatCountdown,
+  formatDateTime,
+  formatSignedAmount,
+  otherUsdView,
+  remaining,
+  usagePercent,
+  usageTone,
+} from "@/lib/format";
+import { displayPoolName } from "@/lib/poolName";
+import { compactPoolView } from "@/lib/poolView";
+import { dashboardRecentListHeightPx, dashboardRecentRecords } from "@/lib/recentRecords";
+import type { PoolSyncBadge } from "@/lib/settings";
+import { cn } from "@/lib/utils";
+
+export type PoolSyncMeta = {
+  connected: boolean;
+  source: PoolSyncBadge;
+  lastSyncedAt?: string | null;
+  botUnavailable?: boolean;
+};
+
+type Props = {
+  pool: Pool;
+  records: UsageRecord[];
+  advice?: PoolAdvice;
+  warnPercent?: number;
+  critPercent?: number;
+  syncMeta?: PoolSyncMeta;
+  compact?: boolean;
+  unsynced?: boolean;
+  showActions?: boolean;
+  showRecent?: boolean;
+  showAdvice?: boolean;
+  onEdit?: (pool: Pool) => void;
+  onDelete?: (pool: Pool) => void;
+};
+
+export function PoolCard({
+  pool,
+  records,
+  advice,
+  warnPercent,
+  critPercent,
+  syncMeta,
+  compact = false,
+  unsynced = false,
+  showActions = false,
+  showRecent = true,
+  showAdvice = true,
+  onEdit,
+  onDelete,
+}: Props) {
+  const { t, i18n } = useTranslation();
+  const percent = usagePercent(pool);
+  const tone = usageTone(percent, warnPercent, critPercent);
+  const left = remaining(pool);
+  const recent = dashboardRecentRecords(records);
+  const usd = otherUsdView(pool);
+  const sourceLabel = pool.id === "preset-cursor-other" ? t("pool.sourceCursorPeriod") : null;
+
+  if (compact) {
+    const view = compactPoolView(pool);
+    return (
+      <Card size="sm" className="h-full w-full min-h-0 min-w-0 overflow-hidden bg-card/90 backdrop-blur">
+        <CardContent className="flex h-full min-h-0 min-w-0 flex-col justify-center space-y-1.5 py-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: pool.color }} />
+              <span className="truncate text-sm font-medium">{displayPoolName(pool, t)}</span>
+            </div>
+            <span
+              className={cn(
+                "shrink-0 text-sm font-semibold tabular-nums",
+                unsynced && "text-muted-foreground",
+                !unsynced && tone === "ok" && "text-emerald-600 dark:text-emerald-400",
+                !unsynced && tone === "warn" && "text-amber-600 dark:text-amber-400",
+                !unsynced && tone === "crit" && "text-red-600 dark:text-red-400",
+              )}
+            >
+              {unsynced ? t("pool.awaitingConnect") : `${view.percent.toFixed(0)}%`}
+            </span>
+          </div>
+          {unsynced ? (
+            <p className="text-[11px] leading-tight text-muted-foreground">{t("live.notConnected")}</p>
+          ) : (
+            <>
+          <Progress value={view.percent} indicatorColor={pool.color} className="h-1.5 w-full" />
+          <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] leading-tight">
+            {usd ? (
+              <>
+                <p className="truncate text-muted-foreground">{sourceLabel ?? t("pool.used")}</p>
+                <p className="truncate text-right font-medium tabular-nums">{usd.dollarLine}</p>
+              </>
+            ) : sourceLabel ? (
+              <>
+                <p className="truncate text-muted-foreground">{sourceLabel}</p>
+                <p className="truncate text-right font-medium tabular-nums">{`${view.percent.toFixed(0)}%`}</p>
+              </>
+            ) : null}
+            <p className="truncate text-muted-foreground">{t("pool.remaining")}</p>
+            <p className="truncate text-right font-medium tabular-nums">
+              {usd ? usd.remainingLine : formatAmount(view.remaining, view.unit)}
+            </p>
+            <p className="truncate text-muted-foreground">{t("pool.reset")}</p>
+            <p className="truncate text-right font-medium tabular-nums">
+              {formatCountdown(view.resetAt, i18n.language)}
+            </p>
+          </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card size="sm" className="h-full w-full min-h-0 min-w-0 overflow-hidden bg-card/90 backdrop-blur">
+      <CardHeader className="shrink-0">
+        <CardTitle className={cn("flex items-center gap-2", showActions && "pr-16")}>
+          <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: pool.color }} />
+          {displayPoolName(pool, t)}
+        </CardTitle>
+        <CardDescription>
+          {pool.is_preset ? t("pool.preset") : t("pool.custom")} · {pool.unit}
+          {syncMeta && (
+            <>
+              {" · "}
+              <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                {t(`live.badge.${syncMeta.source}`)}
+              </span>
+            </>
+          )}
+        </CardDescription>
+        {showActions && onEdit && onDelete ? (
+          <CardAction className="flex gap-1">
+            <Button variant="ghost" size="icon-sm" onClick={() => onEdit(pool)}>
+              <Pencil />
+              <span className="sr-only">{t("pool.edit")}</span>
+            </Button>
+            <Button variant="ghost" size="icon-sm" onClick={() => onDelete(pool)}>
+              <Trash2 />
+              <span className="sr-only">{t("pool.delete")}</span>
+            </Button>
+          </CardAction>
+        ) : null}
+      </CardHeader>
+      <CardContent className="min-h-0 flex-1 space-y-3 overflow-y-auto">
+        {unsynced ? (
+          <div className="space-y-1">
+            <p className="font-heading text-2xl font-semibold tracking-tight">{t("pool.awaitingConnect")}</p>
+            <p className="text-xs text-muted-foreground">{t("live.notConnected")}</p>
+          </div>
+        ) : (
+          <>
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-xs text-muted-foreground">{t("pool.used")}</p>
+            <p className="font-heading text-2xl font-semibold tracking-tight">
+              {usd ? usd.dollarLine : formatAmount(pool.quota_used, pool.unit)}
+            </p>
+            {sourceLabel ? <p className="text-[10px] text-muted-foreground">{sourceLabel}</p> : null}
+          </div>
+          <p
+            className={cn(
+              "text-xl font-semibold tabular-nums",
+              tone === "ok" && "text-emerald-600 dark:text-emerald-400",
+              tone === "warn" && "text-amber-600 dark:text-amber-400",
+              tone === "crit" && "text-red-600 dark:text-red-400",
+            )}
+          >
+            {percent.toFixed(0)}%
+          </p>
+        </div>
+        <Progress value={percent} indicatorColor={pool.color} className="h-2 w-full" />
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <Stat label={t("pool.remaining")} value={usd ? usd.remainingLine : formatAmount(left, pool.unit)} />
+          <Stat label={t("pool.total")} value={usd ? formatAmount(usd.total, "USD") : formatAmount(pool.quota_total, pool.unit)} />
+          <Stat label={t("pool.reset")} value={formatCountdown(pool.reset_at, i18n.language)} />
+        </div>
+          </>
+        )}
+        {syncMeta && (
+          <p className="text-xs text-muted-foreground">
+            {syncMeta.connected
+              ? syncMeta.lastSyncedAt
+                ? `${t("live.lastSynced")}: ${formatDateTime(syncMeta.lastSyncedAt, i18n.language)}`
+                : t("live.lastSyncedNever")
+              : t("live.notConnected")}
+            {syncMeta.botUnavailable ? ` — ${t("live.grokBotUnavailable")}` : ""}
+          </p>
+        )}
+        {showAdvice && advice && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/40 px-2.5 py-2 text-xs">
+            <span className="text-muted-foreground">
+              {t("advisor.recommendedDaily")}:{" "}
+              <span className="font-medium text-foreground tabular-nums">
+                {formatAmount(advice.recommendedDaily, pool.unit)}
+              </span>
+            </span>
+            <span className="text-muted-foreground">
+              {t("advisor.todayUsed")}:{" "}
+              <span className="font-medium text-foreground tabular-nums">
+                {formatAmount(advice.todayUsedAmount, pool.unit)}
+              </span>
+            </span>
+            <span
+              className={cn(
+                "rounded-full px-1.5 py-0.5 font-medium",
+                riskTone(advice.risk) === "ok" && "bg-emerald-400/15 text-emerald-700 dark:text-emerald-300",
+                riskTone(advice.risk) === "warn" && "bg-amber-400/15 text-amber-700 dark:text-amber-300",
+                riskTone(advice.risk) === "crit" && "bg-red-400/15 text-red-300",
+              )}
+            >
+              {advice.risk === "overspend"
+                ? t("advisor.riskOverspend")
+                : advice.risk === "waste"
+                  ? t("advisor.riskWaste")
+                  : advice.risk === "unconnected"
+                    ? t("pool.awaitingConnect")
+                    : t("advisor.riskOk")}
+            </span>
+          </div>
+        )}
+      </CardContent>
+      {showRecent && (
+        <CardFooter className="shrink-0 flex-col items-stretch gap-2">
+          <p className="text-xs text-muted-foreground">{t("pool.recent")}</p>
+          <ul
+            className="space-y-1 overflow-hidden"
+            style={{ height: dashboardRecentListHeightPx() }}
+          >
+            {recent.length > 0 ? (
+              recent.map((record) => (
+                <li key={record.id} className="flex justify-between gap-2 text-xs leading-5">
+                  <span className="min-w-0 truncate text-muted-foreground">
+                    {new Date(record.recorded_at).toLocaleString(i18n.language)}
+                  </span>
+                  <span className="shrink-0 tabular-nums">
+                    {formatSignedAmount(record.amount, pool.unit)}
+                  </span>
+                </li>
+              ))
+            ) : (
+              <li className="text-xs leading-5 text-muted-foreground">{t("pool.recentEmpty")}</li>
+            )}
+          </ul>
+        </CardFooter>
+      )}
+    </Card>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-muted-foreground">{label}</p>
+      <p className="mt-1 font-medium text-foreground">{value}</p>
+    </div>
+  );
+}

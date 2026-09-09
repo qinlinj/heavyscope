@@ -1,0 +1,9 @@
+{
+  "_comment": "SAMPLE ONLY — fake demo numbers, not live Cursor usage. Safe to paste in Settings → Data sources.",
+  "source": "cursor",
+  "fetchedAt": "2026-08-18T10:00:00.000Z",
+  "pools": [
+    { "hint": "cursor_models", "used": 12, "total": 500 },
+    { "hint": "cursor_other", "used": 40.5, "total": 400 }
+  ]
+}
