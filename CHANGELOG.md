@@ -6,6 +6,23 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-09-09
+
+### Added
+
+- Native SwiftUI macOS menu-bar app in `macos/` (`LSUIElement`, `MenuBarExtra`). CodexMeter-style UX with HeavyScope data: dual-ring status item, popover bars + reset countdown + pace, Quota History / Daily Activity windows, local heatmap, Settings (Keychain tokens, interval, EN / zh-Hans).
+- `Package.swift` exposes `HeavyScopeCore` for `swift test`. Mapping rules ported from TypeScript 0.23–0.27: Other = `apiPercentUsed` (not `totalSpend`); Bot = SAND `usagePercent`; Models = `autoPercentUsed`; Team-ID 401 and HTTP 405 are `http`, not expired.
+- Local SQLite snapshots (value changes + 15-minute unchanged anchors). Refresh on launch, default 60s, and manual; stale last-good on failure.
+- Docs: `macos/README.md`, `docs/NATIVE_MACOS.md`. Existing Vite + Tauri tray is unchanged.
+
+### Honest / not claimed
+
+- This Linux environment cannot run `xcodebuild` or verify the Mac UI. Open `macos/HeavyScope.xcodeproj` on a Mac. No CodexMeter assets or Codex branding were copied.
+
+### Changed
+
+- Version 0.28.0 (package.json + src-tauri + README + docs/RELEASE.md).
+
 ## [0.27.0] - 2026-08-21
 
 ### Fixed

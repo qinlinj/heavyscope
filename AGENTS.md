@@ -67,6 +67,7 @@ https://github.com/qinlinj/heavyscope
 - 0.25.0 — web Dashboard polish (trend hover format, heatmap fill, pie stroke, Recent ×2)
 - 0.26.0 — macOS menubar /tray polish (transparent panel, sticky header, compact heatmap, honest copy)
 - 0.27.0 — Other = apiPercentUsed (0% used); totalSpend is included $ not Other; tray used% hero / daily heatmap zoom
+- 0.28.0 — native SwiftUI menu-bar app (macos/) + HeavyScopeCore tests; Tauri/web kept
 
 ## Commits
 

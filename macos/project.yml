@@ -1,0 +1,45 @@
+name: HeavyScope
+options:
+  bundleIdPrefix: com.heavyscope
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+packages:
+  HeavyScopeCore:
+    path: .
+targets:
+  HeavyScope:
+    type: application
+    platform: macOS
+    sources:
+      - path: HeavyScope/App
+      - path: HeavyScope/Core
+      - path: HeavyScope/Assets.xcassets
+      - path: HeavyScope/Info.plist
+        buildPhase: none
+      - path: HeavyScope/HeavyScope.entitlements
+        buildPhase: none
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.heavyscope.macos
+        PRODUCT_NAME: HeavyScope
+        MARKETING_VERSION: 0.28.0
+        CURRENT_PROJECT_VERSION: 28
+        INFOPLIST_FILE: HeavyScope/Info.plist
+        CODE_SIGN_ENTITLEMENTS: HeavyScope/HeavyScope.entitlements
+        GENERATE_INFOPLIST_FILE: false
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
+        COMBINE_HIDPI_IMAGES: true
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_HARDENED_RUNTIME: true
+        SWIFT_EMIT_LOC_STRINGS: true
+    info:
+      path: HeavyScope/Info.plist
+      properties:
+        LSUIElement: true

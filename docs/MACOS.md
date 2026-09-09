@@ -1,6 +1,8 @@
 # macOS menu-bar accessory
 
-HeavyScope's Tauri 2 desktop shell is a **menu-bar extra** on macOS (`NSApplicationActivationPolicyAccessory`). It must be built and verified on a real Mac. This Linux/web environment cannot produce a `.app` or `.dmg`.
+**0.28.0 native Swift app** lives in [`macos/`](../macos/README.md) (`LSUIElement`, `MenuBarExtra`). That is the product-direction menu bar. Open `macos/HeavyScope.xcodeproj` on a Mac. Linux cannot run `xcodebuild`. See [NATIVE_MACOS.md](NATIVE_MACOS.md).
+
+The older Tauri 2 desktop shell is still a **menu-bar extra** on macOS (`NSApplicationActivationPolicyAccessory`). It must be built and verified on a real Mac. This Linux/web environment cannot produce a `.app` or `.dmg`.
 
 The web app is unchanged. `src-tauri/Info.plist` already sets `LSUIElement`. Rust calls `App::set_activation_policy(ActivationPolicy::Accessory)` — that method is `&mut self -> ()` on `tauri::App` in Tauri 2.11.3, so do not use `?` (`AppHandle::set_activation_policy` is the `Result<()>` variant) — and positions a compact **~400×660** transparent panel under the status item on top of that plist. It does not replace the plist. Linux/Windows keep the 980×720 centered tray window (`tauri.conf.json`) and still compile (`cfg(target_os = "macos")` in `src-tauri/src/lib.rs`, plus `src-tauri/tauri.macos.conf.json`).
 

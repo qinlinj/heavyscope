@@ -25,3 +25,9 @@ dist-ssr
 
 # Tauri
 src-tauri/target
+
+# Native Swift / Xcode
+macos/.build
+macos/.swiftpm
+macos/DerivedData
+**/xcuserdata/

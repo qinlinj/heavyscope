@@ -2,6 +2,14 @@
 
 GitHub Releases notes. Published as a file because the GitHub MCP server has no create-release tool.
 
+## v0.28.0
+
+- Native SwiftUI macOS menu-bar app in `macos/` (CodexMeter-style UX, HeavyScope data). Dual-ring status item, popover, history, heatmap, Keychain settings, EN / zh-Hans.
+- HeavyScopeCore tests: Other = `apiPercentUsed` not `totalSpend`; Bot = SAND `usagePercent`; Models = `autoPercentUsed`; Team-ID 401 and 405 are `http`.
+- SQLite snapshots + 15-minute anchors. Refresh on launch / 60s / manual. Stale last-good on failure.
+- Vite + Tauri tray unchanged. Mac UI UNVERIFIED in Linux CI. Open `macos/HeavyScope.xcodeproj` on a Mac.
+- Version 0.28.0.
+
 ## v0.27.0
 
 - Other Models is **`planUsage.apiPercentUsed`** (spending JS `1govohjdzqjzr.js`). Live **0% used**, unit `%`, source **Included in Ultra / Other Models**. `$400` is included cap copy, not used. `planUsage.totalSpend` / `limit` (live `$145.99 / $400`, “You've used 36% of your included usage”) is included / Auto — not Other. Models is `autoPercentUsed` 7.2995. Grok Bot is SAND `usagePercent` 36.327845.

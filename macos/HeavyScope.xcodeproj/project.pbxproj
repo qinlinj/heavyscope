@@ -1,0 +1,321 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000100000000 /* JSONValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000100000000 /* JSONValue.swift */; };
+		A10000000000000200000000 /* QuotaModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000200000000 /* QuotaModels.swift */; };
+		A10000000000000300000000 /* ISODates.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000300000000 /* ISODates.swift */; };
+		A10000000000000400000000 /* CursorMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000400000000 /* CursorMapper.swift */; };
+		A10000000000000500000000 /* GrokMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000500000000 /* GrokMapper.swift */; };
+		A10000000000000600000000 /* SnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000600000000 /* SnapshotStore.swift */; };
+		A10000000000000700000000 /* SecretStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000700000000 /* SecretStore.swift */; };
+		A10000000000000800000000 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000800000000 /* AppPreferences.swift */; };
+		A10000000000000900000000 /* LiveClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000900000000 /* LiveClient.swift */; };
+		A10000000000001000000000 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000001000000000 /* L10n.swift */; };
+		A10000000000001100000000 /* UsageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000001100000000 /* UsageService.swift */; };
+		A10000000000001200000000 /* MenuBarProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000001200000000 /* MenuBarProgressView.swift */; };
+		A10000000000001300000000 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000001300000000 /* ContentView.swift */; };
+		A10000000000001400000000 /* HistoryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000001400000000 /* HistoryViews.swift */; };
+		A10000000000001500000000 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000001500000000 /* SettingsView.swift */; };
+		A10000000000001600000000 /* HeavyScopeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000001600000000 /* HeavyScopeApp.swift */; };
+		A10000000000001700000000 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000001700000000 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B10000000000000100000000 /* JSONValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONValue.swift; sourceTree = "<group>"; };
+		B10000000000000200000000 /* QuotaModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaModels.swift; sourceTree = "<group>"; };
+		B10000000000000300000000 /* ISODates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ISODates.swift; sourceTree = "<group>"; };
+		B10000000000000400000000 /* CursorMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorMapper.swift; sourceTree = "<group>"; };
+		B10000000000000500000000 /* GrokMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokMapper.swift; sourceTree = "<group>"; };
+		B10000000000000600000000 /* SnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotStore.swift; sourceTree = "<group>"; };
+		B10000000000000700000000 /* SecretStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecretStore.swift; sourceTree = "<group>"; };
+		B10000000000000800000000 /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
+		B10000000000000900000000 /* LiveClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveClient.swift; sourceTree = "<group>"; };
+		B10000000000001000000000 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
+		B10000000000001100000000 /* UsageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageService.swift; sourceTree = "<group>"; };
+		B10000000000001200000000 /* MenuBarProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarProgressView.swift; sourceTree = "<group>"; };
+		B10000000000001300000000 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		B10000000000001400000000 /* HistoryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViews.swift; sourceTree = "<group>"; };
+		B10000000000001500000000 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B10000000000001600000000 /* HeavyScopeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeavyScopeApp.swift; sourceTree = "<group>"; };
+		B10000000000001700000000 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B10000000000001800000000 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B10000000000001900000000 /* HeavyScope.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HeavyScope.entitlements; sourceTree = "<group>"; };
+		C10000000000000100000000 /* HeavyScope.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HeavyScope.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D10000000000000100000000 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		E10000000000000100000000 = {
+			isa = PBXGroup;
+			children = (
+				E10000000000000200000000 /* HeavyScope */,
+				E10000000000000500000000 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E10000000000000200000000 /* HeavyScope */ = {
+			isa = PBXGroup;
+			children = (
+				E10000000000000300000000 /* Core */,
+				E10000000000000400000000 /* App */,
+				B10000000000001700000000 /* Assets.xcassets */,
+				B10000000000001800000000 /* Info.plist */,
+				B10000000000001900000000 /* HeavyScope.entitlements */,
+			);
+			path = HeavyScope;
+			sourceTree = "<group>";
+		};
+		E10000000000000300000000 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000100000000 /* JSONValue.swift */,
+				B10000000000000200000000 /* QuotaModels.swift */,
+				B10000000000000300000000 /* ISODates.swift */,
+				B10000000000000400000000 /* CursorMapper.swift */,
+				B10000000000000500000000 /* GrokMapper.swift */,
+				B10000000000000600000000 /* SnapshotStore.swift */,
+				B10000000000000700000000 /* SecretStore.swift */,
+				B10000000000000800000000 /* AppPreferences.swift */,
+				B10000000000000900000000 /* LiveClient.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		E10000000000000400000000 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000001600000000 /* HeavyScopeApp.swift */,
+				B10000000000001300000000 /* ContentView.swift */,
+				B10000000000001200000000 /* MenuBarProgressView.swift */,
+				B10000000000001400000000 /* HistoryViews.swift */,
+				B10000000000001500000000 /* SettingsView.swift */,
+				B10000000000001100000000 /* UsageService.swift */,
+				B10000000000001000000000 /* L10n.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		E10000000000000500000000 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C10000000000000100000000 /* HeavyScope.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F10000000000000100000000 /* HeavyScope */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F10000000000000400000000 /* Build configuration list for PBXNativeTarget "HeavyScope" */;
+			buildPhases = (
+				F10000000000000200000000 /* Sources */,
+				D10000000000000100000000 /* Frameworks */,
+				F10000000000000300000000 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HeavyScope;
+			productName = HeavyScope;
+			productReference = C10000000000000100000000 /* HeavyScope.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F10000000000001000000000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1540;
+				LastUpgradeCheck = 1540;
+				TargetAttributes = {
+					F10000000000000100000000 = {
+						CreatedOnToolsVersion = 15.4;
+					};
+				};
+			};
+			buildConfigurationList = F10000000000001100000000 /* Build configuration list for PBXProject "HeavyScope" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				"zh-Hans",
+				Base,
+			);
+			mainGroup = E10000000000000100000000;
+			productRefGroup = E10000000000000500000000 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F10000000000000100000000 /* HeavyScope */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		F10000000000000300000000 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000001700000000 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F10000000000000200000000 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000100000000 /* JSONValue.swift in Sources */,
+				A10000000000000200000000 /* QuotaModels.swift in Sources */,
+				A10000000000000300000000 /* ISODates.swift in Sources */,
+				A10000000000000400000000 /* CursorMapper.swift in Sources */,
+				A10000000000000500000000 /* GrokMapper.swift in Sources */,
+				A10000000000000600000000 /* SnapshotStore.swift in Sources */,
+				A10000000000000700000000 /* SecretStore.swift in Sources */,
+				A10000000000000800000000 /* AppPreferences.swift in Sources */,
+				A10000000000000900000000 /* LiveClient.swift in Sources */,
+				A10000000000001000000000 /* L10n.swift in Sources */,
+				A10000000000001100000000 /* UsageService.swift in Sources */,
+				A10000000000001200000000 /* MenuBarProgressView.swift in Sources */,
+				A10000000000001300000000 /* ContentView.swift in Sources */,
+				A10000000000001400000000 /* HistoryViews.swift in Sources */,
+				A10000000000001500000000 /* SettingsView.swift in Sources */,
+				A10000000000001600000000 /* HeavyScopeApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F20000000000000100000000 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		F20000000000000200000000 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		F20000000000000300000000 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = HeavyScope/HeavyScope.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 28;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = HeavyScope/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 0.28.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.heavyscope.macos;
+				PRODUCT_NAME = HeavyScope;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		F20000000000000400000000 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = HeavyScope/HeavyScope.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 28;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = HeavyScope/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 0.28.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.heavyscope.macos;
+				PRODUCT_NAME = HeavyScope;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F10000000000000400000000 /* Build configuration list for PBXNativeTarget "HeavyScope" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F20000000000000300000000 /* Debug */,
+				F20000000000000400000000 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F10000000000001100000000 /* Build configuration list for PBXProject "HeavyScope" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F20000000000000100000000 /* Debug */,
+				F20000000000000200000000 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F10000000000001000000000 /* Project object */;
+}

@@ -4,7 +4,7 @@ Local-first multi-quota monitoring panel for SuperGrok Heavy and Cursor Ultra.
 
 HeavyScope helps you see how fast you are burning weekly or monthly quotas, when a pool will reset, and whether you should switch work to a pool with more headroom. The same React UI runs as a web app and inside a Tauri 2 desktop shell. Quota data stays on your machine. There is no HeavyScope cloud account.
 
-Current product version is **0.27.0**.
+Current product version is **0.28.0**.
 
 ## Features
 
@@ -45,9 +45,9 @@ In-app confirm dialog when deleting a pool:
 - Tailwind CSS v4 + shadcn/ui + Recharts
 - react-i18next (zh-CN, en)
 - sql.js SQLite (web and Tauri webview)
-- Tauri 2 tray / macOS Accessory shell in `src-tauri` (see [docs/MACOS.md](docs/MACOS.md))
-- Vitest for unit tests
-- GitHub Actions CI (Node 22, package manager from packageManager)
+- Native SwiftUI menu-bar app in `macos/` (see [macos/README.md](macos/README.md) and [docs/NATIVE_MACOS.md](docs/NATIVE_MACOS.md)). Tauri 2 tray remains in `src-tauri` (see [docs/MACOS.md](docs/MACOS.md))
+- Vitest for the web app; `swift test --package-path macos` for HeavyScopeCore
+- GitHub Actions CI (Node 22 + optional Swift Core tests)
 
 ## How to run
 
@@ -81,7 +81,9 @@ pnpm tauri build
 
 `src-tauri` wraps the existing Vite React app. Identifier is `com.heavyscope.app`. Product name is HeavyScope.
 
-**macOS menu-bar is Accessory; verify on a real Mac.** `Info.plist` already has `LSUIElement`. Rust adds `ActivationPolicy::Accessory` and anchors a ~400×660 transparent panel under the status item on top of that — the Linux window stays 980×720 `center: true`. This Linux/web environment cannot produce those binaries. Build with `pnpm tauri build` on a Mac, then walk through the checklist and size measurements in [docs/MACOS.md](docs/MACOS.md). Linux `.deb` installers can be built locally. There is no Windows installer yet.
+**Preferred macOS product (0.28.0) is the native Swift menu bar.** Open `macos/HeavyScope.xcodeproj` on a Mac. `LSUIElement` is set. Dual-ring status item, popover, history, heatmap, and Keychain settings. `swift test --package-path macos` covers the mapping Core. This Linux environment cannot run `xcodebuild` or verify that UI.
+
+The older Tauri Accessory tray is still in `src-tauri`. Rust adds `ActivationPolicy::Accessory` and a ~400×660 panel. Build with `pnpm tauri build` on a Mac if you still want that shell. Linux `.deb` installers can be built locally. There is no Windows installer yet.
 
 Generate bundle icons from `src-tauri/app-icon.svg` with the Tauri icon command before shipping if you change the mark. The menu-bar glyph is the monochrome template `src-tauri/icons/tray-template.png`.
 
