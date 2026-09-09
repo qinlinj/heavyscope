@@ -6,13 +6,12 @@ This Linux cloud agent cannot run `xcodebuild` or verify the Mac UI. Open `macos
 
 ## What is in this slice
 
-- Accessory app (`LSUIElement`): click the status item for a popover with four quotas
-- Dual-ring indicator: outer remaining of the selected / tightest pool; inner time-to-reset when known
-- Per-pool remaining + time bars, reset countdown, and pace when timing is known
-- Compact Quota History + Daily Activity links, full history window, local heatmap
-- SQLite snapshots (`changes` + 15-minute unchanged anchors) in Application Support
-- Settings: Keychain tokens/cookies, refresh interval, EN / zh-Hans
-- Refresh on launch, default 60s, and manual refresh; last-good snapshot on failure
+Leader UX (status item + popover A–E):
+
+- Menu-bar icon: dual ring — outer remaining% of the tightest **connected** pool (preset color), inner time-to-reset when known, short integer remaining% label. Unconnected pools never drive the icon. Stale keeps last good.
+- Popover (~360 wide, hairline dividers, no card stack): **A** Refresh + Settings · **B** hero used% of tightest connected (dot + short name + reset + pace) · **C** Models → Other → Bot → Heavy compact rows · **D** mini remaining% curves + % burn activity · **E** last synced. Heatmap at the bottom only (1:1, brand purple, no tooltip).
+- Settings may hide History / Activity. Pool rows cannot be emptied or reordered. No Layout/Done. No Day/Week/Month heatmap binding.
+- SQLite snapshots, Keychain, EN / zh-Hans, refresh on launch / 60s / manual
 
 ## Honest mapping (Coding Bot / 0.27 accepted table)
 

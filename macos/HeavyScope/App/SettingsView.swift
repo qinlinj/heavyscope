@@ -34,12 +34,8 @@ struct SettingsView: View {
                     Text(service.t("language.english")).tag(AppLanguage.english)
                     Text(service.t("language.chinese")).tag(AppLanguage.simplifiedChinese)
                 }
-                Picker(service.t("selection.tightest"), selection: selectionBinding) {
-                    Text(service.t("selection.tightest")).tag(QuotaSelectionStorage.tightest)
-                    ForEach(PoolHint.allCases, id: \.self) { hint in
-                        Text(L10n.poolName(hint, language: language)).tag(QuotaSelectionStorage.pool(hint))
-                    }
-                }
+                Toggle(service.t("settings.showHistory"), isOn: showHistoryBinding)
+                Toggle(service.t("settings.showActivity"), isOn: showActivityBinding)
             }
             Button(service.t("settings.save")) {
                 service.saveSecrets(cursor: cursorToken, grokCookie: grokCookie, grokBearer: grokBearer)
@@ -61,12 +57,23 @@ struct SettingsView: View {
         }
     }
 
-    private var selectionBinding: Binding<QuotaSelectionStorage> {
+    private var showHistoryBinding: Binding<Bool> {
         Binding(
-            get: { service.preferences.selectedPool },
+            get: { service.preferences.showQuotaHistory },
             set: { next in
                 var prefs = service.preferences
-                prefs.selectedPool = next
+                prefs.showQuotaHistory = next
+                service.updatePreferences(prefs)
+            }
+        )
+    }
+
+    private var showActivityBinding: Binding<Bool> {
+        Binding(
+            get: { service.preferences.showTokenActivity },
+            set: { next in
+                var prefs = service.preferences
+                prefs.showTokenActivity = next
                 service.updatePreferences(prefs)
             }
         )

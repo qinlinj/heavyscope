@@ -15,6 +15,8 @@ public struct AppPreferences: Equatable, Sendable, Codable {
     public var lastGrokSync: Date?
     public var lastCursorError: String?
     public var lastGrokError: String?
+    public var showQuotaHistory: Bool
+    public var showTokenActivity: Bool
 
     public init(
         language: AppLanguage = .simplifiedChinese,
@@ -23,7 +25,9 @@ public struct AppPreferences: Equatable, Sendable, Codable {
         lastCursorSync: Date? = nil,
         lastGrokSync: Date? = nil,
         lastCursorError: String? = nil,
-        lastGrokError: String? = nil
+        lastGrokError: String? = nil,
+        showQuotaHistory: Bool = true,
+        showTokenActivity: Bool = true
     ) {
         self.language = language
         self.refreshInterval = refreshInterval
@@ -32,10 +36,31 @@ public struct AppPreferences: Equatable, Sendable, Codable {
         self.lastGrokSync = lastGrokSync
         self.lastCursorError = lastCursorError
         self.lastGrokError = lastGrokError
+        self.showQuotaHistory = showQuotaHistory
+        self.showTokenActivity = showTokenActivity
     }
 
     public var selection: QuotaSelection {
         selectedPool.selection
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case language, refreshInterval, selectedPool
+        case lastCursorSync, lastGrokSync, lastCursorError, lastGrokError
+        case showQuotaHistory, showTokenActivity
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        language = try container.decodeIfPresent(AppLanguage.self, forKey: .language) ?? .simplifiedChinese
+        refreshInterval = try container.decodeIfPresent(TimeInterval.self, forKey: .refreshInterval) ?? LiveConstants.defaultRefreshInterval
+        selectedPool = try container.decodeIfPresent(QuotaSelectionStorage.self, forKey: .selectedPool) ?? .tightest
+        lastCursorSync = try container.decodeIfPresent(Date.self, forKey: .lastCursorSync)
+        lastGrokSync = try container.decodeIfPresent(Date.self, forKey: .lastGrokSync)
+        lastCursorError = try container.decodeIfPresent(String.self, forKey: .lastCursorError)
+        lastGrokError = try container.decodeIfPresent(String.self, forKey: .lastGrokError)
+        showQuotaHistory = try container.decodeIfPresent(Bool.self, forKey: .showQuotaHistory) ?? true
+        showTokenActivity = try container.decodeIfPresent(Bool.self, forKey: .showTokenActivity) ?? true
     }
 }
 

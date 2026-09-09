@@ -50,6 +50,18 @@ public enum PoolHint: String, CaseIterable, Codable, Sendable {
         case .cursorOther: return "#FBBF24"
         }
     }
+
+    public var shortName: String {
+        switch self {
+        case .grokHeavy: return "Heavy"
+        case .grokBot: return "Bot"
+        case .cursorModels: return "Models"
+        case .cursorOther: return "Other"
+        }
+    }
+
+    /// Leader popover row order. Pool list cannot be emptied or reordered in v1.
+    public static let popoverOrder: [PoolHint] = [.cursorModels, .cursorOther, .grokBot, .grokHeavy]
 }
 
 public enum ResetCycle: String, Codable, Sendable {
@@ -254,6 +266,8 @@ public enum LiveConstants {
     public static let grokCliTokenAuth = "xai-grok-cli"
     public static let snapshotAnchorInterval: TimeInterval = 15 * 60
     public static let defaultRefreshInterval: TimeInterval = 60
+    public static let brandPurpleHex = "#7C3AED"
+    public static let popoverWidth: Double = 360
 }
 
 public enum QuotaSelection: Equatable, Sendable {
@@ -262,29 +276,51 @@ public enum QuotaSelection: Equatable, Sendable {
 }
 
 public enum MenuBarIndicator {
-    /// Outer ring = remaining of the selected or tightest connected pool.
-    /// Inner ring = time remaining when reset timing is known.
+    /// Status-item rings. Unconnected pools never drive the icon.
+    /// Outer = remaining% of the tightest connected pool. Inner = time-to-reset when known.
+    /// v1 has no pin / four-ring / dual-pool rings. Stale callers pass last-good pools.
     public static func rings(
         pools: [LivePoolUpdate],
-        selection: QuotaSelection,
+        connectedHints: Set<PoolHint>? = nil,
         at date: Date = Date()
-    ) -> (outerRemaining: Double?, innerTimeRemaining: Double?, label: PoolHint?) {
-        let connected = pools.filter { $0.quotaTotal != nil }
-        let chosen: LivePoolUpdate?
-        switch selection {
-        case .tightest:
-            chosen = connected.max { lhs, rhs in
-                if lhs.usedPercent == rhs.usedPercent {
-                    return lhs.remainingPercent > rhs.remainingPercent
-                }
-                return lhs.usedPercent < rhs.usedPercent
+    ) -> (outerRemaining: Double?, innerTimeRemaining: Double?, usedPercent: Double?, label: PoolHint?) {
+        guard let pool = tightestConnected(in: pools, connectedHints: connectedHints) else {
+            return (nil, nil, nil, nil)
+        }
+        return (pool.remainingPercent, pool.remainingTimePercent(at: date), pool.usedPercent, pool.poolHint)
+    }
+
+    public static func tightestConnected(
+        in pools: [LivePoolUpdate],
+        connectedHints: Set<PoolHint>? = nil
+    ) -> LivePoolUpdate? {
+        pools.filter { pool in
+            guard pool.quotaTotal != nil else { return false }
+            if let connectedHints { return connectedHints.contains(pool.poolHint) }
+            return true
+        }
+        .max { lhs, rhs in
+            if lhs.usedPercent == rhs.usedPercent {
+                return lhs.remainingPercent > rhs.remainingPercent
             }
-        case let .pool(hint):
-            chosen = connected.first { $0.poolHint == hint } ?? connected.first { $0.poolHint == hint }
+            return lhs.usedPercent < rhs.usedPercent
         }
-        guard let pool = chosen else {
-            return (nil, nil, nil)
-        }
-        return (pool.remainingPercent, pool.remainingTimePercent(at: date), pool.poolHint)
+    }
+
+    public static func remainingLabel(_ remaining: Double?) -> String {
+        guard let remaining else { return "—" }
+        return "\(Int(round(remaining)))%"
+    }
+
+    public static func usedLabel(_ used: Double?) -> String {
+        guard let used else { return "—" }
+        return "\(Int(round(used)))%"
+    }
+
+    /// Token Activity never mixes `$` and `%` into one total.
+    public static func combinedUnit(_ units: [String]) -> String? {
+        let unique = Set(units.filter { !$0.isEmpty })
+        guard unique.count == 1 else { return nil }
+        return unique.first
     }
 }

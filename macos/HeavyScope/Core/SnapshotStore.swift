@@ -37,8 +37,16 @@ public struct DailyActivity: Equatable, Sendable, Identifiable {
     public var day: Date
     public var usedDelta: Double
     public var sampleCount: Int
+    public var unit: String
 
     public var id: Date { day }
+
+    public init(day: Date, usedDelta: Double, sampleCount: Int, unit: String = LiveConstants.percentUnit) {
+        self.day = day
+        self.usedDelta = usedDelta
+        self.sampleCount = sampleCount
+        self.unit = unit
+    }
 }
 
 public struct HeatmapCell: Equatable, Sendable, Identifiable {
@@ -145,12 +153,19 @@ public final class SnapshotStore: @unchecked Sendable {
         return rows
     }
 
-    /// Daily activity from local history: used% increase that day. Honest empty when no samples.
-    public func dailyActivity(from: Date, to: Date, pool: PoolHint? = nil) throws -> [DailyActivity] {
+    /// Daily burn from local history. One unit only — never mix `$` and `%` into a fake total.
+    public func dailyActivity(
+        from: Date,
+        to: Date,
+        pool: PoolHint? = nil,
+        unit: String = LiveConstants.percentUnit
+    ) throws -> [DailyActivity] {
         let calendar = Calendar(identifier: .gregorian)
         var days: [Date: (delta: Double, count: Int)] = [:]
+        let latest = Dictionary(uniqueKeysWithValues: (try latestPools()).map { ($0.poolHint, $0) })
         let hints = pool.map { [$0] } ?? PoolHint.allCases
         for hint in hints {
+            if let mapped = latest[hint], mapped.unit != unit { continue }
             let points = try series(pool: hint, from: from.addingTimeInterval(-24 * 60 * 60), to: to)
             guard !points.isEmpty else { continue }
             var previous = points[0]
@@ -172,7 +187,7 @@ public final class SnapshotStore: @unchecked Sendable {
         }
         return days.keys.sorted().map { day in
             let bucket = days[day]!
-            return DailyActivity(day: day, usedDelta: bucket.delta, sampleCount: bucket.count)
+            return DailyActivity(day: day, usedDelta: bucket.delta, sampleCount: bucket.count, unit: unit)
         }
     }
 

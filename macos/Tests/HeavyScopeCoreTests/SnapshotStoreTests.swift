@@ -37,6 +37,12 @@ final class SnapshotStoreTests: XCTestCase {
         XCTAssertTrue(cells.allSatisfy { $0.intensity == 0 && $0.sampleCount == 0 })
     }
 
+    func testDailyActivityDoesNotMixUSDAndPercent() {
+        XCTAssertEqual(MenuBarIndicator.combinedUnit(["%", "%"]), "%")
+        XCTAssertNil(MenuBarIndicator.combinedUnit(["%", "USD"]))
+        XCTAssertEqual(MenuBarIndicator.combinedUnit(["USD"]), "USD")
+    }
+
     func testIdealPaceIsLinearAndNotInventedUsage() {
         let store = try! SnapshotStore(path: temporaryDB())
         XCTAssertEqual(store.idealPace(steps: 5), [100, 75, 50, 25, 0])
@@ -48,7 +54,7 @@ final class SnapshotStoreTests: XCTestCase {
             LivePoolUpdate(poolHint: .cursorOther, quotaUsed: 0),
             LivePoolUpdate(poolHint: .grokBot, quotaUsed: 36),
         ]
-        let rings = MenuBarIndicator.rings(pools: pools, selection: .tightest)
+        let rings = MenuBarIndicator.rings(pools: pools)
         XCTAssertEqual(rings.label, .grokBot)
         XCTAssertEqual(rings.outerRemaining, 64)
     }

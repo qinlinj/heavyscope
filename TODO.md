@@ -112,6 +112,7 @@ GitHub: https://github.com/qinlinj/heavyscope
 - [x] `macos/` SwiftUI `MenuBarExtra` + `LSUIElement` Xcode project
 - [x] `Package.swift` HeavyScopeCore + unit tests (Other=apiPercentUsed, Bot=SAND usagePercent, Models=autoPercentUsed, Team-ID 401 / 405 are http)
 - [x] Dual-ring status item, popover bars + reset + pace, history window, daily activity, heatmap
+- [x] Leader UX: icon = tightest connected remaining%; popover A–E; Models→Other→Bot→Heavy; heatmap bottom only
 - [x] Keychain secrets, EN / zh-Hans, refresh on launch / ~60s / manual, stale last-good
 - [x] SQLite snapshots (changes + 15-minute anchors)
 - [x] Version 0.28.0 (package.json + src-tauri + README + docs)

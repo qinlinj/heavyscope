@@ -1,38 +1,28 @@
 import SwiftUI
 
-/// Dual-ring menu-bar indicator. Outer = remaining quota; inner = time-to-reset.
+/// Status-item only. Outer remaining% of tightest connected pool (preset color).
+/// Inner time-to-reset when known. Short integer remaining% label. No popover chrome.
 struct MenuBarProgressView: View {
     var remaining: Double?
     var timeRemaining: Double?
-    var usedLabel: String
-    var caption: String
+    var accentHex: String?
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 5) {
             ZStack {
-                ring(progress: (remaining ?? 0) / 100, color: outerColor, line: 2.4)
+                ring(progress: (remaining ?? 0) / 100, color: Color(hex: accentHex ?? "#94A3B8"), line: 2.4)
                     .opacity(remaining == nil ? 0.18 : 1)
                 if let timeRemaining {
-                    ring(progress: timeRemaining / 100, color: Color(red: 0.35, green: 0.72, blue: 1.0), line: 1.6)
+                    ring(progress: timeRemaining / 100, color: Color(hex: LiveConstants.brandPurpleHex), line: 1.5)
                         .padding(3.2)
                 }
             }
-            .frame(width: 18, height: 18)
-            Text(usedLabel)
+            .frame(width: 16, height: 16)
+            Text(MenuBarIndicator.remainingLabel(remaining))
                 .font(.system(size: 12, weight: .semibold, design: .rounded))
                 .monospacedDigit()
-            Text(caption)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 2)
-    }
-
-    private var outerColor: Color {
-        guard let remaining else { return .secondary }
-        if remaining < 20 { return Color(red: 0.96, green: 0.45, blue: 0.35) }
-        if remaining < 40 { return Color(red: 0.98, green: 0.78, blue: 0.25) }
-        return Color(red: 0.45, green: 0.86, blue: 0.55)
     }
 
     private func ring(progress: Double, color: Color, line: CGFloat) -> some View {
@@ -44,12 +34,5 @@ struct MenuBarProgressView: View {
                     .stroke(color, style: StrokeStyle(lineWidth: line, lineCap: .round))
                     .rotationEffect(.degrees(-90))
             )
-    }
-}
-
-enum MenuBarLabel {
-    static func usedText(remaining: Double?) -> String {
-        guard let remaining else { return "—" }
-        return "\(Int(round(100 - remaining)))%"
     }
 }

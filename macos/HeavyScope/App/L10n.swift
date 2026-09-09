@@ -27,6 +27,10 @@ enum L10n {
             .english: "Not connected",
             .simplifiedChinese: "待连接",
         ],
+        "status.pending": [
+            .english: "Pending",
+            .simplifiedChinese: "待连接",
+        ],
         "status.stale": [
             .english: "Showing last good snapshot",
             .simplifiedChinese: "显示上次成功快照",
@@ -159,9 +163,13 @@ enum L10n {
             .english: "简体中文",
             .simplifiedChinese: "简体中文",
         ],
-        "selection.tightest": [
-            .english: "Tightest pool",
-            .simplifiedChinese: "最紧的池",
+        "settings.showHistory": [
+            .english: "Show Quota History",
+            .simplifiedChinese: "显示额度历史",
+        ],
+        "settings.showActivity": [
+            .english: "Show Token Activity",
+            .simplifiedChinese: "显示用量活动",
         ],
     ]
 }

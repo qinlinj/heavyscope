@@ -117,8 +117,17 @@ final class UsageService: ObservableObject {
         pools.first { $0.poolHint == hint }
     }
 
-    func rings() -> (outerRemaining: Double?, innerTimeRemaining: Double?, label: PoolHint?) {
-        MenuBarIndicator.rings(pools: pools, selection: preferences.selection)
+    func rings() -> (outerRemaining: Double?, innerTimeRemaining: Double?, usedPercent: Double?, label: PoolHint?) {
+        MenuBarIndicator.rings(pools: pools, connectedHints: connectedHints)
+    }
+
+    /// A pool is connected only after a successful last-good snapshot exists.
+    var connectedHints: Set<PoolHint> {
+        Set(pools.map(\.poolHint))
+    }
+
+    var tightest: LivePoolUpdate? {
+        MenuBarIndicator.tightestConnected(in: pools, connectedHints: connectedHints)
     }
 
     private func restartTimer() {

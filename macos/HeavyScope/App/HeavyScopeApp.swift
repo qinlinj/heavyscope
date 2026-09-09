@@ -14,8 +14,7 @@ struct HeavyScopeApp: App {
             MenuBarProgressView(
                 remaining: rings.outerRemaining,
                 timeRemaining: rings.innerTimeRemaining,
-                usedLabel: MenuBarLabel.usedText(remaining: rings.outerRemaining),
-                caption: rings.label.map { L10n.poolName($0, language: service.language) } ?? "HeavyScope"
+                accentHex: rings.label?.accentHex
             )
         }
         .menuBarExtraStyle(.window)
