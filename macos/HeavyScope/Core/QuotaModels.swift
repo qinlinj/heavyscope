@@ -6,6 +6,16 @@ public enum PoolHint: String, CaseIterable, Codable, Sendable {
     case cursorModels = "cursor_models"
     case cursorOther = "cursor_other"
 
+    /// Web sql.js preset id. Same four pools as 0.27; Swift does not change adapters.
+    public var presetId: String {
+        switch self {
+        case .grokHeavy: return "preset-grok-heavy"
+        case .grokBot: return "preset-grok-bot"
+        case .cursorModels: return "preset-cursor-models"
+        case .cursorOther: return "preset-cursor-other"
+        }
+    }
+
     public var displayNameEN: String {
         switch self {
         case .grokHeavy: return "Grok Heavy"

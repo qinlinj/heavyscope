@@ -13,7 +13,7 @@ The format is based on Keep a Changelog, and this project uses Semantic Versioni
 - Native SwiftUI macOS menu-bar app in `macos/` (`LSUIElement`, `MenuBarExtra`). CodexMeter-style UX with HeavyScope data: dual-ring status item, popover bars + reset countdown + pace, Quota History / Daily Activity windows, local heatmap, Settings (Keychain tokens, interval, EN / zh-Hans).
 - `Package.swift` exposes `HeavyScopeCore` for `swift test`. Mapping rules ported from TypeScript 0.23–0.27: Other = `apiPercentUsed` (not `totalSpend`); Bot = SAND `usagePercent`; Models = `autoPercentUsed`; Team-ID 401 and HTTP 405 are `http`, not expired.
 - Local SQLite snapshots (value changes + 15-minute unchanged anchors). Refresh on launch, default 60s, and manual; stale last-good on failure.
-- Docs: `macos/README.md`, `docs/NATIVE_MACOS.md`. Existing Vite + Tauri tray is unchanged.
+- Docs: `macos/README.md`, `docs/NATIVE_MACOS.md`. Existing Vite + Tauri tray is unchanged. Swift Core aligned to Coding Bot’s 0.27 four-pool table and sibling `docs/NATIVE_MAC_MAPPING.md` (PR #29). No `src/adapters/**` edits.
 
 ### Honest / not claimed
 

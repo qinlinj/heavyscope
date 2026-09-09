@@ -1,6 +1,8 @@
 import Foundation
 
-/// Honest Cursor Spending / SAND / usage-summary mapping ported from HeavyScope 0.23–0.27.
+/// Honest Cursor Spending / SAND / usage-summary mapping (0.23–0.27).
+/// Models = `autoPercentUsed`; Other = `apiPercentUsed` only; Bot = SAND `usagePercent`.
+/// See `NativeMacMapping` and sibling `docs/NATIVE_MAC_MAPPING.md`.
 public enum CursorMapper {
     public static func sandUsageRequestBody() -> String { "{}" }
 

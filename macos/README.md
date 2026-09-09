@@ -25,13 +25,13 @@ swift test
 
 `Package.swift` exposes `HeavyScopeCore` from `HeavyScope/Core`. Tests live in `Tests/HeavyScopeCoreTests`. On Ubuntu 24.04, `swift test` (Swift 5.10.1) passed 24 Core tests after installing `libsqlite3-dev`. `xcodebuild` is not available in Linux CI.
 
-Critical mapping contracts (ported from TypeScript 0.23–0.27):
+Critical mapping contracts match sibling `docs/NATIVE_MAC_MAPPING.md` (PR #29) and Coding Bot’s 0.27 table. This package does not edit `src/adapters/**`.
 
-- Other Models = `planUsage.apiPercentUsed`, never `totalSpend`
-- Grok Bot = SAND `usagePercent` (weekly % of 100). No invented absolute counts
-- Cursor Models = `autoPercentUsed`
-- HTTP 401 `Team ID is required` is `http`, not session expired
-- HTTP 405 is `http`, not expired
+- Cursor Models = `preset-cursor-models` / `autoPercentUsed` (period POST, usage-summary fallback)
+- Other Models = `preset-cursor-other` / `apiPercentUsed` only — never `totalSpend` / `plan.used` / `onDemand.used`
+- Grok Bot = `preset-grok-bot` / SAND `usagePercent`; do not loosen `isGrokBotSKU` (`cursor-grok-*` is chat)
+- Grok Heavy = `preset-grok-heavy` / proto field 1 `credit_usage_percent` (CLI JSON supplement)
+- HTTP 401 `Team ID is required` and HTTP 405 are `http`, not session expired
 
 ## Layout
 

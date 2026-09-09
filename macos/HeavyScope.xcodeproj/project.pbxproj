@@ -16,6 +16,7 @@
 		A10000000000000700000000 /* SecretStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000700000000 /* SecretStore.swift */; };
 		A10000000000000800000000 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000800000000 /* AppPreferences.swift */; };
 		A10000000000000900000000 /* LiveClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000900000000 /* LiveClient.swift */; };
+		A10000000000002100000000 /* NativeMacMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000002100000000 /* NativeMacMapping.swift */; };
 		A10000000000001000000000 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000001000000000 /* L10n.swift */; };
 		A10000000000001100000000 /* UsageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000001100000000 /* UsageService.swift */; };
 		A10000000000001200000000 /* MenuBarProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000001200000000 /* MenuBarProgressView.swift */; };
@@ -36,6 +37,7 @@
 		B10000000000000700000000 /* SecretStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecretStore.swift; sourceTree = "<group>"; };
 		B10000000000000800000000 /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
 		B10000000000000900000000 /* LiveClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveClient.swift; sourceTree = "<group>"; };
+		B10000000000002100000000 /* NativeMacMapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeMacMapping.swift; sourceTree = "<group>"; };
 		B10000000000001000000000 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
 		B10000000000001100000000 /* UsageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageService.swift; sourceTree = "<group>"; };
 		B10000000000001200000000 /* MenuBarProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarProgressView.swift; sourceTree = "<group>"; };
@@ -92,6 +94,7 @@
 				B10000000000000700000000 /* SecretStore.swift */,
 				B10000000000000800000000 /* AppPreferences.swift */,
 				B10000000000000900000000 /* LiveClient.swift */,
+				B10000000000002100000000 /* NativeMacMapping.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -197,6 +200,7 @@
 				A10000000000000700000000 /* SecretStore.swift in Sources */,
 				A10000000000000800000000 /* AppPreferences.swift in Sources */,
 				A10000000000000900000000 /* LiveClient.swift in Sources */,
+				A10000000000002100000000 /* NativeMacMapping.swift in Sources */,
 				A10000000000001000000000 /* L10n.swift in Sources */,
 				A10000000000001100000000 /* UsageService.swift in Sources */,
 				A10000000000001200000000 /* MenuBarProgressView.swift in Sources */,

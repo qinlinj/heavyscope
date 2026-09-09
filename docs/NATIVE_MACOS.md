@@ -14,16 +14,18 @@ This Linux cloud agent cannot run `xcodebuild` or verify the Mac UI. Open `macos
 - Settings: Keychain tokens/cookies, refresh interval, EN / zh-Hans
 - Refresh on launch, default 60s, and manual refresh; last-good snapshot on failure
 
-## Honest mapping (same as TypeScript 0.23–0.27)
+## Honest mapping (Coding Bot / 0.27 accepted table)
 
-| Pool | Source | Rule |
-| --- | --- | --- |
-| Grok Heavy | grok.com `GetGrokCreditsConfig` / CLI billing JSON | weekly `creditUsagePercent` |
-| Grok Bot | Cursor `POST /api/dashboard/get-sand-usage-status` | `usagePercent` weekly % of 100. No invented counts. grok.com `GROK_CHAT` is not Bot |
-| Cursor Models | `planUsage.autoPercentUsed` | percent of 100 |
-| Cursor Other Models | `planUsage.apiPercentUsed` | **not** `totalSpend`. `$400` / `includedAmountCents` is cap copy only |
+Canonical field map: sibling [docs/NATIVE_MAC_MAPPING.md](https://github.com/qinlinj/heavyscope/blob/cursor/native-mac-mapping-8ca6/docs/NATIVE_MAC_MAPPING.md) (PR #29). This PR does **not** change TypeScript adapters, Tray, or the web UI.
 
-HTTP 401 `Team ID is required` and HTTP 405 are `http`, not session expired.
+| Pool | preset id | poolHint | Field | Do not map |
+| --- | --- | --- | --- | --- |
+| Cursor Models | `preset-cursor-models` | `cursor_models` | `planUsage.autoPercentUsed` (period POST, usage-summary fallback). `%` / 100. Reset `billingCycleEnd` | `apiPercentUsed` |
+| Cursor Other | `preset-cursor-other` | `cursor_other` | `planUsage.apiPercentUsed` only. `%` / 100. Reset `billingCycleEnd`. `$400` = `includedAmountCents` copy | `totalSpend`, `plan.used` cents, `onDemand.used` |
+| Grok Bot | `preset-grok-bot` | `grok_bot` | SAND POST `{}` `usagePercent`. `%` / 100. remaining = clamp(100 − %). Reset `nextResetTimestampUtc`. SAND over SKU $ | grok.com `GROK_CHAT` / `product_usage` enum; `cursor-grok-*` chat |
+| Grok Heavy | `preset-grok-heavy` | `grok_heavy` | proto field 1 fixed32 `credit_usage_percent`; CLI `creditUsagePercent` supplement. `%` / 100. Reset period end | treating Heavy product rows as Bot |
+
+Cursor: `WorkosCursorSessionToken` + Origin/Referer cursor.com. 401 real auth → `expired`; 405 and `Team ID is required` → `http`. Grok: session cookie and/or Bearer.
 
 ## Verify on a Mac (not done here)
 
